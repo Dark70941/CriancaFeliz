@@ -45,17 +45,8 @@ body {
     height: 100%;
     object-fit: cover;
 }
-.image-section::after {
-    content: "";
-    position: absolute;
-    top: -10%;
-    right: -60px;
-    width: 160px;
-    height: 120%;
-    background: #0e6f9d;
-    border-radius: 60% 0 0 60% / 50% 0 0 50%;
-    box-shadow: -2px 0 0 2px #0e6f9d;
-}
+/* Removido o detalhe azul lateral para atender ao novo layout limpo */
+.image-section::after { display: none; }
 
 .form-section {
     flex: 1;

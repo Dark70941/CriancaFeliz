@@ -97,10 +97,14 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
         <aside class="sidebar">
             <img src="img/logo.png" class="logo" alt="logo">
             <div class="nav-icon active">🏠</div>
-            <div class="nav-icon">📊</div>
-            <div class="nav-icon">👥</div>
-            <div class="nav-icon">🗓️</div>
-            <div class="nav-icon">⚙️</div>
+            <a class="nav-icon" href="prontuarios.php" title="Prontuários">👥</a>
+            <div class="nav-icon" title="Relatórios">📈</div>
+            <div class="nav-icon" title="Usuários">👤❌</div>
+            <div class="nav-icon" title="Permissões">👤🔒</div>
+            <div class="nav-icon" title="Ideias">💡</div>
+            <div class="nav-icon" title="Documentos">📋</div>
+            <div class="nav-icon" title="Editar">📝</div>
+            <div class="nav-icon" title="Administrador">🤵</div>
         </aside>
         <main class="content">
             <div class="topbar">
