@@ -90,10 +90,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Link "Esqueceu a senha?"
-    forgotPasswordLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        showMessage('Funcionalidade de recuperação de senha em desenvolvimento.', 'info');
-    });
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', function(e) {
+            // se for link para página, deixar navegar
+        });
+    }
 
     // Função para mostrar mensagens
     function showMessage(message, type) {

@@ -30,23 +30,13 @@ unset($_SESSION['form_data']);
         <div class="login-container">
             <!-- Lado esquerdo com a imagem -->
             <div class="image-section">
-                <img src="../img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg" alt="Crianças felizes" class="children-image">
+                <img src="img/84ee2f859c98cde210228f9cf472d03b4932ff8c.jpg" alt="Crianças felizes" class="children-image">
             </div>
             
             <!-- Lado direito com o formulário -->
             <div class="form-section">
                 <div class="logo-section">
-                    <div class="logo">
-                        <span class="logo-text">
-                            <span class="crianca">CRIANÇA</span>
-                            <span class="feliz">FELIZ</span>
-                        </span>
-                        <div class="logo-icon">
-                            <div class="icon-circle orange"></div>
-                            <div class="icon-circle green"></div>
-                            <div class="icon-circle blue"></div>
-                        </div>
-                    </div>
+                    <img src="img/logo.png" alt="Associação Criança Feliz" class="logo-img">
                 </div>
                 
                 <div class="login-form">
@@ -70,7 +60,7 @@ unset($_SESSION['form_data']);
                         </div>
                         
                         <div class="forgot-password">
-                            <a href="#" id="forgotPassword">Esqueceu a senha?</a>
+                            <a href="forgot.php" id="forgotPassword">Esqueceu a senha?</a>
                         </div>
                         
                         <button type="submit" class="login-btn">Entrar</button>
