@@ -54,22 +54,22 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
         .topbar { display:flex; justify-content: space-between; align-items:center; }
         .user { display:flex; align-items:center; gap:10px; }
         .user .avatar { width: 44px; height:44px; border-radius:50%; background:#cfd8dc; }
-        .grid { display:grid; grid-template-columns: 1.2fr 1fr 260px; gap:20px; margin-top:20px; }
+        .grid { display:grid; grid-template-columns: 0.8fr 1fr 260px; gap:20px; margin-top:20px; }
         .card { background:#fff; border-radius:14px; box-shadow: 0 2px 10px rgba(0,0,0,.08); padding:16px; }
-        .calendar { height: 280px; }
+        .calendar { height: auto; }
         .list { display:flex; flex-direction:column; gap:12px; }
         .pill { padding:10px 12px; border-radius:10px; font-size:14px; }
         .pill.red { background:#ffe5e5; border-left:6px solid #e06b6b; }
         .pill.green { background:#e8f6ea; border-left:6px solid #6fb64f; }
         .stats { display:grid; gap:12px; }
         .stat { background:#fff; border-radius:12px; padding:16px; text-align:center; font-weight:700; }
-        .notes-grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:20px; }
+        .notes-grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-top:15px; }
         .note { background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start; }
         .badge { width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#fff; }
         .badge.orange { background:#ff7a00; }
         .badge.green { background:#6fb64f; }
         a.logout-btn { background:#e74c3c; color:#fff; padding:10px 16px; border-radius:8px; text-decoration:none; }
-        .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+        .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; width: 100%; max-width: 720px; margin: 0 auto; }
         .calendar-header { text-align:center; font-weight:600; padding:8px; color:#666; }
         .calendar-day { 
             aspect-ratio:1; display:flex; align-items:center; justify-content:center; 
@@ -90,6 +90,90 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
         .modal-buttons { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; }
         .btn-save { background:#6fb64f; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; }
         .btn-cancel { background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; }
+        
+        /* Responsividade */
+        @media (max-width: 1200px) {
+            .grid { grid-template-columns: 0.9fr 1fr; }
+            .stats { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
+            .notes-grid { grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 12px; }
+        }
+        
+        @media (max-width: 1000px) {
+            .grid { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: repeat(3, 1fr); }
+            .notes-grid { grid-template-columns: 1fr 1fr; margin-top: 10px; }
+            .calendar { height: auto; }
+        }
+        
+        @media (max-width: 768px) {
+            .app { 
+                grid-template-columns: 1fr; 
+                padding: 10px; 
+                gap: 10px; 
+            }
+            .sidebar { 
+                grid-row: 2;
+                flex-direction: row; 
+                padding: 8px 16px; 
+                gap: 12px;
+                overflow-x: auto;
+            }
+            .content { 
+                grid-row: 1;
+                padding: 15px; 
+            }
+            .grid { 
+                grid-template-columns: 1fr; 
+                gap: 15px; 
+            }
+            .calendar { height: auto; }
+            .topbar { 
+                flex-direction: column; 
+                gap: 10px; 
+                align-items: flex-start; 
+            }
+            .user { 
+                align-self: flex-end; 
+            }
+            .notes-grid { 
+                grid-template-columns: 1fr 1fr; 
+                margin-top: 10px;
+                gap: 15px;
+            }
+            .stats { 
+                grid-template-columns: repeat(3, 1fr); 
+                gap: 8px; 
+            }
+            .stat { padding: 12px; font-size: 14px; }
+        }
+        
+        @media (max-width: 480px) {
+            .app { padding: 5px; }
+            .content { padding: 10px; }
+            .topbar { text-align: center; }
+            .user { 
+                flex-direction: column; 
+                gap: 5px; 
+                align-self: center; 
+            }
+            .calendar { height: auto; }
+            .stats { grid-template-columns: 1fr; }
+            .notes-grid { 
+                grid-template-columns: 1fr; 
+                margin-top: 8px;
+                gap: 10px; 
+            }
+            .sidebar { 
+                padding: 6px 12px; 
+                gap: 8px; 
+            }
+            .nav-icon { 
+                width: 36px; 
+                height: 36px; 
+                font-size: 14px; 
+            }
+            .sidebar .logo { width: 36px; }
+        }
     </style>
 </head>
 <body>
