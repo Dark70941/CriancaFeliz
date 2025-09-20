@@ -104,6 +104,8 @@ if (!$record) { header('Location: acolhimento_list.php'); exit(); }
             </div>
         </main>
     </div>
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>
 

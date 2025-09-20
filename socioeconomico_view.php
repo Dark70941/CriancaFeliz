@@ -202,5 +202,7 @@ while (isset($record["familia_{$i}_nome"])) {
             </div>
         </main>
     </div>
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>

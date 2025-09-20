@@ -71,5 +71,7 @@ unset($_SESSION['form_data']);
     </div>
     
     <script src="js/script.js"></script>
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>

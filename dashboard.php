@@ -403,5 +403,8 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
         generateCalendar();
         updateNotesList();
     </script>
+    
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>

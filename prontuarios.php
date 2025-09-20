@@ -73,6 +73,8 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
             </div>
         </main>
     </div>
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>
 

@@ -236,6 +236,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
         </main>
     </div>
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>
 

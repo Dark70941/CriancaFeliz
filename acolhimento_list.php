@@ -146,6 +146,9 @@ usort($records, function($a, $b) {
             </table>
         </main>
     </div>
+    
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>
 

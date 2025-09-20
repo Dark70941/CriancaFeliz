@@ -46,6 +46,8 @@ session_start();
             </div>
         </div>
     </div>
+    <!-- Chatbot -->
+    <script src="js/chatbot.js"></script>
 </body>
 </html>
 
