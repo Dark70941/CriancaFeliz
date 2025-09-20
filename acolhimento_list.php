@@ -73,6 +73,7 @@ usort($records, function($a, $b) {
         .btn { background:#ff7a00; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none; }
         .btn.secondary { background:#6b7b84; }
         .btn.delete { background:#e74c3c; }
+        .btn.back { background:#6fb64f; color:#fff; display:flex; align-items:center; gap:6px; }
         .searchbar { display:flex; gap:10px; margin:16px 0; }
         .searchbar input { padding:10px 12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; }
         table { width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden; }
@@ -101,6 +102,7 @@ usort($records, function($a, $b) {
                     <div style="font-weight:700; font-size:24px;">Ficha de Acolhimento</div>
                 </div>
                 <div class="actions">
+                    <a class="btn back" href="prontuarios.php">← Voltar</a>
                     <a class="btn" href="acolhimento_form.php">+ Cadastrar</a>
                 </div>
             </div>

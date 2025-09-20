@@ -90,6 +90,15 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
         .modal-buttons { display:flex; gap:12px; justify-content:flex-end; margin-top:16px; }
         .btn-save { background:#6fb64f; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; }
         .btn-cancel { background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; }
+        .delete-btn { 
+            background: #e74c3c; color: white; border: none; width: 20px; height: 20px; 
+            border-radius: 50%; cursor: pointer; font-size: 12px; display: flex; 
+            align-items: center; justify-content: center; margin-left: auto; 
+            transition: all 0.2s; flex-shrink: 0;
+        }
+        .delete-btn:hover { background: #c0392b; transform: scale(1.1); }
+        .note-with-delete { display: flex; align-items: flex-start; gap: 10px; width: 100%; }
+        .note-content { flex: 1; }
         
         /* Responsividade */
         @media (max-width: 1200px) {
@@ -244,8 +253,26 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
                         <div style="font-weight:700">Avisos</div>
                         <a href="#" style="font-size:12px; text-decoration:none; color:#333">Ver todos</a>
                     </div>
-                    <div class="note"><div class="badge green">S</div><div><div style="font-weight:600">Assistente Social – Ana</div><div style="font-size:12px;color:#666">Reunião com responsáveis amanhã às 15h.</div></div></div>
-                    <div class="note"><div class="badge green">V</div><div><div style="font-weight:600">Voluntário – Pedro</div><div style="font-size:12px;color:#666">Levar pincéis e cartolinas para oficina de artes.</div></div></div>
+                    <div class="note">
+                        <div class="note-with-delete">
+                            <div class="badge green">S</div>
+                            <div class="note-content">
+                                <div style="font-weight:600">Assistente Social – Ana</div>
+                                <div style="font-size:12px;color:#666">Reunião com responsáveis amanhã às 15h.</div>
+                            </div>
+                            <button class="delete-btn" onclick="deleteAlert(0)" title="Excluir aviso">×</button>
+                        </div>
+                    </div>
+                    <div class="note">
+                        <div class="note-with-delete">
+                            <div class="badge green">V</div>
+                            <div class="note-content">
+                                <div style="font-weight:600">Voluntário – Pedro</div>
+                                <div style="font-size:12px;color:#666">Levar pincéis e cartolinas para oficina de artes.</div>
+                            </div>
+                            <button class="delete-btn" onclick="deleteAlert(1)" title="Excluir aviso">×</button>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
@@ -381,10 +408,13 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
                 noteElement.innerHTML = `
-                    <div class="badge orange">${day}</div>
-                    <div>
-                        <div style="font-weight:600">${day}/${month}/${year}</div>
-                        <div style="font-size:12px;color:#666">${note}</div>
+                    <div class="note-with-delete">
+                        <div class="badge orange">${day}</div>
+                        <div class="note-content">
+                            <div style="font-weight:600">${day}/${month}/${year}</div>
+                            <div style="font-size:12px;color:#666">${note}</div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteNote('${dateKey}')" title="Excluir anotação">×</button>
                     </div>
                 `;
                 notesList.appendChild(noteElement);
@@ -397,6 +427,62 @@ $userName = $_SESSION['user_name'] ?? 'Usuário';
             if (event.target === modal) {
                 closeModal();
             }
+        }
+
+        // Função para deletar anotação
+        function deleteNote(dateKey) {
+            if (confirm('Tem certeza que deseja excluir esta anotação?')) {
+                delete notes[dateKey];
+                localStorage.setItem('calendarNotes', JSON.stringify(notes));
+                generateCalendar();
+                updateNotesList();
+            }
+        }
+
+        // Função para deletar aviso
+        let alerts = [
+            { badge: 'S', title: 'Assistente Social – Ana', content: 'Reunião com responsáveis amanhã às 15h.' },
+            { badge: 'V', title: 'Voluntário – Pedro', content: 'Levar pincéis e cartolinas para oficina de artes.' }
+        ];
+
+        function deleteAlert(index) {
+            if (confirm('Tem certeza que deseja excluir este aviso?')) {
+                alerts.splice(index, 1);
+                updateAlertsList();
+            }
+        }
+
+        function updateAlertsList() {
+            const alertsContainer = document.querySelector('.card.list:last-child');
+            const alertsContent = alertsContainer.querySelector('div:not(:first-child)');
+            
+            // Limpar avisos existentes (manter o cabeçalho)
+            const existingNotes = alertsContainer.querySelectorAll('.note');
+            existingNotes.forEach(note => note.remove());
+            
+            if (alerts.length === 0) {
+                const emptyMessage = document.createElement('div');
+                emptyMessage.style.cssText = 'color:#666; font-style:italic; margin-top:10px;';
+                emptyMessage.textContent = 'Nenhum aviso disponível';
+                alertsContainer.appendChild(emptyMessage);
+                return;
+            }
+            
+            alerts.forEach((alert, index) => {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note';
+                noteElement.innerHTML = `
+                    <div class="note-with-delete">
+                        <div class="badge green">${alert.badge}</div>
+                        <div class="note-content">
+                            <div style="font-weight:600">${alert.title}</div>
+                            <div style="font-size:12px;color:#666">${alert.content}</div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteAlert(${index})" title="Excluir aviso">×</button>
+                    </div>
+                `;
+                alertsContainer.appendChild(noteElement);
+            });
         }
 
         // Inicializar calendário
