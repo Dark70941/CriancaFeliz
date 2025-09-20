@@ -4,12 +4,58 @@
     box-sizing: border-box;
 }
 
+/* ===== VARIÁVEIS CSS PARA MODO ESCURO ===== */
+:root {
+    /* Cores do tema claro */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #edf1f3;
+    --text-primary: #000000;
+    --text-secondary: #333333;
+    --text-muted: #999999;
+    --border-color: #f0a36b;
+    --input-bg: #ffffff;
+    --card-bg: #ffffff;
+    --shadow: rgba(0, 0, 0, 0.15);
+    --shadow-light: rgba(0, 0, 0, 0.1);
+    
+    /* Cores do sistema (mantidas) */
+    --primary-green: #6fb64f;
+    --primary-orange: #f0a36b;
+    --primary-orange-hover: #d98242;
+    --error-bg: #fee;
+    --error-border: #fcc;
+    --error-text: #c33;
+}
+
+/* Tema escuro */
+[data-theme="dark"] {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #121a1f;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-muted: #a0a0a0;
+    --border-color: #f0a36b;
+    --input-bg: #2d2d2d;
+    --card-bg: #2d2d2d;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --shadow-light: rgba(0, 0, 0, 0.2);
+    
+    /* Ajustes para modo escuro */
+    --error-bg: #4a1a1a;
+    --error-border: #8a2a2a;
+    --error-text: #ff6b6b;
+}
+
 body {
     font-family: 'Poppins', sans-serif;
-    background: #ffffff;
+    background: var(--bg-primary);
+    color: var(--text-primary);
     min-height: 100vh;
     margin: 0;
     padding: 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -23,13 +69,14 @@ body {
 }
 
 .login-container {
-    background: white;
+    background: var(--bg-primary);
     border-radius: 0;
     box-shadow: none;
     overflow: hidden;
     display: flex;
     width: 100%;
     height: 100%;
+    transition: background-color 0.3s ease;
 }
 
 .image-section {
@@ -52,7 +99,8 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    background: white;
+    background: var(--bg-primary);
+    transition: background-color 0.3s ease;
 }
 
 .logo-section {
@@ -73,10 +121,11 @@ body {
 .login-title {
     font-size: 32px;
     font-weight: 600;
-    color: #000;
+    color: var(--text-primary);
     text-align: center;
     margin-bottom: 40px;
     letter-spacing: 1px;
+    transition: color 0.3s ease;
 }
 
 .error-messages {
@@ -84,15 +133,16 @@ body {
 }
 
 .error-message {
-    background-color: #fee;
-    border: 1px solid #fcc;
-    color: #c33;
+    background-color: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
     padding: 10px 15px;
     border-radius: 8px;
     margin-bottom: 10px;
     font-size: 14px;
     text-align: center;
     animation: fadeIn 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
 
 @keyframes fadeIn {
@@ -113,23 +163,24 @@ body {
 .input-group input {
     width: 100%;
     padding: 15px 20px;
-    border: 2px solid #f0a36b;
+    border: 2px solid var(--border-color);
     border-radius: 25px;
     font-size: 16px;
     font-family: 'Poppins', sans-serif;
     outline: none;
     transition: all 0.3s ease;
-    background-color: #fff;
+    background-color: var(--input-bg);
+    color: var(--text-primary);
 }
 
 .input-group input:focus {
-    border-color: #f0a36b;
-    background-color: white;
+    border-color: var(--border-color);
+    background-color: var(--input-bg);
     box-shadow: 0 0 0 3px rgba(240, 163, 107, 0.15);
 }
 
 .input-group input::placeholder {
-    color: #999;
+    color: var(--text-muted);
     font-weight: 400;
 }
 
@@ -301,13 +352,14 @@ body {
     right: 0;
     width: 350px;
     height: 500px;
-    background: white;
+    background: var(--card-bg);
     border-radius: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 40px var(--shadow);
     display: none;
     flex-direction: column;
     overflow: hidden;
     animation: slideUp 0.3s ease;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .chatbot-window.active {
@@ -397,10 +449,11 @@ body {
 }
 
 .chatbot-message.bot {
-    background: #f8f9fa;
-    color: #333;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
     align-self: flex-start;
     border-bottom-left-radius: 6px;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .chatbot-message.user {
@@ -418,7 +471,7 @@ body {
 }
 
 .chatbot-option {
-    background: white;
+    background: var(--card-bg);
     border: 2px solid #6fb64f;
     color: #6fb64f;
     padding: 10px 15px;
@@ -453,11 +506,12 @@ body {
     align-items: center;
     gap: 5px;
     padding: 12px 16px;
-    background: #f8f9fa;
+    background: var(--bg-secondary);
     border-radius: 18px;
     border-bottom-left-radius: 6px;
     max-width: 80%;
     align-self: flex-start;
+    transition: background-color 0.3s ease;
 }
 
 .typing-dots {
@@ -537,5 +591,394 @@ body {
     
     .chatbot-header {
         padding: 15px;
+    }
+}
+
+/* ===== TOGGLE MODO ESCURO ===== */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1001;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 50px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 60px;
+    justify-content: center;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px var(--shadow);
+}
+
+.theme-toggle-icon {
+    font-size: 20px;
+    transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover .theme-toggle-icon {
+    transform: rotate(180deg);
+}
+
+/* Estilos específicos para páginas internas (dashboard, fichas) */
+.dashboard-theme-toggle {
+    position: relative;
+    background: var(--card-bg);
+    border: 2px solid var(--primary-orange);
+    border-radius: 50px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px var(--shadow-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-right: 15px;
+    white-space: nowrap;
+}
+
+/* Quando está na área de ações (páginas de fichas) */
+.actions .dashboard-theme-toggle {
+    margin-right: 10px;
+    margin-left: 0;
+}
+
+/* Quando está na área do usuário (dashboard) */
+.user .dashboard-theme-toggle {
+    margin-right: 15px;
+    margin-left: 0;
+}
+
+.dashboard-theme-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow);
+    background: var(--primary-orange);
+    color: white;
+}
+
+.dashboard-theme-toggle .theme-icon {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+}
+
+.dashboard-theme-toggle:hover .theme-icon {
+    transform: rotate(180deg);
+}
+
+/* Estilos para páginas internas (dashboard, prontuários, etc.) */
+.app {
+    transition: background-color 0.3s ease;
+}
+
+.sidebar {
+    background: var(--bg-secondary) !important;
+    transition: background-color 0.3s ease;
+}
+
+.content {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.nav-icon {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.nav-icon.active {
+    background: #ff7a00 !important;
+    color: white !important;
+}
+
+.folder {
+    box-shadow: 0 8px 20px var(--shadow-light);
+    transition: box-shadow 0.3s ease;
+}
+
+.user .avatar {
+    background: var(--bg-secondary);
+    transition: background-color 0.3s ease;
+}
+
+/* Estilos para tabelas no modo escuro */
+[data-theme="dark"] table {
+    background: var(--card-bg);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] thead {
+    background: #e6782e !important;
+}
+
+[data-theme="dark"] th,
+[data-theme="dark"] td {
+    border-bottom: 1px solid #444;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Estilos para formulários no modo escuro */
+[data-theme="dark"] .box {
+    background: var(--card-bg);
+    border: 1px solid #444;
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .section-title {
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--primary-orange);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid #444;
+}
+
+[data-theme="dark"] input:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+    border-color: var(--primary-orange);
+    background: var(--input-bg);
+}
+
+[data-theme="dark"] .btn {
+    background: var(--primary-green);
+    color: white;
+}
+
+[data-theme="dark"] .btn:hover {
+    background: #63a646;
+}
+
+[data-theme="dark"] .btn.back {
+    background: var(--primary-green);
+    color: white;
+}
+
+[data-theme="dark"] .label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .value {
+    color: var(--text-primary);
+}
+
+/* ===== ESTILOS ESPECÍFICOS PARA DASHBOARD NO MODO ESCURO ===== */
+[data-theme="dark"] body {
+    background: #121a1f !important;
+}
+
+[data-theme="dark"] .app {
+    background: #121a1f !important;
+}
+
+[data-theme="dark"] .sidebar {
+    background: #0e2a33 !important;
+}
+
+[data-theme="dark"] .content {
+    background: #1e2a32 !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .nav-icon {
+    background: #153945 !important;
+    color: #fff !important;
+}
+
+[data-theme="dark"] .nav-icon.active {
+    background: #ff7a00 !important;
+}
+
+/* Cards e componentes do dashboard */
+[data-theme="dark"] .card {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,.3) !important;
+}
+
+[data-theme="dark"] .stat {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .note {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Calendário no modo escuro */
+[data-theme="dark"] .calendar-day {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid #444 !important;
+}
+
+[data-theme="dark"] .calendar-day:hover {
+    background: #3a4a52 !important;
+}
+
+[data-theme="dark"] .calendar-day.has-notes {
+    background: #ff7a00 !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .calendar-day.today {
+    background: #6fb64f !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .calendar-header {
+    color: var(--text-secondary) !important;
+}
+
+/* Pills/Alertas no modo escuro */
+[data-theme="dark"] .pill.red {
+    background: #4a1a1a !important;
+    border-left: 6px solid #e06b6b !important;
+    color: #ff9999 !important;
+}
+
+[data-theme="dark"] .pill.green {
+    background: #1a3a1a !important;
+    border-left: 6px solid #6fb64f !important;
+    color: #99ff99 !important;
+}
+
+/* Modal no modo escuro */
+[data-theme="dark"] .modal-content {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .note-textarea {
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 2px solid #f0a36b !important;
+}
+
+/* Avatar do usuário */
+[data-theme="dark"] .user .avatar {
+    background: #3a4a52 !important;
+}
+
+/* Texto geral do dashboard */
+[data-theme="dark"] .grid h3,
+[data-theme="dark"] .card h3,
+[data-theme="dark"] .card h4,
+[data-theme="dark"] .card p,
+[data-theme="dark"] .stat span,
+[data-theme="dark"] .note span,
+[data-theme="dark"] .note div {
+    color: var(--text-primary) !important;
+}
+
+/* Texto dos pills */
+[data-theme="dark"] .pill span,
+[data-theme="dark"] .pill div {
+    color: inherit !important;
+}
+
+/* Estilos para elementos com estilos inline no dashboard */
+[data-theme="dark"] .topbar div {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .user div {
+    color: var(--text-primary) !important;
+}
+
+/* Botões do calendário */
+[data-theme="dark"] button {
+    background: #ff7a00 !important;
+    color: white !important;
+}
+
+/* Títulos das seções */
+[data-theme="dark"] div[style*="font-weight:700"] {
+    color: var(--text-primary) !important;
+}
+
+/* Estatísticas */
+[data-theme="dark"] .stat span[style*="font-weight:500"] {
+    color: var(--text-secondary) !important;
+}
+
+/* Lista de anotações */
+[data-theme="dark"] #notesList {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] #notesList div {
+    color: var(--text-primary) !important;
+}
+
+/* Avisos específicos */
+[data-theme="dark"] #alertsList {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] #alertsList div {
+    color: var(--text-primary) !important;
+}
+
+/* Texto "Nenhuma anotação" */
+[data-theme="dark"] div[style*="color:#6b7b84"] {
+    color: var(--text-muted) !important;
+}
+
+/* Responsividade do toggle */
+@media (max-width: 768px) {
+    .theme-toggle {
+        top: 15px;
+        right: 15px;
+        padding: 6px;
+        min-width: 50px;
+    }
+    
+    .theme-toggle-icon {
+        font-size: 18px;
+    }
+    
+    .dashboard-theme-toggle {
+        padding: 6px 10px;
+        font-size: 12px;
+        margin-right: 8px;
+    }
+    
+    .dashboard-theme-toggle .theme-icon {
+        font-size: 12px;
+    }
+    
+    /* Em mobile, pode esconder o texto e mostrar só o ícone */
+    .dashboard-theme-toggle .theme-text {
+        display: none;
+    }
+    
+    .actions .dashboard-theme-toggle {
+        margin-right: 8px;
+    }
+    
+    .user .dashboard-theme-toggle {
+        margin-right: 10px;
     }
 }

@@ -73,5 +73,7 @@ unset($_SESSION['form_data']);
     <script src="js/script.js"></script>
     <!-- Chatbot -->
     <script src="js/chatbot.js"></script>
+    <!-- Modo Escuro -->
+    <script src="js/theme-toggle.js"></script>
 </body>
 </html>

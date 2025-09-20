@@ -151,6 +151,8 @@ usort($records, function($a, $b) {
     
     <!-- Chatbot -->
     <script src="js/chatbot.js"></script>
+    <!-- Modo Escuro -->
+    <script src="js/theme-toggle.js"></script>
 </body>
 </html>
 
