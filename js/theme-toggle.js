@@ -72,11 +72,26 @@ class ThemeManager {
                 // Dashboard: inserir antes do avatar/email
                 userArea.insertBefore(toggle, userArea.firstChild);
             } else if (actionsArea) {
-                // Páginas de fichas: inserir na área de ações, antes dos botões
+                // Páginas de fichas: inserir na área de ações, ANTES dos botões existentes
+                // Isso fará com que apareça à esquerda do botão "Voltar"
                 actionsArea.insertBefore(toggle, actionsArea.firstChild);
             } else if (topbar) {
-                // Fallback: adicionar no topbar
-                topbar.appendChild(toggle);
+                // Se não há área de ações, mas há topbar, criar uma área de ações
+                const newActionsArea = document.createElement('div');
+                newActionsArea.className = 'actions';
+                newActionsArea.style.cssText = 'display: flex; gap: 10px; align-items: center;';
+                
+                // Mover botões existentes para a nova área de ações
+                const existingButtons = topbar.querySelectorAll('.btn, button, a[class*="btn"]');
+                existingButtons.forEach(btn => {
+                    newActionsArea.appendChild(btn);
+                });
+                
+                // Adicionar o toggle primeiro (à esquerda)
+                newActionsArea.insertBefore(toggle, newActionsArea.firstChild);
+                
+                // Adicionar a área de ações ao topbar
+                topbar.appendChild(newActionsArea);
             } else {
                 // Último fallback: adicionar ao body
                 document.body.appendChild(toggle);

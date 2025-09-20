@@ -77,16 +77,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Animação de loading no botão
-        loginBtn.innerHTML = '<span>Entrando...</span>';
-        loginBtn.disabled = true;
-
-        // Simular delay de processamento
+        // Mostrar animação simples de loading
+        showSimpleLoadingAnimation();
+        
+        // Submeter formulário após animação
         setTimeout(() => {
-            // Aqui você pode fazer a requisição AJAX para o servidor
-            // Por enquanto, vamos apenas submeter o formulário normalmente
             this.submit();
-        }, 1000);
+        }, 2000);
     });
 
     // Link "Esqueceu a senha?"
@@ -186,4 +183,82 @@ document.addEventListener('DOMContentLoaded', function() {
             this.parentElement.style.transform = 'scale(1)';
         });
     });
+
+    // Função para animação simples de loading
+    function showSimpleLoadingAnimation() {
+        // Criar overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+        `;
+
+        // Criar spinner
+        const spinner = document.createElement('div');
+        spinner.style.cssText = `
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #6fb64f;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        `;
+
+        // Texto de loading
+        const loadingText = document.createElement('div');
+        loadingText.textContent = 'Entrando no sistema...';
+        loadingText.style.cssText = `
+            font-size: 18px;
+            font-weight: 500;
+            text-align: center;
+            animation: pulse 1.5s ease-in-out infinite;
+        `;
+
+        // Adicionar elementos
+        overlay.appendChild(spinner);
+        overlay.appendChild(loadingText);
+        document.body.appendChild(overlay);
+
+        // Remover overlay após 2 segundos
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.remove();
+            }
+        }, 2000);
+    }
 });
+
+// Adicionar animações CSS para o loading simples
+const loadingStyle = document.createElement('style');
+loadingStyle.textContent = `
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.6;
+        }
+    }
+`;
+document.head.appendChild(loadingStyle);

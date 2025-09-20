@@ -89,7 +89,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <main class="content">
             <div class="topbar">
                 <div style="font-weight:700; font-size:24px;">Ficha Socioeconômico - Cadastrar</div>
-                <a href="socioeconomico_list.php" class="btn secondary">Voltar</a>
+                <div class="actions">
+                    <a href="socioeconomico_list.php" class="btn secondary">Voltar</a>
+                </div>
             </div>
 
             <div class="stepper">

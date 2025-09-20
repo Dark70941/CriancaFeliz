@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($payload['cpf'])) { $payload['cpf'] = preg_replace('/\D+/', '', $payload['cpf']); }
     $records[] = $payload;
     saveRecords($dataFile, $records);
-    header('Location: acolhimento_list.php');
+    header('Location: acolhimento_list.php?saved=1');
     exit();
 }
 ?>
@@ -78,7 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <main class="content">
             <div class="topbar">
                 <div style="font-weight:700; font-size:24px;">Ficha de Acolhimento - Cadastrar</div>
-                <a href="acolhimento_list.php" class="btn secondary">Voltar</a>
+                <div class="actions">
+                    <a href="acolhimento_list.php" class="btn secondary">Voltar</a>
+                </div>
             </div>
 
             <div class="stepper">
@@ -88,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="chip">4. Documentos</div>
             </div>
 
-            <form method="post">
+            <form method="post" enctype="multipart/form-data">
                 <!-- Etapa 1 -->
                 <div class="box">
                     <div class="grid">
@@ -98,27 +100,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                         <div>
                             <label>RG</label>
-                            <input type="text" name="rg">
+                            <input type="text" name="rg" required>
                         </div>
                         <div>
                             <label>CPF</label>
                             <input type="text" name="cpf" required>
                         </div>
                         <div>
-                            <label>Data de Nasc.</label>
-                            <input type="text" name="data_nasc" placeholder="dd/mm/aaaa" required>
+                            <label>Data de Nascimento</label>
+                            <input type="text" name="data_nascimento" placeholder="dd/mm/aaaa" required>
                         </div>
                         <div>
-                            <label>Data do Acolh.</label>
-                            <input type="text" name="data_acolh" placeholder="dd/mm/aaaa" required>
+                            <label>Data de Acolhimento</label>
+                            <input type="text" name="data_acolhimento" placeholder="dd/mm/aaaa" required>
                         </div>
                         <div>
-                            <label>Encaminha por</label>
+                            <label>Encaminhado por</label>
                             <input type="text" name="encaminha_por">
+                        </div>
+                        <div style="grid-column:1 / 2;">
+                            <label>Foto 3x4</label>
+                            <input type="file" name="foto" accept="image/*" style="padding: 8px; border: 2px dashed #f0a36b; background: #fff;">
+                            <small style="color: #666; font-size: 12px; display: block; margin-top: 4px;">Formatos aceitos: JPG, PNG, GIF (máx. 2MB)</small>
                         </div>
                         <div style="grid-column:1 / -1;">
                             <label>Queixa Principal</label>
-                            <textarea name="queixa"></textarea>
+                            <textarea name="queixa_principal" required></textarea>
                         </div>
                     </div>
                 </div>
@@ -128,23 +135,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="grid">
                         <div>
                             <label>Endereço</label>
-                            <input type="text" name="endereco">
+                            <input type="text" name="endereco" required>
                         </div>
                         <div>
-                            <label>Nº</label>
-                            <input type="text" name="numero">
+                            <label>Número</label>
+                            <input type="text" name="numero" required>
                         </div>
                         <div>
                             <label>CEP</label>
-                            <input type="text" name="cep">
+                            <input type="text" name="cep" required>
                         </div>
                         <div>
                             <label>Bairro</label>
-                            <input type="text" name="bairro">
+                            <input type="text" name="bairro" required>
                         </div>
                         <div>
                             <label>Cidade</label>
-                            <input type="text" name="cidade">
+                            <input type="text" name="cidade" required>
                         </div>
                         <div>
                             <label>Complemento</label>
@@ -183,27 +190,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="grid">
                         <div>
                             <label>Nome do Responsável</label>
-                            <input type="text" name="responsavel_nome">
+                            <input type="text" name="nome_responsavel" required>
+                        </div>
+                        <div>
+                            <label>RG do Responsável</label>
+                            <input type="text" name="rg_responsavel" required>
+                        </div>
+                        <div>
+                            <label>CPF do Responsável</label>
+                            <input type="text" name="cpf_responsavel" required>
                         </div>
                         <div>
                             <label>Grau de Parentesco</label>
-                            <input type="text" name="responsavel_parentesco">
+                            <input type="text" name="grau_parentesco" required>
                         </div>
                         <div>
-                            <label>Contato 1</label>
-                            <input type="text" name="contato1">
-                        </div>
-                        <div>
-                            <label>Contato 2</label>
-                            <input type="text" name="contato2">
-                        </div>
-                        <div>
-                            <label>Contato 3</label>
-                            <input type="text" name="contato3">
-                        </div>
-                        <div>
-                            <label>Contato 4</label>
-                            <input type="text" name="contato4">
+                            <label>Contato 1 (obrigatório)</label>
+                            <input type="text" name="contato_1" placeholder="(11) 99999-8888" required>
                         </div>
                     </div>
                 </div>
@@ -240,6 +243,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <script src="js/chatbot.js"></script>
     <!-- Modo Escuro -->
     <script src="js/theme-toggle.js"></script>
+    <!-- Sistema de Notificações -->
+    <script src="js/notifications.js"></script>
+    <!-- Script específico da Ficha de Acolhimento -->
+    <script src="js/acolhimento-form.js"></script>
 </body>
 </html>
 

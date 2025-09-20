@@ -22,7 +22,7 @@ if (isset($_GET['delete'])) {
     $records = loadRecords($dataFile);
     $records = array_filter($records, function($r) use ($id) { return $r['id'] !== $id; });
     saveRecords($dataFile, $records);
-    header('Location: acolhimento_list.php');
+    header('Location: acolhimento_list.php?deleted=1');
     exit();
 }
 
@@ -153,6 +153,45 @@ usort($records, function($a, $b) {
     <script src="js/chatbot.js"></script>
     <!-- Modo Escuro -->
     <script src="js/theme-toggle.js"></script>
+    <!-- Sistema de Notificações -->
+    <script src="js/notifications.js"></script>
+    
+    <script>
+        // Mostrar notificações baseadas nos parâmetros da URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            if (urlParams.get('saved') === '1') {
+                setTimeout(() => {
+                    window.notificationSystem.save('Ficha de acolhimento cadastrada com sucesso!');
+                }, 500);
+                
+                // Limpar parâmetro da URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+            
+            if (urlParams.get('deleted') === '1') {
+                setTimeout(() => {
+                    window.notificationSystem.delete('Ficha de acolhimento excluída com sucesso!');
+                }, 500);
+                
+                // Limpar parâmetro da URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+            
+            if (urlParams.get('edited') === '1') {
+                setTimeout(() => {
+                    window.notificationSystem.edit('Ficha de acolhimento editada com sucesso!');
+                }, 500);
+                
+                // Limpar parâmetro da URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        });
+    </script>
 </body>
 </html>
 
