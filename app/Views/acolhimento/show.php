@@ -1,5 +1,5 @@
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
-    <a href="acolhimento_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
+    <a href="prontuarios.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
     <a href="acolhimento_form.php?edit=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">✏️ Editar</a>
 </div>
 

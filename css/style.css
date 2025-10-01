@@ -28,24 +28,31 @@
     --error-text: #c33;
 }
 
-/* Tema escuro */
+/* Tema escuro - PALETA MELHORADA */
 [data-theme="dark"] {
-    --bg-primary: #1a1a1a;
-    --bg-secondary: #2d2d2d;
-    --bg-tertiary: #121a1f;
-    --text-primary: #ffffff;
-    --text-secondary: #e0e0e0;
-    --text-muted: #cccccc;
-    --border-color: #f0a36b;
-    --input-bg: #ffffff;
-    --card-bg: #2d2d2d;
-    --shadow: rgba(0, 0, 0, 0.3);
-    --shadow-light: rgba(0, 0, 0, 0.2);
+    /* Backgrounds mais suaves e legíveis */
+    --bg-primary: #1e293b;      /* Azul escuro suave */
+    --bg-secondary: #334155;    /* Azul médio */
+    --bg-tertiary: #0f172a;     /* Azul muito escuro */
     
-    /* Ajustes para modo escuro */
-    --error-bg: #4a1a1a;
-    --error-border: #8a2a2a;
-    --error-text: #ff6b6b;
+    /* Textos com melhor contraste */
+    --text-primary: #f8fafc;    /* Branco suave */
+    --text-secondary: #e2e8f0;  /* Cinza claro */
+    --text-muted: #94a3b8;      /* Cinza médio legível */
+    
+    /* Cores de sistema mantidas */
+    --border-color: #f0a36b;
+    --input-bg: #f8fafc;        /* Input branco suave */
+    --card-bg: #334155;         /* Cards em azul médio */
+    
+    /* Sombras mais suaves */
+    --shadow: rgba(0, 0, 0, 0.4);
+    --shadow-light: rgba(0, 0, 0, 0.25);
+    
+    /* Cores de erro melhoradas */
+    --error-bg: #7f1d1d;        /* Vermelho escuro */
+    --error-border: #dc2626;    /* Vermelho médio */
+    --error-text: #fca5a5;      /* Vermelho claro */
 }
 
 body {
@@ -966,251 +973,380 @@ body {
     border: 1px solid #444 !important;
 }
 
-/* ===== CORREÇÕES CRÍTICAS PARA LEGIBILIDADE NO MODO ESCURO ===== */
+/* ===== SISTEMA DE MODO ESCURO SIMPLIFICADO E OTIMIZADO ===== */
 
-/* FORÇA TODOS OS INPUTS A SEREM BRANCOS COM TEXTO PRETO */
-html[data-theme="dark"] input,
-html[data-theme="dark"] select,
-html[data-theme="dark"] textarea,
-html[data-theme="dark"] input[type="text"],
-html[data-theme="dark"] input[type="email"],
-html[data-theme="dark"] input[type="tel"],
-html[data-theme="dark"] input[type="date"],
-html[data-theme="dark"] input[type="search"] {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    border: 2px solid #f0a36b !important;
+/* Elementos de formulário com melhor contraste */
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--input-bg) !important;
+    color: #1e293b !important;
+    border: 2px solid var(--border-color) !important;
     border-radius: 8px !important;
 }
 
-/* FORÇA PLACEHOLDERS A SEREM VISÍVEIS */
-html[data-theme="dark"] input::placeholder,
-html[data-theme="dark"] textarea::placeholder {
-    color: #666666 !important;
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+    color: #64748b !important;
     opacity: 1 !important;
 }
 
-/* FORÇA LABELS A SEREM BRANCOS - CORREÇÃO CRÍTICA */
-html[data-theme="dark"] label,
-html[data-theme="dark"] .label,
-html[data-theme="dark"] label *,
-html[data-theme="dark"] .form-label,
-html[data-theme="dark"] .field-label {
-    color: #ffffff !important;
+/* Labels e texto com excelente legibilidade */
+[data-theme="dark"] label,
+[data-theme="dark"] .label,
+[data-theme="dark"] .form-label {
+    color: var(--text-primary) !important;
     font-weight: 600 !important;
+}
+
+/* Asteriscos obrigatórios */
+[data-theme="dark"] .required-asterisk {
+    color: var(--error-text) !important;
+}
+
+/* Títulos e texto geral */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div {
+    color: var(--text-secondary) !important;
+}
+
+/* Tabelas otimizadas */
+[data-theme="dark"] table {
+    background: var(--card-bg) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+
+[data-theme="dark"] th {
+    background: var(--primary-orange) !important;
+    color: #1e293b !important;
+    font-weight: 600 !important;
+}
+
+[data-theme="dark"] td {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] tr:nth-child(even) td {
+    background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] tr:hover td {
+    background: var(--bg-secondary) !important;
+}
+
+/* Botões mantêm identidade visual */
+[data-theme="dark"] .btn {
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+}
+
+[data-theme="dark"] .btn-primary {
+    background: var(--primary-orange) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .btn-success {
+    background: var(--primary-green) !important;
+    color: white !important;
+}
+
+[data-theme="dark"] .btn-danger {
+    background: var(--error-border) !important;
+    color: white !important;
+}
+
+/* Links com boa visibilidade */
+[data-theme="dark"] a {
+    color: #60a5fa !important;
+}
+
+[data-theme="dark"] a:hover {
+    color: #93c5fd !important;
+}
+
+/* Containers e seções */
+[data-theme="dark"] .container,
+[data-theme="dark"] .form-container,
+[data-theme="dark"] .content,
+[data-theme="dark"] .main-content {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .card,
+[data-theme="dark"] .section,
+[data-theme="dark"] .form-section {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    border-radius: 12px !important;
+}
+
+/* Correção para elementos com estilos inline problemáticos */
+[data-theme="dark"] *[style*="color:#354047"],
+[data-theme="dark"] *[style*="color: #354047"] {
+    color: var(--text-primary) !important;
+}
+
+/* ===== CORREÇÃO CRÍTICA: ELEMENTOS BRANCOS NO MODO ESCURO ===== */
+
+/* Força TODOS os elementos com fundo branco a usar o tema escuro */
+[data-theme="dark"] *[style*="background-color: white"],
+[data-theme="dark"] *[style*="background-color:white"],
+[data-theme="dark"] *[style*="background-color: #fff"],
+[data-theme="dark"] *[style*="background-color:#fff"],
+[data-theme="dark"] *[style*="background-color: #ffffff"],
+[data-theme="dark"] *[style*="background-color:#ffffff"],
+[data-theme="dark"] *[style*="background: white"],
+[data-theme="dark"] *[style*="background:white"],
+[data-theme="dark"] *[style*="background: #fff"],
+[data-theme="dark"] *[style*="background:#fff"],
+[data-theme="dark"] *[style*="background: #ffffff"],
+[data-theme="dark"] *[style*="background:#ffffff"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Cards e containers principais */
+[data-theme="dark"] .search-container,
+[data-theme="dark"] .search-section,
+[data-theme="dark"] .main-cards,
+[data-theme="dark"] .dashboard-cards,
+[data-theme="dark"] .stats-container,
+[data-theme="dark"] .content-wrapper,
+[data-theme="dark"] .page-content {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Área de busca específica */
+[data-theme="dark"] .search-bar,
+[data-theme="dark"] .search-wrapper,
+[data-theme="dark"] .filter-section {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    border-radius: 12px !important;
+}
+
+/* Cards de estatísticas e principais */
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .info-card,
+[data-theme="dark"] .dashboard-card,
+[data-theme="dark"] .summary-card {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    border-radius: 12px !important;
+}
+
+/* Seções de conteúdo */
+[data-theme="dark"] .content-section,
+[data-theme="dark"] .main-section,
+[data-theme="dark"] .page-section {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Força elementos genéricos com classes comuns */
+[data-theme="dark"] .white-bg,
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .background-white {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Containers de grid e layout */
+[data-theme="dark"] .grid-container,
+[data-theme="dark"] .layout-container,
+[data-theme="dark"] .wrapper {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Força todos os divs sem classe específica que podem estar brancos */
+[data-theme="dark"] div:not([class]):not([id]) {
     background: transparent !important;
-    text-shadow: none !important;
+    color: var(--text-secondary) !important;
 }
 
-/* Força labels específicos que podem ter classes ou estilos inline */
-html[data-theme="dark"] label[style],
-html[data-theme="dark"] span[style*="color"],
-html[data-theme="dark"] div[style*="color"] {
-    color: #ffffff !important;
+/* Elementos de interface específicos */
+[data-theme="dark"] .topbar,
+[data-theme="dark"] .header,
+[data-theme="dark"] .navbar {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--bg-tertiary) !important;
 }
 
-/* Força asteriscos obrigatórios a serem vermelhos */
-html[data-theme="dark"] .required,
-html[data-theme="dark"] .asterisk,
-html[data-theme="dark"] .required-asterisk {
-    color: #ff6b6b !important;
-}
+/* ===== CORREÇÃO AGRESSIVA PARA TODOS OS ELEMENTOS BRANCOS ===== */
 
-/* FORÇA TEXTO GERAL A SER BRANCO */
-html[data-theme="dark"] h1,
-html[data-theme="dark"] h2,
-html[data-theme="dark"] h3,
-html[data-theme="dark"] h4,
-html[data-theme="dark"] h5,
-html[data-theme="dark"] h6,
-html[data-theme="dark"] p,
-html[data-theme="dark"] span,
-html[data-theme="dark"] div {
-    color: #ffffff !important;
-}
-
-/* FORÇA TABELAS A SEREM LEGÍVEIS */
-html[data-theme="dark"] table {
-    background: #2d2d2d !important;
-    color: #ffffff !important;
-}
-
-html[data-theme="dark"] th {
-    background: #f0a36b !important;
-    color: #000000 !important;
-}
-
-html[data-theme="dark"] td {
-    background: #2d2d2d !important;
-    color: #ffffff !important;
-    border: 1px solid #555 !important;
-}
-
-/* FORÇA BOTÕES A MANTEREM SUAS CORES */
-html[data-theme="dark"] .btn,
-html[data-theme="dark"] button {
-    color: white !important;
-}
-
-html[data-theme="dark"] .btn-primary {
-    background: #f0a36b !important;
-    color: white !important;
-}
-
-html[data-theme="dark"] .btn-success {
-    background: #6fb64f !important;
-    color: white !important;
-}
-
-html[data-theme="dark"] .btn-danger {
-    background: #e74c3c !important;
-    color: white !important;
-}
-
-/* FORÇA LINKS A SEREM AZUIS CLAROS */
-html[data-theme="dark"] a {
-    color: #4fc3f7 !important;
-}
-
-/* FORÇA BADGES E STATUS A SEREM VISÍVEIS */
-html[data-theme="dark"] .badge,
-html[data-theme="dark"] .status {
-    color: white !important;
-}
-
-/* ===== CORREÇÕES ESPECÍFICAS PARA ELEMENTOS COM ESTILOS INLINE ===== */
-
-/* Remove estilos inline que podem estar causando problemas */
-html[data-theme="dark"] *[style*="color"] {
-    color: #ffffff !important;
-}
-
-/* CORREÇÃO ESPECÍFICA PARA LABELS AZUIS INVISÍVEIS */
-html[data-theme="dark"] *[style*="color: blue"],
-html[data-theme="dark"] *[style*="color:blue"],
-html[data-theme="dark"] *[style*="color: #0000ff"],
-html[data-theme="dark"] *[style*="color:#0000ff"],
-html[data-theme="dark"] *[style*="color: rgb(0,0,255)"] {
-    color: #ffffff !important;
-}
-
-/* Força todos os elementos de texto a serem brancos */
-html[data-theme="dark"] * {
-    color: #ffffff !important;
-}
-
-/* FORÇA TODOS OS CONTAINERS A TEREM FUNDO ESCURO */
-html[data-theme="dark"] div,
-html[data-theme="dark"] section,
-html[data-theme="dark"] article,
-html[data-theme="dark"] main,
-html[data-theme="dark"] aside {
+/* Força QUALQUER elemento que possa estar branco */
+[data-theme="dark"] * {
+    /* Remove fundos brancos de qualquer elemento */
     background-color: transparent !important;
 }
 
-/* Força especificamente containers de formulário */
-html[data-theme="dark"] .container,
-html[data-theme="dark"] .form-container,
-html[data-theme="dark"] .content,
-html[data-theme="dark"] .main-content {
-    background: #2d2d2d !important;
-    color: #ffffff !important;
+/* Reaplica fundos corretos para elementos específicos */
+[data-theme="dark"] body {
+    background: var(--bg-primary) !important;
 }
 
-/* Exceções para inputs que devem ser pretos */
-html[data-theme="dark"] input,
-html[data-theme="dark"] select,
-html[data-theme="dark"] textarea,
-html[data-theme="dark"] option {
-    color: #000000 !important;
-    background: #ffffff !important;
+[data-theme="dark"] .card,
+[data-theme="dark"] .box,
+[data-theme="dark"] .panel,
+[data-theme="dark"] .widget {
+    background: var(--card-bg) !important;
 }
 
-html[data-theme="dark"] input[style*="background"],
-html[data-theme="dark"] select[style*="background"],
-html[data-theme="dark"] textarea[style*="background"] {
-    background-color: #ffffff !important;
-    color: #000000 !important;
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: var(--input-bg) !important;
 }
 
-/* Correções específicas para formulários */
-html[data-theme="dark"] .form-group input,
-html[data-theme="dark"] .form-control,
-html[data-theme="dark"] .input-field {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-    border: 2px solid #f0a36b !important;
+[data-theme="dark"] .sidebar {
+    background: var(--bg-secondary) !important;
 }
 
-/* Correções para seções de formulário */
-html[data-theme="dark"] .form-section,
-html[data-theme="dark"] .section,
-html[data-theme="dark"] .card,
-html[data-theme="dark"] .tab-content,
-html[data-theme="dark"] .form-container,
-html[data-theme="dark"] .content-section {
-    background: #2d2d2d !important;
-    color: #ffffff !important;
-    border: 1px solid #555 !important;
+[data-theme="dark"] .content {
+    background: var(--bg-tertiary) !important;
 }
 
-/* FORÇA TODAS AS DIVS BRANCAS A SEREM ESCURAS */
-html[data-theme="dark"] div[style*="background: white"],
-html[data-theme="dark"] div[style*="background:white"],
-html[data-theme="dark"] div[style*="background: #fff"],
-html[data-theme="dark"] div[style*="background:#fff"],
-html[data-theme="dark"] div[style*="background: #ffffff"],
-html[data-theme="dark"] div[style*="background:#ffffff"],
-html[data-theme="dark"] div[style*="background-color: white"],
-html[data-theme="dark"] div[style*="background-color:white"],
-html[data-theme="dark"] div[style*="background-color: #fff"],
-html[data-theme="dark"] div[style*="background-color:#fff"],
-html[data-theme="dark"] div[style*="background-color: #ffffff"],
-html[data-theme="dark"] div[style*="background-color:#ffffff"],
-html[data-theme="dark"] .box {
-    background: #2d2d2d !important;
-    color: #ffffff !important;
+/* Força elementos com IDs específicos que podem estar brancos */
+[data-theme="dark"] #main,
+[data-theme="dark"] #content,
+[data-theme="dark"] #wrapper,
+[data-theme="dark"] #container,
+[data-theme="dark"] #page,
+[data-theme="dark"] #app {
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
 }
 
-/* CORREÇÃO ESPECÍFICA PARA LABELS COM COR CINZA */
-html[data-theme="dark"] label[style*="color:#354047"],
-html[data-theme="dark"] label[style*="color: #354047"],
-html[data-theme="dark"] *[style*="color:#354047"],
-html[data-theme="dark"] *[style*="color: #354047"] {
-    color: #ffffff !important;
+/* Força elementos de layout comuns */
+[data-theme="dark"] .row,
+[data-theme="dark"] .col,
+[data-theme="dark"] .column,
+[data-theme="dark"] .grid,
+[data-theme="dark"] .flex {
+    background: transparent !important;
+    color: var(--text-secondary) !important;
 }
 
-/* Força texto em elementos específicos */
-html[data-theme="dark"] .text-muted,
-html[data-theme="dark"] .text-secondary {
-    color: #cccccc !important;
+/* Elementos de busca e filtros */
+[data-theme="dark"] .search,
+[data-theme="dark"] .filter,
+[data-theme="dark"] .toolbar {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
 }
 
-html[data-theme="dark"] .text-primary {
-    color: #ffffff !important;
+/* Modais e overlays */
+[data-theme="dark"] .modal,
+[data-theme="dark"] .overlay,
+[data-theme="dark"] .popup {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* ===== CORREÇÃO ESPECÍFICA PARA DASHBOARD COM ESTILOS INLINE ===== */
+
+/* Força elementos do dashboard com background:#fff inline */
+[data-theme="dark"] .card[style*="background:#fff"],
+[data-theme="dark"] .card[style*="background: #fff"],
+[data-theme="dark"] div[style*="background:#fff"],
+[data-theme="dark"] div[style*="background: #fff"],
+[data-theme="dark"] .stat[style*="background:#fff"],
+[data-theme="dark"] .stat[style*="background: #fff"],
+[data-theme="dark"] .note[style*="background:#fff"],
+[data-theme="dark"] .note[style*="background: #fff"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Modal com background inline */
+[data-theme="dark"] .modal-content[style*="background:white"],
+[data-theme="dark"] .modal-content[style*="background: white"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Elementos específicos do calendário */
+[data-theme="dark"] .calendar-day[style*="background:#f8f9fa"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Grid e seções principais */
+[data-theme="dark"] .grid,
+[data-theme="dark"] .notes-grid {
+    background: transparent !important;
+}
+
+/* Força TODOS os elementos com estilos inline de fundo branco */
+[data-theme="dark"] *[style*="background:#fff"],
+[data-theme="dark"] *[style*="background: #fff"],
+[data-theme="dark"] *[style*="background:#ffffff"],
+[data-theme="dark"] *[style*="background: #ffffff"],
+[data-theme="dark"] *[style*="background:white"],
+[data-theme="dark"] *[style*="background: white"] {
+    background: var(--card-bg) !important;
+    color: var(--text-primary) !important;
+}
+
+/* Exceções para inputs que devem permanecer brancos */
+[data-theme="dark"] input[style*="background"],
+[data-theme="dark"] select[style*="background"],
+[data-theme="dark"] textarea[style*="background"] {
+    background: var(--input-bg) !important;
+    color: #1e293b !important;
+}
+
+/* Badges e elementos coloridos mantêm suas cores */
+[data-theme="dark"] .badge[style*="background:#ff7a00"],
+[data-theme="dark"] .badge[style*="background: #ff7a00"],
+[data-theme="dark"] .badge[style*="background:#6fb64f"],
+[data-theme="dark"] .badge[style*="background: #6fb64f"] {
+    /* Mantém as cores originais dos badges */
+    color: white !important;
 }
 
 /* ===== ESTILOS ESPECÍFICOS PARA DASHBOARD NO MODO ESCURO ===== */
 [data-theme="dark"] body {
-    background: #121a1f !important;
+    background: var(--bg-primary) !important;
 }
 
 [data-theme="dark"] .app {
-    background: #121a1f !important;
+    background: var(--bg-primary) !important;
 }
 
 [data-theme="dark"] .sidebar {
-    background: #0e2a33 !important;
+    background: var(--bg-secondary) !important;
+    border-right: 1px solid var(--bg-tertiary) !important;
 }
 
 [data-theme="dark"] .content {
-    background: #1e2a32 !important;
+    background: var(--bg-tertiary) !important;
     color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .nav-icon {
-    background: #153945 !important;
-    color: #fff !important;
+    background: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--bg-tertiary) !important;
 }
 
 [data-theme="dark"] .nav-icon.active {
@@ -1238,38 +1374,47 @@ html[data-theme="dark"] .text-primary {
 [data-theme="dark"] .calendar-day {
     background: var(--card-bg) !important;
     color: var(--text-primary) !important;
-    border: 1px solid #444 !important;
+    border: 1px solid var(--bg-tertiary) !important;
+    transition: all 0.2s ease !important;
 }
 
 [data-theme="dark"] .calendar-day:hover {
-    background: #3a4a52 !important;
+    background: var(--bg-primary) !important;
+    border-color: var(--primary-orange) !important;
+    transform: translateY(-1px) !important;
 }
 
 [data-theme="dark"] .calendar-day.has-notes {
-    background: #ff7a00 !important;
+    background: var(--primary-orange) !important;
     color: white !important;
+    border-color: var(--primary-orange-hover) !important;
 }
 
 [data-theme="dark"] .calendar-day.today {
-    background: #6fb64f !important;
+    background: var(--primary-green) !important;
     color: white !important;
+    border-color: #5aa03f !important;
+    font-weight: 600 !important;
 }
 
 [data-theme="dark"] .calendar-header {
     color: var(--text-secondary) !important;
+    font-weight: 500 !important;
 }
 
 /* Pills/Alertas no modo escuro */
 [data-theme="dark"] .pill.red {
-    background: #4a1a1a !important;
-    border-left: 6px solid #e06b6b !important;
-    color: #ff9999 !important;
+    background: var(--error-bg) !important;
+    border-left: 6px solid var(--error-border) !important;
+    color: var(--error-text) !important;
+    border-radius: 8px !important;
 }
 
 [data-theme="dark"] .pill.green {
-    background: #1a3a1a !important;
-    border-left: 6px solid #6fb64f !important;
-    color: #99ff99 !important;
+    background: #064e3b !important;
+    border-left: 6px solid var(--primary-green) !important;
+    color: #86efac !important;
+    border-radius: 8px !important;
 }
 
 /* Modal no modo escuro */
@@ -1286,7 +1431,8 @@ html[data-theme="dark"] .text-primary {
 
 /* Avatar do usuário */
 [data-theme="dark"] .user .avatar {
-    background: #3a4a52 !important;
+    background: var(--bg-secondary) !important;
+    border: 2px solid var(--bg-tertiary) !important;
 }
 
 /* Texto geral do dashboard */
@@ -1317,8 +1463,10 @@ html[data-theme="dark"] .text-primary {
 
 /* Botões do calendário */
 [data-theme="dark"] button {
-    background: #ff7a00 !important;
+    background: var(--primary-orange) !important;
     color: white !important;
+    border: none !important;
+    border-radius: 6px !important;
 }
 
 /* Títulos das seções */

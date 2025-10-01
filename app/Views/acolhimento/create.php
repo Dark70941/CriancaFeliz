@@ -151,7 +151,7 @@
     </div>
 
     <div class="actions" style="display:flex; gap:10px; justify-content:flex-end;">
-        <a href="acolhimento_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">Voltar</a>
+        <a href="prontuarios.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">Voltar</a>
         <button class="btn" type="submit" style="background:#ff7a00; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer;">Cadastrar</button>
     </div>
 </form>
