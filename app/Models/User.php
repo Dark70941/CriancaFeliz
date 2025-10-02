@@ -130,10 +130,48 @@ class User extends BaseModel {
      * Lista usuários sem senhas
      */
     public function findAllSafe() {
-        $users = $this->findAll();
+        $users = $this->getAll();
         foreach ($users as &$user) {
             unset($user['password']);
         }
         return $users;
+    }
+    
+    /**
+     * Sobrescreve create para adicionar campos padrão
+     */
+    public function create($data) {
+        if (!isset($data['id'])) {
+            $data['id'] = uniqid('user_');
+        }
+        
+        if (!isset($data['created_at'])) {
+            $data['created_at'] = date('Y-m-d H:i:s');
+        }
+        
+        if (!isset($data['updated_at'])) {
+            $data['updated_at'] = date('Y-m-d H:i:s');
+        }
+        
+        // Hash da senha se fornecida
+        if (isset($data['password']) && !empty($data['password'])) {
+            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+        
+        return parent::create($data);
+    }
+    
+    /**
+     * Sobrescreve update para atualizar timestamp
+     */
+    public function update($id, $data) {
+        $data['updated_at'] = date('Y-m-d H:i:s');
+        
+        // Hash da senha se fornecida
+        if (isset($data['password']) && !empty($data['password'])) {
+            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        }
+        
+        return parent::update($id, $data);
     }
 }

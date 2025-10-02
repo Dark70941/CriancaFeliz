@@ -43,6 +43,13 @@ class BaseModel {
     }
     
     /**
+     * Alias para findAll() - busca todos os registros
+     */
+    public function getAll() {
+        return $this->data;
+    }
+    
+    /**
      * Busca registro por ID
      */
     public function findById($id) {

@@ -27,16 +27,11 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 // Autoloader simples para as classes
-spl_autoload_register(function ($className) {
-    // Converter namespace para caminho de arquivo
-    $className = str_replace('\\', '/', $className);
-    
-    // Tentar carregar de diferentes diretórios
+spl_autoload_register(function ($class) {
     $paths = [
-        APP_PATH . '/Controllers/' . $className . '.php',
-        APP_PATH . '/Models/' . $className . '.php',
-        APP_PATH . '/Services/' . $className . '.php',
-        APP_PATH . '/' . $className . '.php'
+        BASE_PATH . '/app/Controllers/' . $class . '.php',
+        BASE_PATH . '/app/Models/' . $class . '.php',
+        BASE_PATH . '/app/Services/' . $class . '.php'
     ];
     
     foreach ($paths as $path) {

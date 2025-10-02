@@ -127,7 +127,15 @@ class Acolhimento extends BaseModel {
      */
     public function findByCpf($cpf) {
         $cpf = preg_replace('/\D+/', '', $cpf);
-        return $this->findBy('cpf', $cpf);
+        
+        foreach ($this->data as $ficha) {
+            $fichaCpf = preg_replace('/\D+/', '', $ficha['cpf'] ?? '');
+            if ($fichaCpf === $cpf) {
+                return $ficha;
+            }
+        }
+        
+        return null;
     }
     
     /**

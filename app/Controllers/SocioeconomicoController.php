@@ -57,6 +57,7 @@ class SocioeconomicoController extends BaseController {
      */
     public function create() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
         
         $data = [
             'title' => 'Cadastrar Ficha Socioeconômica',
@@ -72,6 +73,7 @@ class SocioeconomicoController extends BaseController {
      */
     public function store() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
         
         if (!$this->isPost()) {
             redirect('socioeconomico_form.php');

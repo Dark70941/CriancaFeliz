@@ -100,8 +100,13 @@
             <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'prontuarios') !== false) ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários">👥</a>
             <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'acolhimento') !== false) ? 'active' : ''; ?>" href="acolhimento_list.php" title="Acolhimento">📋</a>
             <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'socioeconomico') !== false) ? 'active' : ''; ?>" href="socioeconomico_list.php" title="Socioeconômico">🏘️</a>
+            <?php if ($currentUser['role'] === 'psicologo'): ?>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'psychology') !== false) ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica">🧠</a>
+            <?php endif; ?>
             <div class="nav-icon" title="Relatórios">📈</div>
-            <div class="nav-icon" title="Usuários">👤</div>
+            <?php if ($currentUser['role'] === 'admin'): ?>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'users') !== false) ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários">👤</a>
+            <?php endif; ?>
             <div class="nav-icon" title="Configurações">⚙️</div>
         </aside>
         

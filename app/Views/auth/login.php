@@ -14,11 +14,13 @@
         
         <div class="input-group">
             <input type="email" id="email" name="email" placeholder="Digite seu email" 
+                   autocomplete="email" 
                    value="<?php echo htmlspecialchars($formData['email'] ?? ''); ?>" required>
         </div>
         
         <div class="input-group">
-            <input type="password" id="password" name="password" placeholder="Digite sua senha" required>
+            <input type="password" id="password" name="password" placeholder="Digite sua senha" 
+                   autocomplete="current-password" required>
         </div>
         
         <div class="forgot-password">

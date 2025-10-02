@@ -47,15 +47,16 @@ class AcolhimentoController extends BaseController {
             $this->handleException($e);
         }
     }
-    
     /**
      * Exibe formulário de criação
      */
     public function create() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
         
         $data = [
             'title' => 'Cadastrar Ficha de Acolhimento',
+            'pageTitle' => 'Nova Ficha de Acolhimento',
             'csrf_token' => $this->generateCSRF(),
             'messages' => $this->getFlashMessages()
         ];
@@ -68,6 +69,7 @@ class AcolhimentoController extends BaseController {
      */
     public function store() {
         $this->requireAuth();
+        $this->requirePermission('create_records');
         
         if (!$this->isPost()) {
             redirect('acolhimento_form.php');
@@ -118,6 +120,7 @@ class AcolhimentoController extends BaseController {
      */
     public function edit($id) {
         $this->requireAuth();
+        $this->requirePermission('edit_records');
         
         try {
             $ficha = $this->acolhimentoService->getFicha($id);
@@ -141,6 +144,7 @@ class AcolhimentoController extends BaseController {
      */
     public function update($id) {
         $this->requireAuth();
+        $this->requirePermission('edit_records');
         
         if (!$this->isPost()) {
             redirect("acolhimento_view.php?id=$id");
@@ -170,6 +174,7 @@ class AcolhimentoController extends BaseController {
      */
     public function delete($id) {
         $this->requireAuth();
+        $this->requirePermission('delete_records');
         
         if (!$this->isPost()) {
             $this->json(['error' => 'Método não permitido'], 405);

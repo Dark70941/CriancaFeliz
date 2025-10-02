@@ -115,23 +115,42 @@ class AuthService {
         
         $role = $_SESSION['user_role'];
         
-        // Admin tem todas as permissões
-        if ($role === 'admin') {
-            return true;
-        }
-        
         // Definir permissões por role
         $permissions = [
-            'user' => ['view_own', 'edit_own'],
-            'moderator' => ['view_own', 'edit_own', 'view_all', 'create'],
-            'admin' => ['*'] // Todas as permissões
+            'admin' => [
+                'manage_users',
+                'view_all_records',
+                'create_records',
+                'edit_records',
+                'delete_records',
+                'manage_system',
+                'view_reports'
+            ],
+            'psicologo' => [
+                'view_all_records',
+                'psychological_notes',
+                'view_psychological_area',
+                'edit_psychological_notes'
+            ],
+            'funcionario' => [
+                'view_all_records'
+            ]
         ];
         
         if (!isset($permissions[$role])) {
             return false;
         }
         
-        return in_array($permission, $permissions[$role]) || in_array('*', $permissions[$role]);
+        // Admin tem todas as permissões exceto área psicológica
+        if ($role === 'admin' && $permission === 'psychological_notes') {
+            return false;
+        }
+        
+        if ($role === 'admin' && $permission === 'view_psychological_area') {
+            return false;
+        }
+        
+        return in_array($permission, $permissions[$role]);
     }
     
     /**
