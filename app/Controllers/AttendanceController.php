@@ -1,0 +1,451 @@
+<?php
+
+/**
+ * Controller para controle de faltas e desligamentos
+ */
+class AttendanceController extends BaseController {
+    private $attendanceService;
+    
+    public function __construct() {
+        parent::__construct();
+        $this->attendanceService = new AttendanceService();
+    }
+    
+    /**
+     * Lista atendidos com controle de faltas
+     */
+    public function index() {
+        $this->requireAuth();
+        
+        try {
+            $page = intval($this->getParam('page', 1));
+            $search = $this->getParam('search', '');
+            
+            $result = $this->attendanceService->listAtendidosComFaltas($page, 50);
+            
+            // Filtrar por busca se fornecida
+            if (!empty($search)) {
+                $result['data'] = array_filter($result['data'], function($atendido) use ($search) {
+                    $searchLower = strtolower($search);
+                    return stripos($atendido['nome_completo'] ?? '', $search) !== false ||
+                           stripos($atendido['cpf'] ?? '', $search) !== false;
+                });
+                $result['data'] = array_values($result['data']);
+            }
+            
+            $data = [
+                'title' => 'Controle de Faltas',
+                'pageTitle' => 'Controle de Faltas',
+                'atendidos' => $result['data'],
+                'pagination' => [
+                    'current_page' => $result['current_page'],
+                    'last_page' => $result['last_page'],
+                    'total' => $result['total']
+                ],
+                'search' => $search,
+                'messages' => $this->getFlashMessages()
+            ];
+            
+            $this->renderWithLayout('main', 'attendance/index', $data);
+            
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
+    
+    /**
+     * Exibe detalhes de um atendido
+     */
+    public function show($id) {
+        $this->requireAuth();
+        
+        try {
+            $stats = $this->attendanceService->getAtendidoStatistics($id);
+            $historico = $this->attendanceService->getHistorico($id);
+            
+            $data = [
+                'title' => 'Detalhes - ' . ($stats['atendido']['nome'] ?? 'Atendido'),
+                'pageTitle' => 'Controle de Faltas - Detalhes',
+                'stats' => $stats,
+                'historico' => $historico,
+                'csrf_token' => $this->generateCSRF(),
+                'messages' => $this->getFlashMessages()
+            ];
+            
+            $this->renderWithLayout('main', 'attendance/show', $data);
+            
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
+    
+    /**
+     * Registra presença
+     */
+    public function registerPresence() {
+        $this->requireAuth();
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $atendidoId = $this->getParam('atendido_id', '');
+            $data = [
+                'data' => $this->getParam('data', date('Y-m-d')),
+                'atividade' => $this->getParam('atividade', 'Atendimento'),
+                'observacao' => $this->getParam('observacao', '')
+            ];
+            
+            if (empty($atendidoId)) {
+                throw new Exception('ID do atendido é obrigatório');
+            }
+            
+            $result = $this->attendanceService->registerPresence($atendidoId, $data);
+            
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => true, 'message' => 'Presença registrada com sucesso', 'data' => $result]);
+            } else {
+                $this->redirectWithSuccess("attendance.php?action=show&id={$atendidoId}", 'Presença registrada com sucesso!');
+            }
+            
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $e->getMessage()], 400);
+            } else {
+                $this->redirectWithError('attendance.php', $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Registra falta
+     */
+    public function registerAbsence() {
+        $this->requireAuth();
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $atendidoId = $this->getParam('atendido_id', '');
+            $data = [
+                'data' => $this->getParam('data', date('Y-m-d')),
+                'atividade' => $this->getParam('atividade', 'Atendimento'),
+                'justificativa' => $this->getParam('justificativa', ''),
+                'observacao' => $this->getParam('observacao', '')
+            ];
+            
+            if (empty($atendidoId)) {
+                throw new Exception('ID do atendido é obrigatório');
+            }
+            
+            $result = $this->attendanceService->registerAbsence($atendidoId, $data);
+            
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => true, 'message' => 'Falta registrada com sucesso', 'data' => $result]);
+            } else {
+                $this->redirectWithSuccess("attendance.php?action=show&id={$atendidoId}", 'Falta registrada com sucesso!');
+            }
+            
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $e->getMessage()], 400);
+            } else {
+                $this->redirectWithError('attendance.php', $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Atualiza justificativa de falta
+     */
+    public function updateJustification() {
+        $this->requireAuth();
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $recordId = $this->getParam('record_id', '');
+            $justificativa = $this->getParam('justificativa', '');
+            
+            if (empty($recordId)) {
+                throw new Exception('ID do registro é obrigatório');
+            }
+            
+            $result = $this->attendanceService->updateJustification($recordId, $justificativa);
+            
+            if (!$result) {
+                throw new Exception('Registro não encontrado ou não é uma falta');
+            }
+            
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => true, 'message' => 'Justificativa atualizada com sucesso']);
+            } else {
+                $this->redirectWithSuccess($_SERVER['HTTP_REFERER'] ?? 'attendance.php', 'Justificativa atualizada com sucesso!');
+            }
+            
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $e->getMessage()], 400);
+            } else {
+                $this->redirectWithError($_SERVER['HTTP_REFERER'] ?? 'attendance.php', $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Remove registro
+     */
+    public function removeRecord() {
+        $this->requireAuth();
+        $this->requirePermission('delete_records');
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $recordId = $this->getParam('record_id', '');
+            
+            if (empty($recordId)) {
+                throw new Exception('ID do registro é obrigatório');
+            }
+            
+            $result = $this->attendanceService->removeRecord($recordId);
+            
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => true, 'message' => 'Registro removido com sucesso']);
+            } else {
+                $this->redirectWithSuccess($_SERVER['HTTP_REFERER'] ?? 'attendance.php', 'Registro removido com sucesso!');
+            }
+            
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $e->getMessage()], 400);
+            } else {
+                $this->redirectWithError($_SERVER['HTTP_REFERER'] ?? 'attendance.php', $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Exibe formulário de desligamento
+     */
+    public function showDesligamento($id) {
+        $this->requireAuth();
+        $this->requirePermission('manage_users');
+        
+        try {
+            $stats = $this->attendanceService->getAtendidoStatistics($id);
+            
+            if ($stats['desligado']) {
+                throw new Exception('Atendido já foi desligado');
+            }
+            
+            $data = [
+                'title' => 'Desligar Atendido',
+                'pageTitle' => 'Desligamento de Atendido',
+                'stats' => $stats,
+                'csrf_token' => $this->generateCSRF(),
+                'messages' => $this->getFlashMessages()
+            ];
+            
+            $this->renderWithLayout('main', 'attendance/desligamento', $data);
+            
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
+    
+    /**
+     * Processa desligamento
+     */
+    public function processarDesligamento() {
+        $this->requireAuth();
+        $this->requirePermission('manage_users');
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $atendidoId = $this->getParam('atendido_id', '');
+            $motivo = $this->getParam('motivo', '');
+            $observacao = $this->getParam('observacao', '');
+            
+            if (empty($atendidoId)) {
+                throw new Exception('ID do atendido é obrigatório');
+            }
+            
+            if (empty($motivo)) {
+                throw new Exception('Motivo do desligamento é obrigatório');
+            }
+            
+            $result = $this->attendanceService->processarDesligamento($atendidoId, $motivo, $observacao, false);
+            
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => true, 'message' => 'Atendido desligado com sucesso', 'data' => $result]);
+            } else {
+                $this->redirectWithSuccess('attendance.php', 'Atendido desligado com sucesso!');
+            }
+            
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $e->getMessage()], 400);
+            } else {
+                $this->redirectWithError('attendance.php', $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Cancela desligamento (reativa atendido)
+     */
+    public function cancelarDesligamento() {
+        $this->requireAuth();
+        $this->requirePermission('manage_users');
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $atendidoId = $this->getParam('atendido_id', '');
+            
+            if (empty($atendidoId)) {
+                throw new Exception('ID do atendido é obrigatório');
+            }
+            
+            $result = $this->attendanceService->cancelarDesligamento($atendidoId);
+            
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => true, 'message' => 'Atendido reativado com sucesso']);
+            } else {
+                $this->redirectWithSuccess("attendance.php?action=show&id={$atendidoId}", 'Atendido reativado com sucesso!');
+            }
+            
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $e->getMessage()], 400);
+            } else {
+                $this->redirectWithError('attendance.php', $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Processa desligamentos automáticos por idade
+     */
+    public function processarDesligamentosAutomaticos() {
+        $this->requireAuth();
+        $this->requirePermission('manage_users');
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $desligados = $this->attendanceService->processarDesligamentosAutomaticosPorIdade();
+            
+            $message = count($desligados) > 0 
+                ? count($desligados) . ' atendido(s) desligado(s) automaticamente por idade'
+                : 'Nenhum atendido para desligar automaticamente';
+            
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => true, 'message' => $message, 'desligados' => $desligados]);
+            } else {
+                $this->redirectWithSuccess('attendance.php', $message);
+            }
+            
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['error' => $e->getMessage()], 400);
+            } else {
+                $this->redirectWithError('attendance.php', $e->getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Lista atendidos com alertas
+     */
+    public function alertas() {
+        $this->requireAuth();
+        
+        try {
+            $atendidos = $this->attendanceService->getAtendidosComAlertas();
+            
+            $data = [
+                'title' => 'Alertas de Atendimento',
+                'pageTitle' => 'Alertas de Atendimento',
+                'atendidos' => $atendidos,
+                'messages' => $this->getFlashMessages()
+            ];
+            
+            $this->renderWithLayout('main', 'attendance/alertas', $data);
+            
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
+    
+    /**
+     * Exibe relatórios de frequência
+     */
+    public function relatorios() {
+        $this->requireAuth();
+        
+        try {
+            // Obter filtros
+            $filtros = [
+                'status' => $this->getParam('status', ''),
+                'alerta' => $this->getParam('alerta', ''),
+                'min_faltas' => $this->getParam('min_faltas', '')
+            ];
+            
+            // Gerar estatísticas gerais
+            $estatisticasGerais = $this->attendanceService->gerarEstatisticasGerais();
+            
+            // Gerar ranking
+            $rankingMelhores = $this->attendanceService->gerarRankingFrequencia(10, 'melhor');
+            $rankingPiores = $this->attendanceService->gerarRankingFrequencia(10, 'pior');
+            
+            // Gerar relatório geral com filtros
+            $relatorioGeral = $this->attendanceService->gerarRelatorioGeral($filtros);
+            
+            $data = [
+                'title' => 'Relatórios de Frequência - Associação Criança Feliz',
+                'pageTitle' => 'Relatórios de Frequência',
+                'estatisticas' => $estatisticasGerais,
+                'rankingMelhores' => $rankingMelhores,
+                'rankingPiores' => $rankingPiores,
+                'relatorioGeral' => $relatorioGeral,
+                'filtros' => $filtros,
+                'messages' => $this->getFlashMessages()
+            ];
+            
+            $this->renderWithLayout('main', 'attendance/relatorios', $data);
+            
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
+}

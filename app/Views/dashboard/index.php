@@ -22,9 +22,17 @@
         <div style="font-weight:700">Alertas Prioritários</div>
         <?php if (!empty($alertas)): ?>
             <?php foreach ($alertas as $alerta): ?>
-                <div class="pill <?php echo $alerta['tipo']; ?>" style="padding:10px 12px; border-radius:10px; font-size:14px;">
-                    <?php echo $alerta['icone']; ?> <?php echo htmlspecialchars($alerta['mensagem']); ?>
-                </div>
+                <?php if (!empty($alerta['link'])): ?>
+                    <a href="<?php echo $alerta['link']; ?>" style="text-decoration: none; color: inherit;">
+                        <div class="pill <?php echo $alerta['tipo']; ?>" style="padding:10px 12px; border-radius:10px; font-size:14px; cursor: pointer; transition: all 0.2s;">
+                            <?php echo $alerta['icone']; ?> <?php echo htmlspecialchars($alerta['mensagem']); ?>
+                        </div>
+                    </a>
+                <?php else: ?>
+                    <div class="pill <?php echo $alerta['tipo']; ?>" style="padding:10px 12px; border-radius:10px; font-size:14px;">
+                        <?php echo $alerta['icone']; ?> <?php echo htmlspecialchars($alerta['mensagem']); ?>
+                    </div>
+                <?php endif; ?>
             <?php endforeach; ?>
         <?php else: ?>
             <div class="pill green" style="padding:10px 12px; border-radius:10px; font-size:14px; background:#e8f6ea; border-left:6px solid #6fb64f;">
@@ -253,6 +261,11 @@
     .pill.info { background:#d1ecf1; border-left:6px solid #17a2b8; }
     .pill.error { background:#f8d7da; border-left:6px solid #dc3545; }
     .pill.success { background:#d4edda; border-left:6px solid #28a745; }
+    
+    a:has(.pill):hover .pill {
+        opacity: 0.8;
+        transform: translateX(5px);
+    }
     
     /* Responsividade */
     @media (max-width: 1200px) {

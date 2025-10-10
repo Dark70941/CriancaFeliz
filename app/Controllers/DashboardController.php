@@ -184,6 +184,47 @@ class DashboardController extends BaseController {
                 }
             }
             
+            // Alertas de faltas e desligamentos
+            try {
+                $attendanceService = new AttendanceService();
+                $atendidosComAlertas = $attendanceService->getAtendidosComAlertas();
+                
+                $excessoFaltas = 0;
+                $idadeLimite = 0;
+                
+                foreach ($atendidosComAlertas as $atendido) {
+                    foreach ($atendido['alertas'] as $alerta) {
+                        if ($alerta['tipo'] === 'excesso_faltas') {
+                            $excessoFaltas++;
+                        } elseif ($alerta['tipo'] === 'idade_limite') {
+                            $idadeLimite++;
+                        }
+                    }
+                }
+                
+                if ($excessoFaltas > 0) {
+                    $alertas[] = [
+                        'tipo' => 'warning',
+                        'titulo' => 'Excesso de Faltas',
+                        'mensagem' => "$excessoFaltas atendido(s) com excesso de faltas não justificadas",
+                        'icone' => '⚠️',
+                        'link' => 'attendance.php?action=alertas'
+                    ];
+                }
+                
+                if ($idadeLimite > 0) {
+                    $alertas[] = [
+                        'tipo' => 'error',
+                        'titulo' => 'Desligamento Pendente',
+                        'mensagem' => "$idadeLimite atendido(s) completou(aram) 18 anos - Desligamento automático pendente",
+                        'icone' => '🎂',
+                        'link' => 'attendance.php?action=alertas'
+                    ];
+                }
+            } catch (Exception $e) {
+                error_log("Erro ao buscar alertas de faltas: " . $e->getMessage());
+            }
+            
             if ($fichasIncompletas > 0) {
                 $alertas[] = [
                     'tipo' => 'warning',
@@ -203,12 +244,14 @@ class DashboardController extends BaseController {
             }
             
             // Alertas de sistema
-            $alertas[] = [
-                'tipo' => 'success',
-                'titulo' => 'Sistema Funcionando',
-                'mensagem' => 'Todas as funcionalidades operacionais',
-                'icone' => '✅'
-            ];
+            if (empty($alertas)) {
+                $alertas[] = [
+                    'tipo' => 'success',
+                    'titulo' => 'Sistema Funcionando',
+                    'mensagem' => 'Todas as funcionalidades operacionais',
+                    'icone' => '✅'
+                ];
+            }
             
         } catch (Exception $e) {
             $alertas[] = [

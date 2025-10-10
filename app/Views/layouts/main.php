@@ -6,8 +6,23 @@
     <title><?php echo $title ?? 'Sistema Criança Feliz'; ?></title>
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { background: #121a1f; margin: 0; padding: 0; }
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* Exceção para ícones do Font Awesome */
+        .fa, .fas, .far, .fal, .fab {
+            font-family: "Font Awesome 6 Free" !important;
+        }
+        
+        body { 
+            background: #3E6475; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Poppins', sans-serif;
+        }
         .app {
             display: grid;
             grid-template-columns: 80px 1fr;
@@ -32,8 +47,10 @@
         .nav-icon {
             width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center;
             background: #153945; color: #fff; font-weight: 700; text-decoration: none;
+            font-size: 18px;
         }
         .nav-icon.active { background: #ff7a00; }
+        .nav-icon i { font-size: 18px; }
         .content {
             background: #edf1f3;
             border-radius: 16px;
@@ -46,9 +63,34 @@
         .btn { 
             background: #ff7a00; color: #fff; border: none; padding: 10px 14px; 
             border-radius: 8px; cursor: pointer; text-decoration: none; display: inline-block;
+            font-family: 'Poppins', sans-serif;
         }
         .btn.secondary { background: #6b7b84; }
         .btn:hover { opacity: 0.9; }
+        
+        input, select, textarea, button {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        h1, h2, h3, h4, h5, h6, p, span, div, a, label {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        /* Garantir que ícones do Font Awesome funcionem */
+        i.fa, i.fas, i.far, i.fal, i.fab {
+            font-family: "Font Awesome 6 Free" !important;
+            font-style: normal;
+        }
+        
+        /* Ícones do menu lateral em cinza claro */
+        .nav-icon i {
+            color: #b0bec5 !important; /* Cinza claro */
+        }
+        
+        /* Ícone ativo mantém cor branca */
+        .nav-icon.active i {
+            color: #fff !important;
+        }
         .actions { display: flex; gap: 10px; justify-content: flex-end; }
         
         /* Flash Messages */
@@ -96,18 +138,19 @@
     <div class="app">
         <aside class="sidebar">
             <img src="img/logo.png" class="logo" alt="logo">
-            <a class="nav-icon <?php echo (basename($_SERVER['PHP_SELF']) === 'dashboard.php') ? 'active' : ''; ?>" href="dashboard.php" title="Início">🏠</a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'prontuarios') !== false) ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários">👥</a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'acolhimento') !== false) ? 'active' : ''; ?>" href="acolhimento_list.php" title="Acolhimento">📋</a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'socioeconomico') !== false) ? 'active' : ''; ?>" href="socioeconomico_list.php" title="Socioeconômico">🏘️</a>
+            <a class="nav-icon <?php echo (basename($_SERVER['PHP_SELF']) === 'dashboard.php') ? 'active' : ''; ?>" href="dashboard.php" title="Início"><i class="fas fa-home"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'prontuarios') !== false) ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários"><i class="fas fa-users"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'acolhimento') !== false) ? 'active' : ''; ?>" href="acolhimento_list.php" title="Acolhimento"><i class="fas fa-clipboard-list"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'socioeconomico') !== false) ? 'active' : ''; ?>" href="socioeconomico_list.php" title="Socioeconômico"><i class="fas fa-home-lg-alt"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'attendance') !== false) ? 'active' : ''; ?>" href="attendance.php" title="Controle de Faltas"><i class="fas fa-calendar-check"></i></a>
             <?php if ($currentUser['role'] === 'psicologo'): ?>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'psychology') !== false) ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica">🧠</a>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'psychology') !== false) ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica"><i class="fas fa-brain"></i></a>
             <?php endif; ?>
-            <div class="nav-icon" title="Relatórios">📈</div>
+            <a class="nav-icon <?php echo (isset($_GET['action']) && $_GET['action'] === 'relatorios') ? 'active' : ''; ?>" href="attendance.php?action=relatorios" title="Relatórios de Frequência"><i class="fas fa-chart-line"></i></a>
             <?php if ($currentUser['role'] === 'admin'): ?>
-                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'users') !== false) ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários">👤</a>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'users') !== false) ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários"><i class="fas fa-user-cog"></i></a>
             <?php endif; ?>
-            <div class="nav-icon" title="Configurações">⚙️</div>
+            <div class="nav-icon" title="Configurações"><i class="fas fa-cog"></i></div>
         </aside>
         
         <main class="content">

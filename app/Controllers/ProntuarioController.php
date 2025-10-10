@@ -6,11 +6,13 @@
 class ProntuarioController extends BaseController {
     private $acolhimentoService;
     private $socioeconomicoService;
+    private $attendanceService;
     
     public function __construct() {
         parent::__construct();
         $this->acolhimentoService = new AcolhimentoService();
         $this->socioeconomicoService = new SocioeconomicoService();
+        $this->attendanceService = new AttendanceService();
     }
     
     /**
@@ -72,12 +74,24 @@ class ProntuarioController extends BaseController {
                 throw new Exception('Prontuário não encontrado');
             }
             
+            // Buscar estatísticas de faltas se tiver acolhimento
+            $attendanceStats = null;
+            if ($acolhimento) {
+                try {
+                    $attendanceStats = $this->attendanceService->getAtendidoStatistics($acolhimento['id']);
+                } catch (Exception $e) {
+                    error_log("Erro ao buscar estatísticas de faltas: " . $e->getMessage());
+                }
+            }
+            
             $data = [
                 'title' => 'Prontuário - ' . ($acolhimento['nome_completo'] ?? $socioeconomico['nome_completo'] ?? 'Não informado'),
                 'pageTitle' => 'Prontuário',
                 'acolhimento' => $acolhimento,
                 'socioeconomico' => $socioeconomico,
-                'cpf' => $cpf
+                'attendanceStats' => $attendanceStats,
+                'cpf' => $cpf,
+                'csrf_token' => $this->generateCSRF()
             ];
             
             $this->renderWithLayout('main', 'prontuarios/show', $data);
