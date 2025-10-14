@@ -31,6 +31,19 @@ class AuthService {
             throw new Exception('A senha deve ter pelo menos 6 caracteres');
         }
         
+        // Verificar se usuário existe
+        $userExists = $this->userModel->findByEmail($email);
+        
+        if (!$userExists) {
+            throw new Exception('Email ou senha incorretos');
+        }
+        
+        // Verificar se está ativo
+        $status = strtolower($userExists['status'] ?? 'inativo');
+        if ($status !== 'ativo' && $status !== 'active') {
+            throw new Exception('Usuário inativo');
+        }
+        
         // Tentar autenticar
         $user = $this->userModel->authenticate($email, $password);
         
@@ -38,7 +51,9 @@ class AuthService {
             throw new Exception('Email ou senha incorretos');
         }
         
-        if ($user['status'] !== 'active') {
+        // Verificar status (aceita 'Ativo' ou 'active')
+        $status = strtolower($user['status'] ?? '');
+        if ($status !== 'ativo' && $status !== 'active') {
             throw new Exception('Usuário inativo');
         }
         

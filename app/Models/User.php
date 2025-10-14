@@ -33,7 +33,14 @@ class User extends BaseModelDB {
     public function authenticate($email, $password) {
         $user = $this->findByEmail($email);
         
+        // Verificar se usuário existe e senha está correta
         if ($user && password_verify($password, $user['Senha'])) {
+            // Verificar se usuário está ativo
+            $status = strtolower($user['status'] ?? 'inativo');
+            if ($status !== 'ativo' && $status !== 'active') {
+                return null; // Usuário inativo
+            }
+            
             // Remover senha dos dados retornados
             unset($user['Senha']);
             // Mapear campos do banco para formato esperado
