@@ -140,17 +140,15 @@
             <img src="img/logo.png" class="logo" alt="logo">
             <a class="nav-icon <?php echo (basename($_SERVER['PHP_SELF']) === 'dashboard.php') ? 'active' : ''; ?>" href="dashboard.php" title="Início"><i class="fas fa-home"></i></a>
             <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'prontuarios') !== false) ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários"><i class="fas fa-users"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'acolhimento') !== false) ? 'active' : ''; ?>" href="acolhimento_list.php" title="Acolhimento"><i class="fas fa-clipboard-list"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'socioeconomico') !== false) ? 'active' : ''; ?>" href="socioeconomico_list.php" title="Socioeconômico"><i class="fas fa-home-lg-alt"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'attendance') !== false) ? 'active' : ''; ?>" href="attendance.php" title="Controle de Faltas"><i class="fas fa-calendar-check"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'attendance') !== false && !isset($_GET['action'])) ? 'active' : ''; ?>" href="attendance.php" title="Controle de Faltas"><i class="fas fa-calendar-check"></i></a>
             <?php if ($currentUser['role'] === 'psicologo'): ?>
                 <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'psychology') !== false) ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica"><i class="fas fa-brain"></i></a>
             <?php endif; ?>
-            <a class="nav-icon <?php echo (isset($_GET['action']) && $_GET['action'] === 'relatorios') ? 'active' : ''; ?>" href="attendance.php?action=relatorios" title="Relatórios de Frequência"><i class="fas fa-chart-line"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'attendance') !== false && isset($_GET['action']) && $_GET['action'] === 'relatorios') ? 'active' : ''; ?>" href="attendance.php?action=relatorios" title="Relatórios de Frequência"><i class="fas fa-chart-line"></i></a>
             <?php if ($currentUser['role'] === 'admin'): ?>
                 <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'users') !== false) ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários"><i class="fas fa-user-cog"></i></a>
             <?php endif; ?>
-            <div class="nav-icon" title="Configurações"><i class="fas fa-cog"></i></div>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'profile') !== false) ? 'active' : ''; ?>" href="profile.php" title="Meu Perfil"><i class="fas fa-cog"></i></a>
         </aside>
         
         <main class="content">
@@ -159,8 +157,16 @@
                     <div style="font-weight:700; font-size:24px;"><?php echo $pageTitle ?? $title ?? 'Sistema Criança Feliz'; ?></div>
                 </div>
                 <div class="user">
-                    <div class="avatar"></div>
-                    <div><?php echo $currentUser['email'] ?? 'Usuário'; ?></div>
+                    <a href="profile.php" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;" title="Meu Perfil">
+                        <?php if (!empty($currentUser['photo'])): ?>
+                            <img src="<?php echo htmlspecialchars($currentUser['photo']); ?>" class="avatar" style="object-fit: cover;">
+                        <?php else: ?>
+                            <div class="avatar" style="display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff; background: #ff7a00;">
+                                <?php echo strtoupper(substr($currentUser['name'] ?? 'U', 0, 1)); ?>
+                            </div>
+                        <?php endif; ?>
+                        <div><?php echo $currentUser['email'] ?? 'Usuário'; ?></div>
+                    </a>
                     <a href="logout.php" class="btn secondary">Sair</a>
                 </div>
             </div>
@@ -186,6 +192,29 @@
     <script src="js/chatbot.js"></script>
     <script src="js/theme-toggle.js"></script>
     <script src="js/notifications.js"></script>
+    
+    <!-- Script para carregar foto do perfil do sessionStorage -->
+    <script>
+        (function() {
+            const savedPhoto = sessionStorage.getItem('profile_photo');
+            if (savedPhoto) {
+                // Atualizar avatar no topbar
+                const avatarElements = document.querySelectorAll('.avatar');
+                avatarElements.forEach(avatar => {
+                    if (avatar.tagName === 'IMG') {
+                        avatar.src = savedPhoto;
+                    } else if (avatar.tagName === 'DIV') {
+                        // Substituir div por img
+                        const img = document.createElement('img');
+                        img.src = savedPhoto;
+                        img.className = 'avatar';
+                        img.style.objectFit = 'cover';
+                        avatar.parentNode.replaceChild(img, avatar);
+                    }
+                });
+            }
+        })();
+    </script>
     
     <?php if (isset($additionalScripts)): ?>
         <?php foreach ($additionalScripts as $script): ?>

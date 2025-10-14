@@ -61,9 +61,9 @@
     <div class="card list" style="background:#fff; border-radius:14px; box-shadow: 0 2px 10px rgba(0,0,0,.08); padding:16px; display:flex; flex-direction:column; gap:12px;">
         <div style="font-weight:700">Anotações do Calendário</div>
         <div id="notesList">
-            <?php if (!empty($anotacoes)): ?>
-                <?php foreach ($anotacoes as $anotacao): ?>
-                    <div class="note" style="background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start;">
+            <?php if (!empty($anotacoes['anotacoes'])): ?>
+                <?php foreach ($anotacoes['anotacoes'] as $anotacao): ?>
+                    <div class="note" style="background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start; position:relative;">
                         <div class="badge orange" style="width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#fff; background:#ff7a00;">
                             <?php echo date('d', strtotime($anotacao['date'])); ?>
                         </div>
@@ -71,6 +71,7 @@
                             <div style="font-weight:600"><?php echo $anotacao['formatted_date']; ?></div>
                             <div style="font-size:12px;color:#666"><?php echo htmlspecialchars($anotacao['note']); ?></div>
                         </div>
+                        <button onclick="deleteNote('<?php echo $anotacao['id']; ?>')" class="delete-note-btn" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:18px; padding:0 8px; transition:all 0.2s;" title="Excluir anotação">&times;</button>
                     </div>
                 <?php endforeach; ?>
             <?php else: ?>
@@ -82,28 +83,56 @@
     <div class="card list" style="background:#fff; border-radius:14px; box-shadow: 0 2px 10px rgba(0,0,0,.08); padding:16px; display:flex; flex-direction:column; gap:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center">
             <div style="font-weight:700">Avisos</div>
-            <a href="#" style="font-size:12px; text-decoration:none; color:#333">Ver todos</a>
         </div>
-        <div class="note" style="background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start;">
-            <div class="badge green" style="width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#fff; background:#6fb64f;">S</div>
-            <div class="note-content" style="flex: 1;">
-                <div style="font-weight:600">Sistema MVC</div>
-                <div style="font-size:12px;color:#666">Estrutura MVC implementada com sucesso!</div>
-            </div>
+        <div id="avisosList">
+            <?php if (!empty($anotacoes['avisos'])): ?>
+                <?php foreach ($anotacoes['avisos'] as $aviso): ?>
+                    <div class="note" style="background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start; position:relative; margin-bottom:10px;">
+                        <div class="badge green" style="width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#fff; background:#6fb64f;">
+                            <?php echo date('d', strtotime($aviso['date'])); ?>
+                        </div>
+                        <div class="note-content" style="flex: 1;">
+                            <div style="font-weight:600"><?php echo $aviso['formatted_date']; ?></div>
+                            <div style="font-size:12px;color:#666"><?php echo htmlspecialchars($aviso['note']); ?></div>
+                        </div>
+                        <button onclick="deleteNote('<?php echo $aviso['id']; ?>')" class="delete-note-btn" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:18px; padding:0 8px; transition:all 0.2s;" title="Excluir aviso">&times;</button>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div style="color:#666; font-style:italic;">Nenhum aviso este mês</div>
+            <?php endif; ?>
         </div>
     </div>
 </section>
 
+<!-- Modal para escolher tipo de anotação -->
+<div id="typeModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div class="modal-content" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:12px; width:400px; max-width:90vw;">
+        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3>Escolha o tipo</h3>
+            <button class="modal-close" onclick="closeTypeModal()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        <div style="display:flex; gap:12px; flex-direction:column;">
+            <button onclick="openNoteModal('anotacao')" style="background:#ff7a00; color:white; border:none; padding:15px 20px; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600; transition:all 0.2s;">
+                📝 Anotação (Laranja)
+            </button>
+            <button onclick="openNoteModal('aviso')" style="background:#6fb64f; color:white; border:none; padding:15px 20px; border-radius:8px; cursor:pointer; font-size:16px; font-weight:600; transition:all 0.2s;">
+                ⚠️ Aviso (Verde)
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para adicionar/editar anotações -->
-<div id="noteModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+<div id="noteModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1001;">
     <div class="modal-content" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:24px; border-radius:12px; width:400px; max-width:90vw;">
         <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
             <h3 id="modalTitle">Adicionar Anotação</h3>
             <button class="modal-close" onclick="closeModal()" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
         </div>
         <div>
-            <label for="noteText">Anotação para <span id="selectedDate"></span>:</label>
-            <textarea id="noteText" class="note-textarea" placeholder="Digite sua anotação aqui..." style="width:100%; height:100px; border:2px solid #f0a36b; border-radius:8px; padding:12px; resize:vertical;"></textarea>
+            <label for="noteText"><span id="noteTypeLabel">Anotação</span> para <span id="selectedDate"></span>:</label>
+            <textarea id="noteText" class="note-textarea" placeholder="Digite aqui..." style="width:100%; height:100px; border:2px solid #f0a36b; border-radius:8px; padding:12px; resize:vertical; font-family:Poppins;"></textarea>
         </div>
         <div class="modal-buttons" style="display:flex; gap:12px; justify-content:flex-end; margin-top:16px;">
             <button class="btn-cancel" onclick="closeModal()" style="background:#6c757d; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer;">Cancelar</button>
@@ -114,8 +143,37 @@
 
 <script>
     let currentDate = new Date();
-    let notes = JSON.parse(localStorage.getItem('calendarNotes') || '{}');
+    let allNotes = {}; // Armazenará todas as anotações do servidor
     let selectedDate = null;
+    let selectedType = 'anotacao';
+
+    // Carregar anotações do servidor
+    async function loadNotes() {
+        try {
+            const monthParam = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
+            console.log('Carregando notas para o mês:', monthParam);
+            
+            const response = await fetch('dashboard.php?action=getCalendarNotes&month=' + monthParam);
+            const notes = await response.json();
+            
+            console.log('Notas recebidas:', notes);
+            
+            allNotes = {};
+            notes.forEach(note => {
+                if (!allNotes[note.date]) {
+                    allNotes[note.date] = [];
+                }
+                allNotes[note.date].push(note);
+            });
+            
+            console.log('allNotes processado:', allNotes);
+            
+            generateCalendar();
+            updateNotesList();
+        } catch (error) {
+            console.error('Erro ao carregar anotações:', error);
+        }
+    }
 
     function generateCalendar() {
         const year = currentDate.getFullYear();
@@ -163,28 +221,51 @@
                 dayElement.style.fontWeight = '700';
             }
             
-            // Marcar dias com anotações
-            if (notes[dateKey]) {
-                dayElement.style.background = '#ff7a00';
+            // Marcar dias com anotações (laranja se tiver anotação, verde se tiver aviso)
+            if (allNotes[dateKey] && allNotes[dateKey].length > 0) {
+                const hasAviso = allNotes[dateKey].some(n => n.type === 'aviso');
+                const hasAnotacao = allNotes[dateKey].some(n => n.type === 'anotacao');
+                
+                if (hasAviso && hasAnotacao) {
+                    // Ambos: gradiente laranja-verde
+                    dayElement.style.background = 'linear-gradient(135deg, #ff7a00 50%, #6fb64f 50%)';
+                } else if (hasAviso) {
+                    dayElement.style.background = '#6fb64f';
+                } else {
+                    dayElement.style.background = '#ff7a00';
+                }
                 dayElement.style.color = 'white';
                 dayElement.style.fontWeight = '700';
             }
             
-            dayElement.onclick = () => openNoteModal(dateKey, day);
+            dayElement.onclick = () => openTypeModal(dateKey, day);
             calendarGrid.appendChild(dayElement);
         }
     }
 
     function changeMonth(direction) {
         currentDate.setMonth(currentDate.getMonth() + direction);
-        generateCalendar();
-        updateNotesList();
+        loadNotes();
     }
 
-    function openNoteModal(dateKey, day) {
+    function openTypeModal(dateKey, day) {
         selectedDate = dateKey;
-        document.getElementById('selectedDate').textContent = `${day}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
-        document.getElementById('noteText').value = notes[dateKey] || '';
+        // Extrair mês e ano da dateKey para garantir consistência
+        const [year, month, dayNum] = dateKey.split('-');
+        const formattedDate = `${dayNum}/${month}/${year}`;
+        document.getElementById('selectedDate').textContent = formattedDate;
+        document.getElementById('typeModal').style.display = 'block';
+    }
+
+    function closeTypeModal() {
+        document.getElementById('typeModal').style.display = 'none';
+    }
+
+    function openNoteModal(type) {
+        selectedType = type;
+        document.getElementById('typeModal').style.display = 'none';
+        document.getElementById('noteTypeLabel').textContent = type === 'aviso' ? 'Aviso' : 'Anotação';
+        document.getElementById('noteText').value = '';
         document.getElementById('noteModal').style.display = 'block';
     }
 
@@ -193,65 +274,160 @@
         selectedDate = null;
     }
 
-    function saveNote() {
+    async function saveNote() {
         if (selectedDate) {
             const noteText = document.getElementById('noteText').value.trim();
-            if (noteText) {
-                notes[selectedDate] = noteText;
-            } else {
-                delete notes[selectedDate];
+            if (!noteText) {
+                alert('Por favor, digite uma anotação');
+                return;
             }
-            localStorage.setItem('calendarNotes', JSON.stringify(notes));
-            generateCalendar();
-            updateNotesList();
-            closeModal();
+
+            console.log('Salvando nota:', {
+                date: selectedDate,
+                note: noteText,
+                type: selectedType,
+                currentMonth: currentDate.getMonth() + 1,
+                currentYear: currentDate.getFullYear()
+            });
+
+            try {
+                const formData = new FormData();
+                formData.append('date', selectedDate);
+                formData.append('note', noteText);
+                formData.append('type', selectedType);
+
+                const response = await fetch('dashboard.php?action=saveCalendarNote', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    closeModal();
+                    await loadNotes();
+                    // Não recarregar a página para manter o mês atual
+                } else {
+                    alert('Erro ao salvar: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Erro ao salvar anotação:', error);
+                alert('Erro ao salvar anotação');
+            }
+        }
+    }
+
+    async function deleteNote(id) {
+        if (!confirm('Deseja realmente excluir esta anotação?')) {
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('id', id);
+
+            const response = await fetch('dashboard.php?action=deleteCalendarNote', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                await loadNotes();
+                // Não recarregar a página para manter o mês atual
+            } else {
+                alert('Erro ao excluir: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Erro ao excluir anotação:', error);
+            alert('Erro ao excluir anotação');
         }
     }
 
     function updateNotesList() {
+        // Atualizar lista de anotações
         const notesList = document.getElementById('notesList');
-        notesList.innerHTML = '';
+        const currentMonth = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
         
-        const currentMonth = currentDate.getMonth();
-        const currentYear = currentDate.getFullYear();
+        const anotacoes = [];
+        const avisos = [];
         
-        const monthNotes = Object.entries(notes).filter(([dateKey, note]) => {
-            const [year, month, day] = dateKey.split('-').map(Number);
-            return year === currentYear && month === currentMonth + 1;
-        }).sort(([a], [b]) => a.localeCompare(b));
+        // Filtrar anotações do mês atual
+        Object.entries(allNotes).forEach(([date, notes]) => {
+            if (date.startsWith(currentMonth)) {
+                notes.forEach(note => {
+                    if (note.type === 'aviso') {
+                        avisos.push(note);
+                    } else {
+                        anotacoes.push(note);
+                    }
+                });
+            }
+        });
         
-        if (monthNotes.length === 0) {
-            notesList.innerHTML = '<div style="color:#666; font-style:italic;">Nenhuma anotação este mês</div>';
-            return;
+        // Ordenar por data
+        anotacoes.sort((a, b) => a.date.localeCompare(b.date));
+        avisos.sort((a, b) => a.date.localeCompare(b.date));
+        
+        // Atualizar lista de anotações
+        if (anotacoes.length === 0) {
+            notesList.innerHTML = '<div style=\"color:#666; font-style:italic;\">Nenhuma anotação este mês</div>';
+        } else {
+            notesList.innerHTML = anotacoes.map(anotacao => {
+                const day = new Date(anotacao.date).getDate();
+                const formattedDate = new Date(anotacao.date).toLocaleDateString('pt-BR');
+                return `
+                    <div class=\"note\" style=\"background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start; position:relative; margin-bottom:10px;\">
+                        <div class=\"badge orange\" style=\"width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#fff; background:#ff7a00;\">
+                            ${day}
+                        </div>
+                        <div class=\"note-content\" style=\"flex: 1;\">
+                            <div style=\"font-weight:600\">${formattedDate}</div>
+                            <div style=\"font-size:12px;color:#666\">${anotacao.note}</div>
+                        </div>
+                        <button onclick=\"deleteNote('${anotacao.id}')\" class=\"delete-note-btn\" style=\"background:none; border:none; color:#e74c3c; cursor:pointer; font-size:18px; padding:0 8px; transition:all 0.2s;\" title=\"Excluir anotação\">&times;</button>
+                    </div>
+                `;
+            }).join('');
         }
         
-        monthNotes.forEach(([dateKey, note]) => {
-            const [year, month, day] = dateKey.split('-').map(Number);
-            const noteElement = document.createElement('div');
-            noteElement.className = 'note';
-            noteElement.style.cssText = 'background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start; margin-bottom:10px;';
-            noteElement.innerHTML = `
-                <div class="badge orange" style="width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#fff; background:#ff7a00;">${day}</div>
-                <div class="note-content" style="flex: 1;">
-                    <div style="font-weight:600">${day}/${month}/${year}</div>
-                    <div style="font-size:12px;color:#666">${note}</div>
-                </div>
-            `;
-            notesList.appendChild(noteElement);
-        });
+        // Atualizar lista de avisos
+        const avisosList = document.getElementById('avisosList');
+        if (avisos.length === 0) {
+            avisosList.innerHTML = '<div style=\"color:#666; font-style:italic;\">Nenhum aviso este mês</div>';
+        } else {
+            avisosList.innerHTML = avisos.map(aviso => {
+                const day = new Date(aviso.date).getDate();
+                const formattedDate = new Date(aviso.date).toLocaleDateString('pt-BR');
+                return `
+                    <div class=\"note\" style=\"background:#fff; border-radius:12px; padding:14px; display:flex; gap:10px; align-items:flex-start; position:relative; margin-bottom:10px;\">
+                        <div class=\"badge green\" style=\"width:36px; height:36px; border-radius:10px; display:grid; place-items:center; font-weight:700; color:#fff; background:#6fb64f;\">
+                            ${day}
+                        </div>
+                        <div class=\"note-content\" style=\"flex: 1;\">
+                            <div style=\"font-weight:600\">${formattedDate}</div>
+                            <div style=\"font-size:12px;color:#666\">${aviso.note}</div>
+                        </div>
+                        <button onclick=\"deleteNote('${aviso.id}')\" class=\"delete-note-btn\" style=\"background:none; border:none; color:#e74c3c; cursor:pointer; font-size:18px; padding:0 8px; transition:all 0.2s;\" title=\"Excluir aviso\">&times;</button>
+                    </div>
+                `;
+            }).join('');
+        }
     }
 
     // Fechar modal clicando fora
     window.onclick = function(event) {
-        const modal = document.getElementById('noteModal');
-        if (event.target === modal) {
+        const noteModal = document.getElementById('noteModal');
+        const typeModal = document.getElementById('typeModal');
+        if (event.target === noteModal) {
             closeModal();
+        }
+        if (event.target === typeModal) {
+            closeTypeModal();
         }
     }
 
     // Inicializar calendário
-    generateCalendar();
-    updateNotesList();
+    loadNotes();
 </script>
 
 <style>
@@ -262,9 +438,33 @@
     .pill.error { background:#f8d7da; border-left:6px solid #dc3545; }
     .pill.success { background:#d4edda; border-left:6px solid #28a745; }
     
+    /* Botão de exclusão */
+    .delete-note-btn:hover {
+        color: #c0392b !important;
+        transform: scale(1.2);
+        font-weight: bold;
+    }
+    
     a:has(.pill):hover .pill {
         opacity: 0.8;
         transform: translateX(5px);
+    }
+    
+    /* Modo escuro */
+    [data-theme="dark"] .modal-content {
+        background: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] .modal-content h3,
+    [data-theme="dark"] .modal-content label {
+        color: var(--text-primary) !important;
+    }
+    
+    [data-theme="dark"] #noteText {
+        background: var(--input-bg) !important;
+        color: var(--text-secondary) !important;
+        border-color: var(--border-color) !important;
     }
     
     /* Responsividade */

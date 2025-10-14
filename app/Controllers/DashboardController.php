@@ -89,6 +89,7 @@ class DashboardController extends BaseController {
         try {
             $date = $this->getParam('date', '');
             $note = $this->getParam('note', '');
+            $type = $this->getParam('type', 'anotacao'); // 'anotacao' ou 'aviso'
             
             if (empty($date)) {
                 throw new Exception('Data é obrigatória');
@@ -103,9 +104,9 @@ class DashboardController extends BaseController {
                 throw new Exception('Formato de data inválido');
             }
             
-            $this->saveNote($date, $note);
+            $id = $this->saveNote($date, $note, $type);
             
-            $this->json(['success' => 'Anotação salva com sucesso']);
+            $this->json(['success' => 'Anotação salva com sucesso', 'id' => $id]);
             
         } catch (Exception $e) {
             $this->json(['error' => $e->getMessage()], 400);
@@ -123,13 +124,13 @@ class DashboardController extends BaseController {
         }
         
         try {
-            $date = $this->getParam('date', '');
+            $id = $this->getParam('id', '');
             
-            if (empty($date)) {
-                throw new Exception('Data é obrigatória');
+            if (empty($id)) {
+                throw new Exception('ID é obrigatório');
             }
             
-            $this->deleteNote($date);
+            $this->deleteNote($id);
             
             $this->json(['success' => 'Anotação removida com sucesso']);
             
@@ -272,31 +273,44 @@ class DashboardController extends BaseController {
         $notesFile = DATA_PATH . '/calendar_notes.json';
         
         if (!file_exists($notesFile)) {
-            return [];
+            return ['anotacoes' => [], 'avisos' => []];
         }
         
-        $notes = json_decode(file_get_contents($notesFile), true) ?: [];
+        $allNotes = json_decode(file_get_contents($notesFile), true) ?: [];
         
         // Filtrar anotações do mês atual
         $currentMonth = date('Y-m');
-        $monthNotes = [];
+        $anotacoes = [];
+        $avisos = [];
         
-        foreach ($notes as $date => $note) {
-            if (strpos($date, $currentMonth) === 0) {
-                $monthNotes[] = [
-                    'date' => $date,
-                    'note' => $note,
-                    'formatted_date' => date('d/m/Y', strtotime($date))
+        foreach ($allNotes as $id => $item) {
+            if (strpos($item['date'], $currentMonth) === 0) {
+                $noteData = [
+                    'id' => $id,
+                    'date' => $item['date'],
+                    'note' => $item['note'],
+                    'type' => $item['type'] ?? 'anotacao',
+                    'formatted_date' => date('d/m/Y', strtotime($item['date']))
                 ];
+                
+                if ($item['type'] === 'aviso') {
+                    $avisos[] = $noteData;
+                } else {
+                    $anotacoes[] = $noteData;
+                }
             }
         }
         
         // Ordenar por data
-        usort($monthNotes, function($a, $b) {
+        usort($anotacoes, function($a, $b) {
             return strcmp($a['date'], $b['date']);
         });
         
-        return $monthNotes;
+        usort($avisos, function($a, $b) {
+            return strcmp($a['date'], $b['date']);
+        });
+        
+        return ['anotacoes' => $anotacoes, 'avisos' => $avisos];
     }
     
     /**
@@ -309,12 +323,17 @@ class DashboardController extends BaseController {
             return [];
         }
         
-        $notes = json_decode(file_get_contents($notesFile), true) ?: [];
+        $allNotes = json_decode(file_get_contents($notesFile), true) ?: [];
         
         $monthNotes = [];
-        foreach ($notes as $date => $note) {
-            if (strpos($date, $month) === 0) {
-                $monthNotes[$date] = $note;
+        foreach ($allNotes as $id => $item) {
+            if (strpos($item['date'], $month) === 0) {
+                $monthNotes[] = [
+                    'id' => $id,
+                    'date' => $item['date'],
+                    'note' => $item['note'],
+                    'type' => $item['type'] ?? 'anotacao'
+                ];
             }
         }
         
@@ -324,7 +343,7 @@ class DashboardController extends BaseController {
     /**
      * Salva anotação
      */
-    private function saveNote($date, $note) {
+    private function saveNote($date, $note, $type = 'anotacao') {
         $notesFile = DATA_PATH . '/calendar_notes.json';
         
         if (!file_exists($notesFile)) {
@@ -333,19 +352,25 @@ class DashboardController extends BaseController {
         
         $notes = json_decode(file_get_contents($notesFile), true) ?: [];
         
-        if (trim($note) === '') {
-            unset($notes[$date]);
-        } else {
-            $notes[$date] = trim($note);
-        }
+        // Gerar ID único
+        $id = uniqid('note_', true);
+        
+        $notes[$id] = [
+            'date' => $date,
+            'note' => trim($note),
+            'type' => $type,
+            'created_at' => date('Y-m-d H:i:s')
+        ];
         
         file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        
+        return $id;
     }
     
     /**
      * Remove anotação
      */
-    private function deleteNote($date) {
+    private function deleteNote($id) {
         $notesFile = DATA_PATH . '/calendar_notes.json';
         
         if (!file_exists($notesFile)) {
@@ -353,7 +378,7 @@ class DashboardController extends BaseController {
         }
         
         $notes = json_decode(file_get_contents($notesFile), true) ?: [];
-        unset($notes[$date]);
+        unset($notes[$id]);
         
         file_put_contents($notesFile, json_encode($notes, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }

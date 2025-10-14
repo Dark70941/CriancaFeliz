@@ -66,15 +66,23 @@
                         </td>
                         <td style="padding:12px; text-align:center;">
                             <a href="acolhimento_view.php?id=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn btn-sm" 
-                               style="background:#17a2b8; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px; margin-right:8px; margin-bottom:4px; display:inline-block; min-width:60px; text-align:center;">
-                                Ver
+                               class="btn-icon" 
+                               title="Visualizar"
+                               style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="acolhimento_form.php?id=<?php echo urlencode($ficha['id']); ?>" 
+                               class="btn-icon" 
+                               title="Editar"
+                               style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
+                                <i class="fas fa-edit"></i>
                             </a>
                             <a href="acolhimento_list.php?delete=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn btn-sm btn-danger" 
+                               class="btn-icon" 
+                               title="Excluir"
                                onclick="return confirm('Tem certeza que deseja excluir esta ficha?')"
-                               style="background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px; margin-right:8px; margin-bottom:4px; display:inline-block; min-width:60px; text-align:center;">
-                                Excluir
+                               style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
+                                <i class="fas fa-trash"></i>
                             </a>
                         </td>
                     </tr>

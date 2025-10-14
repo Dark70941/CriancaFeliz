@@ -5,5 +5,20 @@ require_once 'bootstrap.php';
 // Instanciar controller do dashboard
 $dashboardController = new DashboardController();
 
-// Exibir dashboard
-$dashboardController->index();
+// Verificar ação
+$action = $_GET['action'] ?? 'index';
+
+switch ($action) {
+    case 'getCalendarNotes':
+        $dashboardController->getCalendarNotes();
+        break;
+    case 'saveCalendarNote':
+        $dashboardController->saveCalendarNote();
+        break;
+    case 'deleteCalendarNote':
+        $dashboardController->deleteCalendarNote();
+        break;
+    default:
+        $dashboardController->index();
+        break;
+}

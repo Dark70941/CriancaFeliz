@@ -13,20 +13,7 @@ class Socioeconomico extends BaseModel {
      * Cria nova ficha socioeconômica com validação
      */
     public function createFicha($data) {
-        // Validações obrigatórias básicas
-        $required = [
-            'nome_completo' => 'Nome completo é obrigatório',
-            'cpf' => 'CPF é obrigatório',
-            'data_nascimento' => 'Data de nascimento é obrigatória'
-        ];
-        
-        foreach ($required as $field => $message) {
-            if (empty($data[$field])) {
-                throw new Exception($message);
-            }
-        }
-        
-        // Normalizar dados
+        // Normalizar dados (validação de campos obrigatórios é feita no frontend)
         $data = $this->normalizeData($data);
         
         // Verificar se CPF já existe
@@ -117,14 +104,14 @@ class Socioeconomico extends BaseModel {
      */
     public function searchAdvanced($query) {
         $searchFields = [
-            'nome_completo',
+            'nome_entrevistado',
+            'nome_menor',
             'cpf',
             'rg',
             'endereco',
             'bairro',
             'cidade',
-            'profissao',
-            'empresa'
+            'assistente_social'
         ];
         
         return $this->search($query, $searchFields);

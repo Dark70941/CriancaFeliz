@@ -13,7 +13,7 @@ class NotificationSystem {
     init() {
         // Criar container de notificações
         this.createContainer();
-        console.log('🔔 Sistema de Notificações inicializado');
+        console.log('Sistema de Notificações inicializado');
     }
 
     createContainer() {

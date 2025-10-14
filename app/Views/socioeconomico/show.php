@@ -1,21 +1,28 @@
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
-    <a href="prontuarios.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
-    <a href="socioeconomico_form.php?edit=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">✏️ Editar</a>
+    <a href="socioeconomico_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
+    <a href="socioeconomico_form.php?id=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;"><i class="fas fa-edit"></i> Editar</a>
 </div>
 
 <!-- Dados Pessoais -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">👤 Dados Pessoais</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-user"></i> Dados Pessoais</h3>
     
     <div class="fields-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Nome Completo</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['nome_completo'] ?? ''); ?></div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Nome do Entrevistado</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['nome_entrevistado'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">CPF</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php 
+                $cpf = $ficha['cpf'] ?? '';
+                if ($cpf && strlen($cpf) == 11) {
+                    echo substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9, 2);
+                } else {
+                    echo $cpf ?: 'Não informado';
+                }
+            ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -24,72 +31,78 @@
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Data de Nascimento</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['data_nascimento'] ?? ''); ?></div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Nome do Menor</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['nome_menor'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Idade</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['idade'] ?? 'N/A'; ?> anos</div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Data de Acolhimento</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['data_acolhimento'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Estado Civil</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['estado_civil'] ?? 'Não informado'); ?></div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Assistente Social</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['assistente_social'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Escolaridade</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['escolaridade'] ?? 'Não informado'); ?></div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Residência</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['residencia'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Profissão</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['profissao'] ?? 'Não informado'); ?></div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Construção</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['construcao'] ?? 'Não informado'); ?></div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Telefone</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['telefone'] ?? ''); ?></div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Nº de Cômodos</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['num_comodos'] ?? 'Não informado'); ?></div>
         </div>
     </div>
 </div>
 
 <!-- Composição Familiar -->
 <div class="section" style="background:#fff; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;">👨‍👩‍👧‍👦 Composição Familiar</h3>
+    <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-users"></i> Composição Familiar</h3>
     
-    <div class="fields-grid" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:16px;">
-        <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Pessoas na Casa</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['pessoas_casa'] ?? 'Não informado'; ?></div>
-        </div>
-        
-        <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Crianças (0-12 anos)</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['criancas'] ?? '0'; ?></div>
-        </div>
-        
-        <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Adolescentes (13-17 anos)</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['adolescentes'] ?? '0'; ?></div>
-        </div>
-        
-        <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Adultos (18-59 anos)</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['adultos'] ?? '0'; ?></div>
-        </div>
-        
-        <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Idosos (60+ anos)</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['idosos'] ?? '0'; ?></div>
-        </div>
-        
-        <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Pessoas com Deficiência</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo $ficha['pessoas_deficiencia'] ?? '0'; ?></div>
-        </div>
-    </div>
+    <?php 
+    $familia = [];
+    if (!empty($ficha['familia_json'])) {
+        $familia = json_decode($ficha['familia_json'], true);
+    }
+    
+    if (!empty($familia) && is_array($familia)): ?>
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="background:#f8f9fa;">
+                    <th style="padding:12px; text-align:left; border-bottom:2px solid #dee2e6;">Nome</th>
+                    <th style="padding:12px; text-align:left; border-bottom:2px solid #dee2e6;">Parentesco</th>
+                    <th style="padding:12px; text-align:left; border-bottom:2px solid #dee2e6;">Data Nasc.</th>
+                    <th style="padding:12px; text-align:left; border-bottom:2px solid #dee2e6;">Formação</th>
+                    <th style="padding:12px; text-align:right; border-bottom:2px solid #dee2e6;">Renda</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($familia as $membro): ?>
+                    <tr style="border-bottom:1px solid #dee2e6;">
+                        <td style="padding:12px;"><?php echo htmlspecialchars($membro['nome'] ?? ''); ?></td>
+                        <td style="padding:12px;"><?php echo htmlspecialchars($membro['parentesco'] ?? ''); ?></td>
+                        <td style="padding:12px;"><?php echo htmlspecialchars($membro['data_nascimento'] ?? ''); ?></td>
+                        <td style="padding:12px;"><?php echo htmlspecialchars($membro['formacao'] ?? ''); ?></td>
+                        <td style="padding:12px; text-align:right;">
+                            <?php 
+                            $renda = $membro['renda'] ?? 0;
+                            echo $renda > 0 ? 'R$ ' . number_format($renda, 2, ',', '.') : '-';
+                            ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <p style="color:#6c757d; text-align:center; padding:20px;">Nenhum membro da família cadastrado</p>
+    <?php endif; ?>
 </div>
 
 <!-- Renda e Benefícios -->
@@ -118,8 +131,8 @@
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
-            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Cadastro Único</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['cadastro_unico'] ?? 'Não informado'); ?></div>
+            <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Cadastro Único (CadÚnico)</div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['cadunico'] ?? 'Não informado'); ?></div>
         </div>
     </div>
     

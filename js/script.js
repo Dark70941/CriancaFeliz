@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const forgotPasswordLink = document.getElementById('forgotPassword');
     const loginBtn = document.querySelector('.login-btn');
 
+    // Verificar se estamos na página de login
+    if (!emailInput || !passwordInput || !loginBtn) {
+        return; // Sair se não for a página de login
+    }
+
     // Validação em tempo real dos campos
     function validateEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -58,7 +63,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Submissão do formulário
-    loginForm.addEventListener('submit', function(e) {
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const email = emailInput.value.trim();
@@ -84,7 +90,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             this.submit();
         }, 2000);
-    });
+        });
+    }
 
     // Link "Esqueceu a senha?"
     if (forgotPasswordLink) {
@@ -171,9 +178,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Estado inicial do botão
     updateButtonState();
 
-    // Efeito de foco suave nos inputs
-    const inputs = document.querySelectorAll('input');
-    inputs.forEach(input => {
+    // Efeito de foco suave nos inputs (apenas na página de login)
+    const loginInputs = loginForm.querySelectorAll('input');
+    loginInputs.forEach(input => {
         input.addEventListener('focus', function() {
             this.parentElement.style.transform = 'scale(1.02)';
             this.parentElement.style.transition = 'transform 0.2s ease';
@@ -238,27 +245,27 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 2000);
     }
-});
-
-// Adicionar animações CSS para o loading simples
-const loadingStyle = document.createElement('style');
-loadingStyle.textContent = `
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
     
-    @keyframes pulse {
-        0%, 100% {
-            opacity: 1;
+    // Adicionar animações CSS para o loading simples
+    const loadingStyle = document.createElement('style');
+    loadingStyle.textContent = `
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        50% {
-            opacity: 0.6;
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
         }
-    }
-`;
-document.head.appendChild(loadingStyle);
+    `;
+    document.head.appendChild(loadingStyle);
+});

@@ -25,12 +25,23 @@ class SocioeconomicoController extends BaseController {
             
             // Adicionar dados calculados
             foreach ($result['data'] as &$ficha) {
+                // Debug
+                error_log('=== PROCESSANDO FICHA ===');
+                error_log('ID: ' . ($ficha['id'] ?? 'N/A'));
+                error_log('Nome: ' . ($ficha['nome_entrevistado'] ?? 'N/A'));
+                error_log('CPF: ' . ($ficha['cpf'] ?? 'N/A'));
+                error_log('Data Nascimento: ' . ($ficha['data_nascimento'] ?? 'N/A'));
+                error_log('Familia JSON: ' . ($ficha['familia_json'] ?? 'N/A'));
+                
                 $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
                 $ficha['renda_familiar'] = $this->calculateRendaFamiliar($ficha);
                 $ficha['situacao_economica'] = $this->categorizeSituacao(
                     $ficha['renda_familiar'], 
                     intval($ficha['numero_membros'] ?? 1)
                 );
+                
+                error_log('Idade calculada: ' . ($ficha['idade'] ?? 'N/A'));
+                error_log('Renda calculada: ' . $ficha['renda_familiar']);
             }
             
             $data = [
@@ -53,23 +64,37 @@ class SocioeconomicoController extends BaseController {
     }
     
     /**
-     * Exibe formulário de criação
+     * Exibe formulário de criação (multi-step)
      */
     public function create() {
         $this->requireAuth();
         $this->requirePermission('create_records');
         
+        // Verificar se é edição
+        $id = $this->getParam('id');
+        $ficha = null;
+        
+        if ($id) {
+            try {
+                $ficha = $this->socioeconomicoService->getFicha($id);
+            } catch (Exception $e) {
+                $this->redirectWithError('socioeconomico_list.php', 'Ficha não encontrada');
+                return;
+            }
+        }
+        
         $data = [
-            'title' => 'Cadastrar Ficha Socioeconômica',
+            'title' => $ficha ? 'Editar Ficha Socioeconômica' : 'Cadastrar Ficha Socioeconômica',
             'csrf_token' => $this->generateCSRF(),
-            'messages' => $this->getFlashMessages()
+            'messages' => $this->getFlashMessages(),
+            'ficha' => $ficha
         ];
         
-        $this->renderWithLayout('main', 'socioeconomico/create', $data);
+        $this->renderWithLayout('main', 'socioeconomico/create_multistep', $data);
     }
     
     /**
-     * Processa criação da ficha
+     * Processa criação ou atualização da ficha
      */
     public function store() {
         $this->requireAuth();
@@ -84,11 +109,30 @@ class SocioeconomicoController extends BaseController {
             
             $data = $this->getPostData();
             
-            $ficha = $this->socioeconomicoService->createFicha($data);
+            // Debug: Log dos dados recebidos
+            error_log('=== SOCIOECONOMICO STORE ===');
+            error_log('ID recebido: ' . ($data['id'] ?? 'NENHUM'));
+            error_log('Dados: ' . print_r($data, true));
             
-            $this->redirectWithSuccess('socioeconomico_list.php', 'Ficha socioeconômica cadastrada com sucesso!');
+            // Verificar se é edição ou criação
+            if (!empty($data['id'])) {
+                // Edição
+                $id = $data['id'];
+                unset($data['id']); // Remover ID dos dados
+                error_log('EDITANDO ficha ID: ' . $id);
+                $ficha = $this->socioeconomicoService->updateFicha($id, $data);
+                $this->redirectWithSuccess('socioeconomico_list.php', 'Ficha socioeconômica atualizada com sucesso!');
+                return; // IMPORTANTE: Parar execução aqui
+            } else {
+                // Criação
+                error_log('CRIANDO nova ficha');
+                $ficha = $this->socioeconomicoService->createFicha($data);
+                $this->redirectWithSuccess('socioeconomico_list.php', 'Ficha socioeconômica cadastrada com sucesso!');
+                return; // IMPORTANTE: Parar execução aqui
+            }
             
         } catch (Exception $e) {
+            error_log('ERRO: ' . $e->getMessage());
             $this->redirectWithError('socioeconomico_form.php', $e->getMessage());
         }
     }
@@ -325,9 +369,24 @@ class SocioeconomicoController extends BaseController {
     private function calculateRendaFamiliar($data) {
         $renda = 0;
         
-        for ($i = 1; $i <= 10; $i++) {
-            $rendaMembro = $data["renda_membro_$i"] ?? 0;
-            $renda += floatval(str_replace(['.', ','], ['', '.'], $rendaMembro));
+        // Tentar calcular a partir do JSON da família
+        if (!empty($data['familia_json'])) {
+            $familia = json_decode($data['familia_json'], true);
+            if (is_array($familia)) {
+                foreach ($familia as $membro) {
+                    if (!empty($membro['renda'])) {
+                        $renda += floatval(str_replace(['.', ','], ['', '.'], $membro['renda']));
+                    }
+                }
+            }
+        }
+        
+        // Fallback: tentar calcular a partir de campos individuais
+        if ($renda == 0) {
+            for ($i = 1; $i <= 10; $i++) {
+                $rendaMembro = $data["renda_membro_$i"] ?? 0;
+                $renda += floatval(str_replace(['.', ','], ['', '.'], $rendaMembro));
+            }
         }
         
         return $renda;

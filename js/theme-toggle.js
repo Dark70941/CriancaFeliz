@@ -19,10 +19,7 @@ class ThemeManager {
         // Adicionar event listeners
         this.addEventListeners();
         
-        // Configurar observer para elementos dinâmicos
-        this.setupDynamicObserver();
-        
-        console.log('🌙 Theme Manager inicializado - Tema atual:', this.currentTheme);
+        console.log('Theme Manager inicializado - Tema atual:', this.currentTheme);
     }
 
     setupDynamicObserver() {
@@ -107,12 +104,12 @@ class ThemeManager {
         
         if (isDashboard) {
             toggle.innerHTML = `
-                <span class="theme-icon">${this.currentTheme === 'light' ? '🌙' : '☀️'}</span>
+                <span class="theme-icon"><i class="fas fa-${this.currentTheme === 'light' ? 'moon' : 'sun'}"></i></span>
                 <span class="theme-text">${this.currentTheme === 'light' ? 'Escuro' : 'Claro'}</span>
             `;
         } else {
             toggle.innerHTML = `
-                <span class="theme-toggle-icon">${this.currentTheme === 'light' ? '🌙' : '☀️'}</span>
+                <span class="theme-toggle-icon"><i class="fas fa-${this.currentTheme === 'light' ? 'moon' : 'sun'}"></i></span>
             `;
         }
     }

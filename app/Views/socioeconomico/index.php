@@ -40,9 +40,33 @@
             <tbody>
                 <?php foreach ($fichas as $ficha): ?>
                     <tr style="border-bottom:1px solid #dee2e6;">
-                        <td style="padding:12px; color:#212529;"><?php echo htmlspecialchars($ficha['nome_completo'] ?? ''); ?></td>
-                        <td style="padding:12px; color:#212529;"><?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?></td>
-                        <td style="padding:12px; color:#212529;"><?php echo $ficha['idade'] ?? 'N/A'; ?> anos</td>
+                        <td style="padding:12px; color:#212529;"><?php echo htmlspecialchars($ficha['nome_entrevistado'] ?? $ficha['nome_completo'] ?? ''); ?></td>
+                        <td style="padding:12px; color:#212529;">
+                            <?php 
+                            $cpf = $ficha['cpf'] ?? '';
+                            if ($cpf && strlen($cpf) == 11) {
+                                echo substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9, 2);
+                            } else {
+                                echo $cpf;
+                            }
+                            ?>
+                        </td>
+                        <td style="padding:12px; color:#212529;">
+                            <?php 
+                            $idade = 'N/A';
+                            if (!empty($ficha['data_nascimento'])) {
+                                $parts = explode('/', $ficha['data_nascimento']);
+                                if (count($parts) == 3) {
+                                    $date = DateTime::createFromFormat('d/m/Y', $ficha['data_nascimento']);
+                                    if ($date) {
+                                        $now = new DateTime();
+                                        $idade = $now->diff($date)->y;
+                                    }
+                                }
+                            }
+                            echo $idade;
+                            ?> anos
+                        </td>
                         <td style="padding:12px; color:#212529;">
                             <?php 
                             $renda = $ficha['renda_familiar'] ?? 0;
@@ -67,15 +91,23 @@
                         </td>
                         <td style="padding:12px; text-align:center;">
                             <a href="socioeconomico_view.php?id=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn btn-sm" 
-                               style="background:#17a2b8; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px; margin-right:8px; margin-bottom:4px; display:inline-block; min-width:60px; text-align:center;">
-                                Ver
+                               class="btn-icon" 
+                               title="Visualizar"
+                               style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="socioeconomico_form.php?id=<?php echo urlencode($ficha['id']); ?>" 
+                               class="btn-icon" 
+                               title="Editar"
+                               style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
+                                <i class="fas fa-edit"></i>
                             </a>
                             <a href="socioeconomico_list.php?delete=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn btn-sm btn-danger" 
+                               class="btn-icon" 
+                               title="Excluir"
                                onclick="return confirm('Tem certeza que deseja excluir esta ficha?')"
-                               style="background:#e74c3c; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px; margin-right:8px; margin-bottom:4px; display:inline-block; min-width:60px; text-align:center;">
-                                Excluir
+                               style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
+                                <i class="fas fa-trash"></i>
                             </a>
                         </td>
                     </tr>
@@ -109,7 +141,9 @@
         
     <?php else: ?>
         <div style="padding:40px; text-align:center; color:#6c757d;">
-            <div style="font-size:48px; margin-bottom:16px;">🏘️</div>
+            <div style="font-size:48px; margin-bottom:16px;">
+                <i class="fas fa-home" style="color:#6c757d;"></i>
+            </div>
             <h3 style="margin:0 0 8px 0; color:#495057;">Nenhuma ficha encontrada</h3>
             <p style="margin:0; color:#6c757d;">
                 <?php if (!empty($_GET['q']) || !empty($_GET['cpf'])): ?>
