@@ -471,6 +471,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const currentStep = parseInt(urlParams.get('step') || '1');
     const editId = urlParams.get('id');
+    
+    // Se for nova ficha (sem ID) E primeira etapa, limpar sessionStorage
+    if (!editId && currentStep === 1) {
+        console.log('🆕 Nova ficha - Limpando dados salvos');
+        for (let i = 1; i <= 5; i++) {
+            sessionStorage.removeItem(`socioeconomico_step${i}`);
+        }
+        sessionStorage.removeItem('familia_json');
+    }
+    
     const savedData = sessionStorage.getItem(`socioeconomico_step${currentStep}`);
     
     console.log('📄 Etapa atual:', currentStep);

@@ -28,12 +28,30 @@
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">RG</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['rg'] ?? ''); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php 
+                $rg = $ficha['rg'] ?? '';
+                if ($rg && strlen($rg) == 9) {
+                    echo substr($rg, 0, 2) . '.' . substr($rg, 2, 3) . '.' . substr($rg, 5, 3) . '-' . substr($rg, 8, 1);
+                } else {
+                    echo htmlspecialchars($rg);
+                }
+                ?>
+            </div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">CPF</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php 
+                $cpf = $ficha['cpf'] ?? '';
+                if ($cpf && strlen($cpf) == 11) {
+                    echo substr($cpf, 0, 3) . '.' . substr($cpf, 3, 3) . '.' . substr($cpf, 6, 3) . '-' . substr($cpf, 9, 2);
+                } else {
+                    echo htmlspecialchars($cpf);
+                }
+                ?>
+            </div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -98,7 +116,16 @@
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">CEP</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['cep'] ?? ''); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php 
+                $cep = $ficha['cep'] ?? '';
+                if ($cep && strlen($cep) == 8) {
+                    echo substr($cep, 0, 5) . '-' . substr($cep, 5, 3);
+                } else {
+                    echo htmlspecialchars($cep);
+                }
+                ?>
+            </div>
         </div>
     </div>
     
@@ -132,12 +159,30 @@
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">RG</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['rg_responsavel'] ?? ''); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php 
+                $rg_resp = $ficha['rg_responsavel'] ?? '';
+                if ($rg_resp && strlen($rg_resp) == 9) {
+                    echo substr($rg_resp, 0, 2) . '.' . substr($rg_resp, 2, 3) . '.' . substr($rg_resp, 5, 3) . '-' . substr($rg_resp, 8, 1);
+                } else {
+                    echo htmlspecialchars($rg_resp);
+                }
+                ?>
+            </div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">CPF</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['cpf_responsavel'] ?? ''); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php 
+                $cpf_resp = $ficha['cpf_responsavel'] ?? '';
+                if ($cpf_resp && strlen($cpf_resp) == 11) {
+                    echo substr($cpf_resp, 0, 3) . '.' . substr($cpf_resp, 3, 3) . '.' . substr($cpf_resp, 6, 3) . '-' . substr($cpf_resp, 9, 2);
+                } else {
+                    echo htmlspecialchars($cpf_resp);
+                }
+                ?>
+            </div>
         </div>
     </div>
     
@@ -149,7 +194,23 @@
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Contato</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['contato_1'] ?? ''); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php 
+                $contato = $ficha['contato_1'] ?? '';
+                if ($contato && strlen($contato) >= 10) {
+                    $contato = preg_replace('/\D/', '', $contato);
+                    if (strlen($contato) == 11) {
+                        echo '(' . substr($contato, 0, 2) . ') ' . substr($contato, 2, 5) . '-' . substr($contato, 7, 4);
+                    } elseif (strlen($contato) == 10) {
+                        echo '(' . substr($contato, 0, 2) . ') ' . substr($contato, 2, 4) . '-' . substr($contato, 6, 4);
+                    } else {
+                        echo htmlspecialchars($ficha['contato_1']);
+                    }
+                } else {
+                    echo htmlspecialchars($ficha['contato_1'] ?? '');
+                }
+                ?>
+            </div>
         </div>
     </div>
 </div>

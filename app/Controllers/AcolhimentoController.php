@@ -48,24 +48,39 @@ class AcolhimentoController extends BaseController {
         }
     }
     /**
-     * Exibe formulário de criação
+     * Exibe formulário de criação/edição
      */
     public function create() {
         $this->requireAuth();
         $this->requirePermission('create_records');
         
+        // Verificar se é edição
+        $editId = $_GET['id'] ?? null;
+        $ficha = null;
+        
+        if ($editId) {
+            try {
+                $ficha = $this->acolhimentoService->getFicha($editId);
+            } catch (Exception $e) {
+                $this->redirectWithError('acolhimento_list.php', 'Ficha não encontrada');
+                return;
+            }
+        }
+        
         $data = [
-            'title' => 'Cadastrar Ficha de Acolhimento',
-            'pageTitle' => 'Nova Ficha de Acolhimento',
+            'title' => $editId ? 'Editar Ficha de Acolhimento' : 'Cadastrar Ficha de Acolhimento',
+            'pageTitle' => $editId ? 'Editar Ficha de Acolhimento' : 'Nova Ficha de Acolhimento',
             'csrf_token' => $this->generateCSRF(),
-            'messages' => $this->getFlashMessages()
+            'messages' => $this->getFlashMessages(),
+            'ficha' => $ficha,
+            'editId' => $editId
         ];
         
         $this->renderWithLayout('main', 'acolhimento/create', $data);
     }
     
     /**
-     * Processa criação da ficha
+     * Processa criação/edição da ficha
      */
     public function store() {
         $this->requireAuth();
@@ -80,16 +95,34 @@ class AcolhimentoController extends BaseController {
             
             $data = $this->getPostData();
             
+            // Verificar se é edição
+            $id = $data['id'] ?? null;
+            
+            error_log('=== ACOLHIMENTO STORE ===');
+            error_log('ID recebido: ' . ($id ?? 'NENHUM'));
+            error_log('Dados POST: ' . json_encode($data));
+            
             // Upload de foto se fornecida
             if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
                 $data['foto'] = $this->uploadFile('foto', ['jpg', 'jpeg', 'png', 'gif'], 2097152);
             }
             
-            $ficha = $this->acolhimentoService->createFicha($data);
-            
-            $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento cadastrada com sucesso!');
+            if (!empty($id)) {
+                // EDIÇÃO
+                error_log('EDITANDO ficha ID: ' . $id);
+                $ficha = $this->acolhimentoService->updateFicha($id, $data);
+                $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento atualizada com sucesso!');
+                return; // IMPORTANTE: Para execução aqui
+            } else {
+                // CRIAÇÃO
+                error_log('CRIANDO nova ficha');
+                $ficha = $this->acolhimentoService->createFicha($data);
+                $this->redirectWithSuccess('acolhimento_list.php', 'Ficha de acolhimento cadastrada com sucesso!');
+                return;
+            }
             
         } catch (Exception $e) {
+            error_log('ERRO no store: ' . $e->getMessage());
             $this->redirectWithError('acolhimento_form.php', $e->getMessage());
         }
     }

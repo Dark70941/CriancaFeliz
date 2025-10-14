@@ -16,10 +16,11 @@ class Socioeconomico extends BaseModel {
         // Normalizar dados (validação de campos obrigatórios é feita no frontend)
         $data = $this->normalizeData($data);
         
-        // Verificar se CPF já existe
-        if ($this->cpfExists($data['cpf'])) {
-            throw new Exception('CPF já cadastrado no sistema');
-        }
+        // TEMPORÁRIO: Validação de CPF duplicado desabilitada (sem banco de dados)
+        // Quando implementar banco, reativar esta validação
+        // if ($this->cpfExists($data['cpf'])) {
+        //     throw new Exception('CPF já cadastrado no sistema');
+        // }
         
         // Definir status padrão
         $data['status'] = $data['status'] ?? 'Ativo';

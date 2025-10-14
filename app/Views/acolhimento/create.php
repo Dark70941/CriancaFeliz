@@ -7,8 +7,11 @@
     <div class="step">4. Documentos</div>
 </div>
 
-<form method="post" enctype="multipart/form-data" class="acolhimento-form">
+<form method="post" enctype="multipart/form-data" class="acolhimento-form" id="acolhimentoForm">
     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+    <?php if (!empty($editId)): ?>
+        <input type="hidden" name="id" value="<?php echo htmlspecialchars($editId); ?>">
+    <?php endif; ?>
     
     <!-- Etapa 1: Dados Iniciais -->
     <div class="form-section">
@@ -16,27 +19,27 @@
         <div class="form-grid">
             <div class="form-field">
                 <label>Nome Completo <span class="required">*</span></label>
-                <input type="text" name="nome_completo" required>
+                <input type="text" name="nome_completo" value="<?php echo htmlspecialchars($ficha['nome_completo'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>RG <span class="required">*</span></label>
-                <input type="text" name="rg" required>
+                <input type="text" name="rg" value="<?php echo htmlspecialchars($ficha['rg'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>CPF <span class="required">*</span></label>
-                <input type="text" name="cpf" required>
+                <input type="text" name="cpf" value="<?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>Data de Nascimento <span class="required">*</span></label>
-                <input type="text" name="data_nascimento" placeholder="dd/mm/aaaa" required>
+                <input type="text" name="data_nascimento" value="<?php echo htmlspecialchars($ficha['data_nascimento'] ?? ''); ?>" placeholder="dd/mm/aaaa" required>
             </div>
             <div class="form-field">
                 <label>Data de Acolhimento <span class="required">*</span></label>
-                <input type="text" name="data_acolhimento" placeholder="dd/mm/aaaa" required>
+                <input type="text" name="data_acolhimento" value="<?php echo htmlspecialchars($ficha['data_acolhimento'] ?? ''); ?>" placeholder="dd/mm/aaaa" required>
             </div>
             <div class="form-field">
                 <label>Encaminhado por</label>
-                <input type="text" name="encaminha_por">
+                <input type="text" name="encaminha_por" value="<?php echo htmlspecialchars($ficha['encaminha_por'] ?? ''); ?>">
             </div>
             <div class="form-field" style="grid-column: 1 / 2;">
                 <label>Foto 3x4</label>
@@ -45,7 +48,7 @@
             </div>
             <div class="form-field" style="grid-column: 1 / -1;">
                 <label>Queixa Principal <span class="required">*</span></label>
-                <textarea name="queixa_principal" required></textarea>
+                <textarea name="queixa_principal" required><?php echo htmlspecialchars($ficha['queixa_principal'] ?? ''); ?></textarea>
             </div>
         </div>
     </div>
@@ -56,52 +59,52 @@
         <div class="form-grid">
             <div class="form-field">
                 <label>Endereço <span class="required">*</span></label>
-                <input type="text" name="endereco" required>
+                <input type="text" name="endereco" value="<?php echo htmlspecialchars($ficha['endereco'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>Número <span class="required">*</span></label>
-                <input type="text" name="numero" required>
+                <input type="text" name="numero" value="<?php echo htmlspecialchars($ficha['numero'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>CEP <span class="required">*</span></label>
-                <input type="text" name="cep" required>
+                <input type="text" name="cep" value="<?php echo htmlspecialchars($ficha['cep'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>Bairro <span class="required">*</span></label>
-                <input type="text" name="bairro" required>
+                <input type="text" name="bairro" value="<?php echo htmlspecialchars($ficha['bairro'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>Cidade <span class="required">*</span></label>
-                <input type="text" name="cidade" required>
+                <input type="text" name="cidade" value="<?php echo htmlspecialchars($ficha['cidade'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>Complemento</label>
-                <input type="text" name="complemento">
+                <input type="text" name="complemento" value="<?php echo htmlspecialchars($ficha['complemento'] ?? ''); ?>">
             </div>
             <div class="form-field">
                 <label>Ponto de Referência</label>
-                <input type="text" name="ponto_referencia">
+                <input type="text" name="ponto_referencia" value="<?php echo htmlspecialchars($ficha['ponto_referencia'] ?? ''); ?>">
             </div>
             <div class="form-field">
                 <label>Escola</label>
-                <input type="text" name="escola">
+                <input type="text" name="escola" value="<?php echo htmlspecialchars($ficha['escola'] ?? ''); ?>">
             </div>
             <div class="form-field">
                 <label>Período</label>
                 <select name="periodo">
                     <option value="">Selecionar</option>
-                    <option>Manhã</option>
-                    <option>Tarde</option>
-                    <option>Noite</option>
+                    <option <?php echo ($ficha['periodo'] ?? '') === 'Manhã' ? 'selected' : ''; ?>>Manhã</option>
+                    <option <?php echo ($ficha['periodo'] ?? '') === 'Tarde' ? 'selected' : ''; ?>>Tarde</option>
+                    <option <?php echo ($ficha['periodo'] ?? '') === 'Noite' ? 'selected' : ''; ?>>Noite</option>
                 </select>
             </div>
             <div class="form-field">
                 <label>CRAS de Referência</label>
-                <input type="text" name="cras">
+                <input type="text" name="cras" value="<?php echo htmlspecialchars($ficha['cras'] ?? ''); ?>">
             </div>
             <div class="form-field">
                 <label>UBS de Referência</label>
-                <input type="text" name="ubs">
+                <input type="text" name="ubs" value="<?php echo htmlspecialchars($ficha['ubs'] ?? ''); ?>">
             </div>
         </div>
     </div>
@@ -112,23 +115,23 @@
         <div class="form-grid">
             <div class="form-field">
                 <label>Nome do Responsável <span class="required">*</span></label>
-                <input type="text" name="nome_responsavel" required>
+                <input type="text" name="nome_responsavel" value="<?php echo htmlspecialchars($ficha['nome_responsavel'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>RG do Responsável <span class="required">*</span></label>
-                <input type="text" name="rg_responsavel" required>
+                <input type="text" name="rg_responsavel" value="<?php echo htmlspecialchars($ficha['rg_responsavel'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>CPF do Responsável <span class="required">*</span></label>
-                <input type="text" name="cpf_responsavel" required>
+                <input type="text" name="cpf_responsavel" value="<?php echo htmlspecialchars($ficha['cpf_responsavel'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>Grau de Parentesco <span class="required">*</span></label>
-                <input type="text" name="grau_parentesco" required>
+                <input type="text" name="grau_parentesco" value="<?php echo htmlspecialchars($ficha['grau_parentesco'] ?? ''); ?>" required>
             </div>
             <div class="form-field">
                 <label>Contato 1 (obrigatório) <span class="required">*</span></label>
-                <input type="text" name="contato_1" placeholder="11999998888 (apenas números)" required>
+                <input type="text" name="contato_1" value="<?php echo htmlspecialchars($ficha['contato_1'] ?? ''); ?>" placeholder="11999998888 (apenas números)" required>
             </div>
         </div>
     </div>
@@ -141,30 +144,41 @@
                 <label>Cadastro Único</label>
                 <select name="cad_unico">
                     <option value="">Selecionar</option>
-                    <option>Possuo</option>
-                    <option>Não Possuo</option>
+                    <option <?php echo ($ficha['cad_unico'] ?? '') === 'Possuo' ? 'selected' : ''; ?>>Possuo</option>
+                    <option <?php echo ($ficha['cad_unico'] ?? '') === 'Não Possuo' ? 'selected' : ''; ?>>Não Possuo</option>
                 </select>
             </div>
             <div class="form-field">
                 <label>Responsável pelo Acolhimento</label>
-                <input type="text" name="acolhimento_responsavel">
+                <input type="text" name="acolhimento_responsavel" value="<?php echo htmlspecialchars($ficha['acolhimento_responsavel'] ?? ''); ?>">
             </div>
             <div class="form-field">
                 <label>Função</label>
-                <input type="text" name="acolhimento_funcao">
+                <input type="text" name="acolhimento_funcao" value="<?php echo htmlspecialchars($ficha['acolhimento_funcao'] ?? ''); ?>">
             </div>
             <div class="form-field" style="grid-column: 1 / -1;">
                 <label>Carimbo/Assinatura</label>
                 <input type="file" name="carimbo" accept="image/*">
                 <small>Envie uma imagem do carimbo ou assinatura (JPG, PNG, GIF - máx. 2MB)</small>
+                <?php if (!empty($ficha['carimbo'])): ?>
+                    <div style="margin-top:8px;">
+                        <small>Arquivo atual: <?php echo basename($ficha['carimbo']); ?></small>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
     <div class="form-actions">
         <a href="prontuarios.php" class="btn-secondary">Voltar</a>
-        <button class="btn-primary" type="submit">Cadastrar</button>
+        <button class="btn-primary" type="submit">
+            <?php if (!empty($editId)): ?>
+                <i class="fas fa-save"></i> Salvar Alteração
+            <?php else: ?>
+                <i class="fas fa-check"></i> Cadastrar
+            <?php endif; ?>
+        </button>
     </div>
 </form>
 
-<script src="js/acolhimento-form.js"></script>
+<script src="js/acolhimento-multistep.js"></script>

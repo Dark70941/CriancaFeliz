@@ -66,9 +66,12 @@
 </div>
 
 <script>
+    // Obter email do usuário atual
+    const currentUserEmail = '<?php echo $userData['email'] ?? ''; ?>';
+    
     // Carregar foto do sessionStorage ao carregar a página
     window.addEventListener('DOMContentLoaded', function() {
-        const savedPhoto = sessionStorage.getItem('profile_photo');
+        const savedPhoto = sessionStorage.getItem(`profile_photo_${currentUserEmail}`);
         if (savedPhoto) {
             const photoElement = document.getElementById('profilePhoto');
             if (photoElement.tagName === 'IMG') {
@@ -101,10 +104,10 @@
         reader.onload = function(e) {
             const base64Image = e.target.result;
             
-            // Salvar no sessionStorage
+            // Salvar no sessionStorage com email do usuário
             try {
-                sessionStorage.setItem('profile_photo', base64Image);
-                console.log('✓ Foto salva no sessionStorage');
+                sessionStorage.setItem(`profile_photo_${currentUserEmail}`, base64Image);
+                console.log('✓ Foto salva no sessionStorage para:', currentUserEmail);
                 
                 // Atualizar preview
                 const photoElement = document.getElementById('profilePhoto');
@@ -118,8 +121,11 @@
                 if (window.notificationSystem) {
                     window.notificationSystem.success('Foto atualizada com sucesso!');
                 } else {
-                    alert('Foto atualizada com sucesso!');
+                    alert('Foto atualizada com sucesso! Recarregue a página para ver em todas as telas.');
                 }
+                
+                // Recarregar página para atualizar avatar no topbar
+                setTimeout(() => location.reload(), 1000);
             } catch (error) {
                 console.error('Erro ao salvar foto:', error);
                 alert('Erro ao salvar foto. A imagem pode ser muito grande.');

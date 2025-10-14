@@ -196,22 +196,27 @@
     <!-- Script para carregar foto do perfil do sessionStorage -->
     <script>
         (function() {
-            const savedPhoto = sessionStorage.getItem('profile_photo');
+            const currentUserEmail = '<?php echo $currentUser['email'] ?? ''; ?>';
+            const savedPhoto = sessionStorage.getItem(`profile_photo_${currentUserEmail}`);
+            
             if (savedPhoto) {
-                // Atualizar avatar no topbar
-                const avatarElements = document.querySelectorAll('.avatar');
-                avatarElements.forEach(avatar => {
-                    if (avatar.tagName === 'IMG') {
-                        avatar.src = savedPhoto;
-                    } else if (avatar.tagName === 'DIV') {
+                // Atualizar APENAS o avatar do usuário logado no topbar
+                const topbarAvatar = document.querySelector('.topbar .user .avatar');
+                if (topbarAvatar) {
+                    if (topbarAvatar.tagName === 'IMG') {
+                        topbarAvatar.src = savedPhoto;
+                    } else if (topbarAvatar.tagName === 'DIV') {
                         // Substituir div por img
                         const img = document.createElement('img');
                         img.src = savedPhoto;
                         img.className = 'avatar';
                         img.style.objectFit = 'cover';
-                        avatar.parentNode.replaceChild(img, avatar);
+                        img.style.width = '44px';
+                        img.style.height = '44px';
+                        img.style.borderRadius = '50%';
+                        topbarAvatar.parentNode.replaceChild(img, topbarAvatar);
                     }
-                });
+                }
             }
         })();
     </script>
