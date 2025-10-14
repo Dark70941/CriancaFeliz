@@ -21,7 +21,15 @@ class UserService {
      * Obtém usuário por ID
      */
     public function getUser($id) {
-        return $this->userModel->findById($id);
+        $user = $this->userModel->findById($id);
+        if ($user) {
+            // Mapear campos MySQL para formato esperado
+            $user['id'] = $user['id'] ?? $user['idusuario'];
+            $user['name'] = $user['name'] ?? $user['nome'];
+            $user['role'] = $user['role'] ?? $user['nivel'];
+            unset($user['Senha']); // Remover senha
+        }
+        return $user;
     }
     
     /**

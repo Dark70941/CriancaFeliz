@@ -46,13 +46,16 @@ class SocioeconomicoController extends BaseController {
             
             $data = [
                 'title' => 'Fichas Socioeconômicas',
-                'fichas' => $result['data'],
+                'fichas' => $result['data'] ?? [],
                 'pagination' => [
-                    'current_page' => $result['current_page'],
-                    'last_page' => $result['last_page'],
-                    'total' => $result['total'],
-                    'per_page' => $result['per_page']
+                    'current_page' => $result['current_page'] ?? 1,
+                    'last_page' => $result['last_page'] ?? 1,
+                    'total' => $result['total'] ?? 0,
+                    'per_page' => $result['per_page'] ?? 10
                 ],
+                'current_page' => $result['current_page'] ?? 1,
+                'last_page' => $result['last_page'] ?? 1,
+                'per_page' => $result['per_page'] ?? 10,
                 'messages' => $this->getFlashMessages()
             ];
             

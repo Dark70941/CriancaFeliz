@@ -1,57 +1,79 @@
 <?php
 
 /**
- * Model para fichas de acolhimento
+ * Model para fichas de acolhimento - MYSQL
  */
-class Acolhimento extends BaseModel {
+class Acolhimento extends BaseModelDB {
     
     public function __construct() {
-        parent::__construct('acolhimento.json');
+        parent::__construct('Atendido', 'idatendido');
     }
     
     /**
      * Cria nova ficha de acolhimento com validação
      */
     public function createFicha($data) {
-        // Validações obrigatórias
-        $required = [
-            'nome_completo' => 'Nome completo é obrigatório',
-            'rg' => 'RG é obrigatório',
-            'cpf' => 'CPF é obrigatório',
-            'data_nascimento' => 'Data de nascimento é obrigatória',
-            'data_acolhimento' => 'Data de acolhimento é obrigatória',
-            'queixa_principal' => 'Queixa principal é obrigatória',
-            'endereco' => 'Endereço é obrigatório',
-            'numero' => 'Número é obrigatório',
-            'cep' => 'CEP é obrigatório',
-            'bairro' => 'Bairro é obrigatório',
-            'cidade' => 'Cidade é obrigatória',
-            'nome_responsavel' => 'Nome do responsável é obrigatório',
-            'rg_responsavel' => 'RG do responsável é obrigatório',
-            'cpf_responsavel' => 'CPF do responsável é obrigatório',
-            'grau_parentesco' => 'Grau de parentesco é obrigatório',
-            'contato_1' => 'Contato é obrigatório'
-        ];
-        
-        foreach ($required as $field => $message) {
-            if (empty($data[$field])) {
-                throw new Exception($message);
-            }
+        try {
+            Database::beginTransaction();
+            
+            // Normalizar dados
+            $data = $this->normalizeData($data);
+            
+            // 1. Criar/Buscar Responsável
+            $responsavelId = $this->createOrGetResponsavel($data);
+            
+            // 2. Criar Atendido
+            $atendidoData = [
+                'nome' => $data['nome_completo'],
+                'cpf' => $data['cpf'],
+                'rg' => $data['rg'],
+                'data_nascimento' => $this->convertDate($data['data_nascimento']),
+                'data_cadastro' => date('Y-m-d'),
+                'endereco' => $data['endereco'],
+                'numero' => $data['numero'],
+                'complemento' => $data['complemento'] ?? null,
+                'bairro' => $data['bairro'],
+                'cidade' => $data['cidade'],
+                'cep' => $data['cep'],
+                'foto' => $data['foto'] ?? null,
+                'status' => 'Ativo',
+                'id_responsavel' => $responsavelId,
+                'faixa_etaria' => $this->calculateAge($data['data_nascimento'])
+            ];
+            
+            $atendido = $this->create($atendidoData);
+            $atendidoId = $atendido['idatendido'];
+            
+            // 3. Criar Ficha de Acolhimento
+            $fichaData = [
+                'id_atendido' => $atendidoId,
+                'data_acolhimento' => $this->convertDate($data['data_acolhimento']),
+                'encaminha_por' => $data['encaminha_por'] ?? null,
+                'queixa_principal' => $data['queixa_principal'],
+                'escola' => $data['escola'] ?? null,
+                'periodo' => $data['periodo'] ?? null,
+                'ponto_referencia' => $data['ponto_referencia'] ?? null,
+                'cras' => $data['cras'] ?? null,
+                'ubs' => $data['ubs'] ?? null,
+                'cad_unico' => $data['cad_unico'] ?? null,
+                'acolhimento_responsavel' => $data['acolhimento_responsavel'] ?? null,
+                'acolhimento_funcao' => $data['acolhimento_funcao'] ?? null,
+                'carimbo' => $data['carimbo'] ?? null
+            ];
+            
+            $this->query(
+                "INSERT INTO Ficha_Acolhimento (id_atendido, data_acolhimento, encaminha_por, queixa_principal, escola, periodo, ponto_referencia, cras, ubs, cad_unico, acolhimento_responsavel, acolhimento_funcao, carimbo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                array_values($fichaData)
+            );
+            
+            Database::commit();
+            
+            return $this->getFicha($atendidoId);
+            
+        } catch (Exception $e) {
+            Database::rollback();
+            throw $e;
         }
-        
-        // Normalizar dados
-        $data = $this->normalizeData($data);
-        
-        // TEMPORÁRIO: Validação de CPF duplicado desabilitada (sem banco de dados)
-        // Quando implementar banco, reativar esta validação
-        // if ($this->cpfExists($data['cpf'])) {
-        //     throw new Exception('CPF já cadastrado no sistema');
-        // }
-        
-        // Definir status padrão
-        $data['status'] = $data['status'] ?? 'Ativo';
-        
-        return $this->create($data);
     }
     
     /**

@@ -36,12 +36,14 @@ class AttendanceController extends BaseController {
             $data = [
                 'title' => 'Controle de Faltas',
                 'pageTitle' => 'Controle de Faltas',
-                'atendidos' => $result['data'],
+                'atendidos' => $result['data'] ?? [],
                 'pagination' => [
-                    'current_page' => $result['current_page'],
-                    'last_page' => $result['last_page'],
-                    'total' => $result['total']
+                    'current_page' => $result['current_page'] ?? 1,
+                    'last_page' => $result['last_page'] ?? 1,
+                    'total' => $result['total'] ?? 0
                 ],
+                'current_page' => $result['current_page'] ?? 1,
+                'last_page' => $result['last_page'] ?? 1,
                 'search' => $search,
                 'messages' => $this->getFlashMessages()
             ];

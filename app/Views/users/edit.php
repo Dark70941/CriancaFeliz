@@ -14,12 +14,12 @@
         
         <div class="user-info" style="background:#f8f9fa; padding:16px; border-radius:8px; margin-bottom:20px; display:flex; align-items:center; gap:16px;">
             <div class="avatar" style="width:60px; height:60px; border-radius:50%; background:#e9ecef; display:flex; align-items:center; justify-content:center; font-weight:600; color:#495057; font-size:24px;">
-                <?php echo strtoupper(substr($user['name'], 0, 1)); ?>
+                <?php echo strtoupper(substr($user['name'] ?? $user['nome'] ?? 'U', 0, 1)); ?>
             </div>
             <div>
-                <div style="font-weight:600; font-size:18px; color:#212529;"><?php echo htmlspecialchars($user['name']); ?></div>
-                <div style="color:#6c757d; font-size:14px;"><?php echo htmlspecialchars($user['email']); ?></div>
-                <div style="font-size:12px; color:#6c757d;">Criado em: <?php echo date('d/m/Y H:i', strtotime($user['created_at'])); ?></div>
+                <div style="font-weight:600; font-size:18px; color:#212529;"><?php echo htmlspecialchars($user['name'] ?? $user['nome'] ?? 'Sem nome'); ?></div>
+                <div style="color:#6c757d; font-size:14px;"><?php echo htmlspecialchars($user['email'] ?? 'Sem email'); ?></div>
+                <div style="font-size:12px; color:#6c757d;">Criado em: <?php echo isset($user['created_at']) ? date('d/m/Y H:i', strtotime($user['created_at'])) : 'N/A'; ?></div>
             </div>
         </div>
         
@@ -31,7 +31,7 @@
                 <input type="text" 
                        name="name" 
                        required
-                       value="<?php echo htmlspecialchars($user['name']); ?>"
+                       value="<?php echo htmlspecialchars($user['name'] ?? $user['nome'] ?? ''); ?>"
                        style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
                        placeholder="Digite o nome completo">
             </div>
@@ -43,7 +43,7 @@
                 <input type="email" 
                        name="email" 
                        required
-                       value="<?php echo htmlspecialchars($user['email']); ?>"
+                       value="<?php echo htmlspecialchars($user['email'] ?? ''); ?>"
                        style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;"
                        placeholder="exemplo@email.com">
             </div>
@@ -67,10 +67,11 @@
                 <select name="role" 
                         required
                         style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
+                    <?php $userRole = $user['role'] ?? $user['nivel'] ?? ''; ?>
                     <option value="">Selecione o nível de acesso</option>
-                    <option value="admin" <?php echo $user['role'] === 'admin' ? 'selected' : ''; ?>>Administrador</option>
-                    <option value="psicologo" <?php echo $user['role'] === 'psicologo' ? 'selected' : ''; ?>>Psicólogo</option>
-                    <option value="funcionario" <?php echo $user['role'] === 'funcionario' ? 'selected' : ''; ?>>Funcionário</option>
+                    <option value="admin" <?php echo ($userRole === 'admin' || $userRole === 'Administrador') ? 'selected' : ''; ?>>Administrador</option>
+                    <option value="psicologo" <?php echo ($userRole === 'psicologo' || $userRole === 'Psicólogo') ? 'selected' : ''; ?>>Psicólogo</option>
+                    <option value="funcionario" <?php echo ($userRole === 'funcionario' || $userRole === 'Funcionário') ? 'selected' : ''; ?>>Funcionário</option>
                 </select>
             </div>
         </div>
@@ -120,7 +121,11 @@
                 ]
             ];
             
-            $currentRole = $roleInfo[$user['role']] ?? null;
+            $userRoleKey = strtolower($user['role'] ?? $user['nivel'] ?? '');
+            if ($userRoleKey === 'administrador') $userRoleKey = 'admin';
+            if ($userRoleKey === 'psicólogo') $userRoleKey = 'psicologo';
+            if ($userRoleKey === 'funcionário') $userRoleKey = 'funcionario';
+            $currentRole = $roleInfo[$userRoleKey] ?? null;
             ?>
             
             <?php if ($currentRole): ?>

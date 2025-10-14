@@ -1,12 +1,12 @@
 <?php
 
 /**
- * Model para usuários do sistema
+ * Model para usuários do sistema - MYSQL
  */
-class User extends BaseModel {
+class User extends BaseModelDB {
     
     public function __construct() {
-        parent::__construct('users.json');
+        parent::__construct('Usuario', 'idusuario');
         $this->createDefaultUser();
     }
     
@@ -14,14 +14,16 @@ class User extends BaseModel {
      * Cria usuário padrão se não existir
      */
     private function createDefaultUser() {
-        if (empty($this->data)) {
-            $this->create([
-                'name' => 'Administrador',
-                'email' => 'admin@criancafeliz.org',
-                'password' => password_hash('admin123', PASSWORD_DEFAULT),
-                'role' => 'admin',
-                'status' => 'active'
-            ]);
+        try {
+            $count = $this->count();
+            if ($count == 0) {
+                $this->query(
+                    "INSERT INTO Usuario (nome, email, Senha, nivel, status) VALUES (?, ?, ?, ?, ?)",
+                    ['Administrador', 'admin@criancafeliz.org', password_hash('admin123', PASSWORD_DEFAULT), 'Administrador', 'Ativo']
+                );
+            }
+        } catch (Exception $e) {
+            // Usuário já existe ou erro - ignorar
         }
     }
     
@@ -31,9 +33,13 @@ class User extends BaseModel {
     public function authenticate($email, $password) {
         $user = $this->findByEmail($email);
         
-        if ($user && password_verify($password, $user['password'])) {
+        if ($user && password_verify($password, $user['Senha'])) {
             // Remover senha dos dados retornados
-            unset($user['password']);
+            unset($user['Senha']);
+            // Mapear campos do banco para formato esperado
+            $user['id'] = $user['idusuario'];
+            $user['name'] = $user['nome'];
+            $user['role'] = $user['nivel'];
             return $user;
         }
         
@@ -44,24 +50,19 @@ class User extends BaseModel {
      * Busca usuário por email
      */
     public function findByEmail($email) {
-        foreach ($this->data as $user) {
-            if ($user['email'] === $email) {
-                return $user;
-            }
-        }
-        return null;
+        return $this->findBy('email', $email);
     }
     
     /**
      * Verifica se email já existe
      */
     public function emailExists($email, $excludeId = null) {
-        foreach ($this->data as $user) {
-            if ($user['email'] === $email && $user['id'] !== $excludeId) {
-                return true;
-            }
-        }
-        return false;
+        $stmt = $this->query(
+            "SELECT COUNT(*) as total FROM Usuario WHERE email = ? AND idusuario != ?",
+            [$email, $excludeId ?? 0]
+        );
+        $result = $stmt->fetch();
+        return $result['total'] > 0;
     }
     
     /**
@@ -85,12 +86,16 @@ class User extends BaseModel {
             throw new Exception('Senha deve ter pelo menos 6 caracteres');
         }
         
-        // Hash da senha
-        $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        $data['role'] = $data['role'] ?? 'user';
-        $data['status'] = $data['status'] ?? 'active';
+        // Mapear campos para banco
+        $dbData = [
+            'nome' => $data['name'],
+            'email' => $data['email'],
+            'Senha' => password_hash($data['password'], PASSWORD_DEFAULT),
+            'nivel' => $data['role'] ?? 'user',
+            'status' => $data['status'] ?? 'Ativo'
+        ];
         
-        return $this->create($data);
+        return $this->create($dbData);
     }
     
     /**
@@ -102,7 +107,13 @@ class User extends BaseModel {
             throw new Exception('Usuário não encontrado');
         }
         
-        // Validações
+        // Mapear campos para banco
+        $dbData = [];
+        
+        if (isset($data['name'])) {
+            $dbData['nome'] = $data['name'];
+        }
+        
         if (isset($data['email'])) {
             if (!validateEmail($data['email'])) {
                 throw new Exception('Email inválido');
@@ -111,67 +122,39 @@ class User extends BaseModel {
             if ($this->emailExists($data['email'], $id)) {
                 throw new Exception('Email já está em uso');
             }
+            $dbData['email'] = $data['email'];
         }
         
         if (isset($data['password']) && !empty($data['password'])) {
             if (!validatePassword($data['password'])) {
                 throw new Exception('Senha deve ter pelo menos 6 caracteres');
             }
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        } else {
-            // Manter senha atual se não foi fornecida nova
-            $data['password'] = $user['password'];
+            $dbData['Senha'] = password_hash($data['password'], PASSWORD_DEFAULT);
         }
         
-        return $this->update($id, $data);
+        if (isset($data['role'])) {
+            $dbData['nivel'] = $data['role'];
+        }
+        
+        if (isset($data['status'])) {
+            $dbData['status'] = $data['status'];
+        }
+        
+        return $this->update($id, $dbData);
     }
     
     /**
      * Lista usuários sem senhas
      */
     public function findAllSafe() {
-        $users = $this->getAll();
+        $users = $this->all();
         foreach ($users as &$user) {
-            unset($user['password']);
+            unset($user['Senha']);
+            // Mapear campos
+            $user['id'] = $user['idusuario'];
+            $user['name'] = $user['nome'];
+            $user['role'] = $user['nivel'];
         }
         return $users;
-    }
-    
-    /**
-     * Sobrescreve create para adicionar campos padrão
-     */
-    public function create($data) {
-        if (!isset($data['id'])) {
-            $data['id'] = uniqid('user_');
-        }
-        
-        if (!isset($data['created_at'])) {
-            $data['created_at'] = date('Y-m-d H:i:s');
-        }
-        
-        if (!isset($data['updated_at'])) {
-            $data['updated_at'] = date('Y-m-d H:i:s');
-        }
-        
-        // Hash da senha se fornecida
-        if (isset($data['password']) && !empty($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        }
-        
-        return parent::create($data);
-    }
-    
-    /**
-     * Sobrescreve update para atualizar timestamp
-     */
-    public function update($id, $data) {
-        $data['updated_at'] = date('Y-m-d H:i:s');
-        
-        // Hash da senha se fornecida
-        if (isset($data['password']) && !empty($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-        }
-        
-        return parent::update($id, $data);
     }
 }

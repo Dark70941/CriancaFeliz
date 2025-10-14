@@ -29,6 +29,7 @@ ini_set('display_errors', 1);
 // Autoloader simples para as classes
 spl_autoload_register(function ($class) {
     $paths = [
+        BASE_PATH . '/app/Config/' . $class . '.php',
         BASE_PATH . '/app/Controllers/' . $class . '.php',
         BASE_PATH . '/app/Models/' . $class . '.php',
         BASE_PATH . '/app/Services/' . $class . '.php'
