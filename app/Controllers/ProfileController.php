@@ -22,21 +22,18 @@ class ProfileController extends BaseController {
                 throw new Exception('Usuário não identificado');
             }
             
-            // Carregar dados do usuário
-            $usersFile = DATA_PATH . '/users.json';
-            $users = json_decode(file_get_contents($usersFile), true) ?? [];
-            
-            $userData = null;
-            foreach ($users as $user) {
-                if ($user['id'] === $userId) {
-                    $userData = $user;
-                    break;
-                }
-            }
+            // Carregar dados do usuário do MySQL
+            $userModel = App::getUserModel();
+            $userData = $userModel->findById($userId);
             
             if (!$userData) {
                 throw new Exception('Usuário não encontrado');
             }
+            
+            // Mapear campos
+            $userData['id'] = $userData['id'] ?? $userData['idusuario'];
+            $userData['name'] = $userData['name'] ?? $userData['nome'];
+            $userData['role'] = $userData['role'] ?? $userData['nivel'];
             
             $data = [
                 'title' => 'Meu Perfil - Associação Criança Feliz',
@@ -153,30 +150,23 @@ class ProfileController extends BaseController {
                 throw new Exception('As senhas não conferem');
             }
             
-            // Carregar usuários
-            $usersFile = DATA_PATH . '/users.json';
-            $users = json_decode(file_get_contents($usersFile), true) ?? [];
+            // Carregar usuário do MySQL
+            $userModel = App::getUserModel();
+            $user = $userModel->findById($userId);
             
-            $userFound = false;
-            foreach ($users as &$user) {
-                if ($user['id'] === $userId) {
-                    // Verificar senha atual
-                    if (!password_verify($currentPassword, $user['password'])) {
-                        throw new Exception('Senha atual incorreta');
-                    }
-                    
-                    // Atualizar senha
-                    $user['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
-                    $userFound = true;
-                    break;
-                }
-            }
-            
-            if (!$userFound) {
+            if (!$user) {
                 throw new Exception('Usuário não encontrado');
             }
             
-            file_put_contents($usersFile, json_encode($users, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            // Verificar senha atual
+            if (!password_verify($currentPassword, $user['Senha'])) {
+                throw new Exception('Senha atual incorreta');
+            }
+            
+            // Atualizar senha no banco
+            $userModel->update($userId, [
+                'Senha' => password_hash($newPassword, PASSWORD_DEFAULT)
+            ]);
             
             $this->setFlashMessage('success', 'Senha alterada com sucesso!');
             $this->redirect('profile.php');
