@@ -95,7 +95,7 @@
                                 ?>
                             </td>
                             <td style="padding: 15px; text-align: center;">
-                                <a href="attendance.php?action=show&id=<?php echo $atendido['id']; ?>" 
+                                <a href="attendance.php?action=show&id=<?php echo htmlspecialchars($atendido['id'] ?? ($atendido['idatendido'] ?? '')); ?>" 
                                    class="btn-icon" 
                                    title="Ver detalhes"
                                    style="background: #3498db; color: white; padding: 8px 12px; border-radius: 6px; text-decoration: none; display: inline-block; font-size: 18px;">

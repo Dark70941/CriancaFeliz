@@ -140,7 +140,8 @@
             <img src="img/logo.png" class="logo" alt="logo">
             <a class="nav-icon <?php echo (basename($_SERVER['PHP_SELF']) === 'dashboard.php') ? 'active' : ''; ?>" href="dashboard.php" title="Início"><i class="fas fa-home"></i></a>
             <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'prontuarios') !== false) ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários"><i class="fas fa-users"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'attendance') !== false && !isset($_GET['action'])) ? 'active' : ''; ?>" href="attendance.php" title="Controle de Faltas"><i class="fas fa-calendar-check"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'attendance') !== false && (!isset($_GET['action']) || $_GET['action']==='index')) ? 'active' : ''; ?>" href="attendance.php" title="Controle de Faltas"><i class="fas fa-calendar-check"></i></a>
+            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'attendance') !== false && isset($_GET['action']) && $_GET['action'] === 'batch') ? 'active' : ''; ?>" href="attendance.php?action=batch" title="Lançamento em Lote"><i class="fas fa-list-check"></i></a>
             <?php if ($currentUser['role'] === 'psicologo'): ?>
                 <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'psychology') !== false) ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica"><i class="fas fa-brain"></i></a>
             <?php endif; ?>

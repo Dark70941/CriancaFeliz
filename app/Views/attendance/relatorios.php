@@ -76,67 +76,6 @@
         </div>
     </div>
 
-    <!-- Rankings -->
-    <div class="rankings-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 30px;">
-        <!-- Top 10 Melhores -->
-        <div class="ranking-card" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-            <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 600;"><i class="fas fa-trophy"></i> Top 10 - Melhor Frequência</h3>
-            <div class="ranking-list">
-                <?php if (empty($rankingMelhores)): ?>
-                    <p style="color: #999; text-align: center; padding: 20px;">Nenhum dado disponível</p>
-                <?php else: ?>
-                    <?php foreach ($rankingMelhores as $index => $item): ?>
-                        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #f0f0f0;">
-                            <div style="width: 30px; height: 30px; background: <?php echo $index < 3 ? '#ffd700' : '#e0e0e0'; ?>; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px;">
-                                <?php echo $index + 1; ?>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 14px;">
-                                    <?php echo htmlspecialchars($item['atendido']['nome_completo']); ?>
-                                </div>
-                                <div style="font-size: 12px; color: #666;">
-                                    <?php echo $item['total_presencas']; ?> presenças • <?php echo $item['total_faltas']; ?> faltas
-                                </div>
-                            </div>
-                            <div style="font-size: 18px; font-weight: 700; color: #27ae60;">
-                                <?php echo $item['taxa_presenca']; ?>%
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <!-- Top 10 Piores -->
-        <div class="ranking-card" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-            <h3 style="margin: 0 0 15px 0; font-size: 16px; font-weight: 600;"><i class="fas fa-exclamation-triangle"></i> Top 10 - Menor Frequência</h3>
-            <div class="ranking-list">
-                <?php if (empty($rankingPiores)): ?>
-                    <p style="color: #999; text-align: center; padding: 20px;">Nenhum dado disponível</p>
-                <?php else: ?>
-                    <?php foreach ($rankingPiores as $index => $item): ?>
-                        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid #f0f0f0;">
-                            <div style="width: 30px; height: 30px; background: <?php echo $item['taxa_presenca'] < 50 ? '#e74c3c' : '#f39c12'; ?>; color: white; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px;">
-                                <?php echo $index + 1; ?>
-                            </div>
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 14px;">
-                                    <?php echo htmlspecialchars($item['atendido']['nome_completo']); ?>
-                                </div>
-                                <div style="font-size: 12px; color: #666;">
-                                    <?php echo $item['total_presencas']; ?> presenças • <?php echo $item['total_faltas']; ?> faltas
-                                </div>
-                            </div>
-                            <div style="font-size: 18px; font-weight: 700; color: <?php echo $item['taxa_presenca'] < 50 ? '#e74c3c' : '#f39c12'; ?>;">
-                                <?php echo $item['taxa_presenca']; ?>%
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-
     <!-- Filtros e Relatório Detalhado -->
     <div class="detailed-report" style="background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
         <h2 style="font-size: 18px; font-weight: 600; margin-bottom: 15px;"><i class="fas fa-search"></i> Relatório Detalhado</h2>
@@ -196,10 +135,10 @@
                             <tr style="border-bottom: 1px solid #f0f0f0;">
                                 <td style="padding: 12px;">
                                     <div style="font-weight: 600;">
-                                        <?php echo htmlspecialchars($item['atendido']['nome_completo']); ?>
+                                        <?php echo htmlspecialchars($item['atendido']['nome_completo'] ?? ($item['atendido']['nome'] ?? '')); ?>
                                     </div>
                                     <div style="font-size: 12px; color: #666;">
-                                        CPF: <?php echo htmlspecialchars($item['atendido']['cpf']); ?>
+                                        CPF: <?php echo htmlspecialchars($item['atendido']['cpf'] ?? ''); ?>
                                     </div>
                                 </td>
                                 <td style="padding: 12px; text-align: center;">
@@ -241,7 +180,7 @@
                                     <?php endif; ?>
                                 </td>
                                 <td style="padding: 12px; text-align: center;">
-                                    <a href="attendance.php?action=show&id=<?php echo $item['atendido']['id']; ?>" 
+                                    <a href="attendance.php?action=show&id=<?php echo htmlspecialchars($item['atendido']['id'] ?? ($item['atendido']['idatendido'] ?? '')); ?>" 
                                        style="color: #3498db; text-decoration: none; font-size: 18px;" 
                                        title="Ver Detalhes">
                                         <i class="fas fa-eye"></i>

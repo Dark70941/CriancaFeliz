@@ -450,4 +450,129 @@ class AttendanceController extends BaseController {
             $this->handleException($e);
         }
     }
+
+    /**
+     * Tela de lançamento em lote de presença/falta
+     */
+    public function batch() {
+        $this->requireAuth();
+        
+        try {
+            $date = $this->getParam('data', date('Y-m-d'));
+            $grupo = $this->getParam('grupo', 'Todos'); // Todos | Crianca | Adolescente
+            
+            // Buscar todos os atendidos ativos
+            $acolhimentoModel = App::getAcolhimentoModel();
+            $atendidos = method_exists($acolhimentoModel, 'findAll') ? $acolhimentoModel->findAll() : [];
+            
+            // Filtrar por grupo
+            $filtrados = [];
+            foreach ($atendidos as $a) {
+                if (($a['status'] ?? 'Ativo') !== 'Ativo') continue;
+                $idade = $this->calcAgeFromYmd($a['data_nascimento'] ?? null, $date);
+                if ($grupo === 'Crianca' && !($idade !== null && $idade < 12)) continue;
+                if ($grupo === 'Adolescente' && !($idade !== null && $idade >= 12 && $idade < 18)) continue;
+                $filtrados[] = $a;
+            }
+            
+            $dataView = [
+                'title' => 'Lançamento em Lote - Frequência',
+                'pageTitle' => 'Marcar Presença/Falta em Lote',
+                'csrf_token' => $this->generateCSRF(),
+                'messages' => $this->getFlashMessages(),
+                'data' => $date,
+                'grupo' => $grupo,
+                'atendidos' => $filtrados
+            ];
+            
+            $this->renderWithLayout('main', 'attendance/batch', $dataView);
+        } catch (Exception $e) {
+            $this->handleException($e);
+        }
+    }
+
+    /**
+     * Aplica lançamento em lote
+     */
+    public function applyBatch() {
+        $this->requireAuth();
+        
+        if (!$this->isPost()) {
+            $this->json(['error' => 'Método não permitido'], 405);
+        }
+        
+        try {
+            $this->validateCSRF();
+            
+            $date = $this->getParam('data', date('Y-m-d'));
+            $grupo = $this->getParam('grupo', 'Todos'); // Todos | Crianca | Adolescente
+            $acao = $this->getParam('acao', 'Presenca'); // Presenca | Falta
+            
+            // IDs selecionados pela UI (checkboxes)
+            $alvo = $_POST['ids'] ?? [];
+            if (is_string($alvo)) { $alvo = [$alvo]; }
+            $alvo = array_values(array_filter($alvo));
+            
+            if (empty($alvo)) {
+                throw new Exception('Nenhum atendido encontrado para o filtro selecionado');
+            }
+            
+            $total = 0;
+            foreach ($alvo as $atendidoId) {
+                if ($acao === 'Presenca') {
+                    $this->attendanceService->registerPresence($atendidoId, [
+                        'data' => $date,
+                        'atividade' => 'Atendimento'
+                    ]);
+                } else {
+                    $this->attendanceService->registerAbsence($atendidoId, [
+                        'data' => $date,
+                        'atividade' => 'Atendimento',
+                        'justificativa' => ''
+                    ]);
+                }
+                $total++;
+            }
+            
+            // Registrar auditoria em lote se existir tabela (opcional)
+            if (class_exists('Database')) {
+                try {
+                    $pdo = Database::getConnection();
+                    $stmt = $pdo->prepare("INSERT INTO frequencia_lote (data, grupo, acao, total_afetados, criado_por) VALUES (?, ?, ?, ?, ?)");
+                    $userId = isset($_SESSION['user_id']) && is_numeric($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
+                    if ($userId !== null) {
+                        try {
+                            $chk = $pdo->prepare("SELECT 1 FROM usuario WHERE idusuario = ?");
+                            $chk->execute([$userId]);
+                            if (!$chk->fetchColumn()) { $userId = null; }
+                        } catch (Exception $e) { $userId = null; }
+                    }
+                    $stmt->execute([$date, $grupo, $acao, $total, $userId]);
+                } catch (Exception $e) {
+                    // Ignorar se tabela não existir
+                    error_log('Auditoria lote não registrada: ' . $e->getMessage());
+                }
+            }
+            
+            $this->redirectWithSuccess('attendance.php?action=batch&data=' . urlencode($date) . '&grupo=' . urlencode($grupo),
+                "Lançamento em lote aplicado: {$acao} para {$total} atendido(s).");
+            
+        } catch (Exception $e) {
+            $this->redirectWithError('attendance.php?action=batch', $e->getMessage());
+        }
+    }
+
+    /**
+     * Utilitário local: calcula idade a partir de data Y-m-d em referência a outra data
+     */
+    private function calcAgeFromYmd($ymd, $refYmd) {
+        if (empty($ymd)) return null;
+        try {
+            $birth = new DateTime($ymd);
+            $ref = new DateTime($refYmd);
+            return $birth->diff($ref)->y;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
 }

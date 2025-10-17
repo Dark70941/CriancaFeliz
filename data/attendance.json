@@ -50,5 +50,65 @@
         "registrado_em": "2025-10-10 02:54:41",
         "created_at": "2025-10-10 02:54:41",
         "updated_at": "2025-10-10 02:54:41"
+    },
+    {
+        "id": "68f2bc5b13aee0.24008913",
+        "atendido_id": 2,
+        "tipo": "presenca",
+        "data": "2025-10-17",
+        "atividade": "Atendimento",
+        "observacao": "",
+        "registrado_por": "admin001",
+        "registrado_em": "2025-10-17 23:59:55",
+        "created_at": "2025-10-17 23:59:55",
+        "updated_at": "2025-10-17 23:59:55"
+    },
+    {
+        "id": "68f2bc5b142f63.00246085",
+        "atendido_id": 3,
+        "tipo": "presenca",
+        "data": "2025-10-17",
+        "atividade": "Atendimento",
+        "observacao": "",
+        "registrado_por": "admin001",
+        "registrado_em": "2025-10-17 23:59:55",
+        "created_at": "2025-10-17 23:59:55",
+        "updated_at": "2025-10-17 23:59:55"
+    },
+    {
+        "id": "68f2bc5b14a302.72981564",
+        "atendido_id": 4,
+        "tipo": "presenca",
+        "data": "2025-10-17",
+        "atividade": "Atendimento",
+        "observacao": "",
+        "registrado_por": "admin001",
+        "registrado_em": "2025-10-17 23:59:55",
+        "created_at": "2025-10-17 23:59:55",
+        "updated_at": "2025-10-17 23:59:55"
+    },
+    {
+        "id": "68f2bdb31afa99.11596295",
+        "atendido_id": "3",
+        "tipo": "presenca",
+        "data": "2025-10-18",
+        "atividade": "Atendimento",
+        "observacao": "",
+        "registrado_por": "admin001",
+        "registrado_em": "2025-10-18 00:05:39",
+        "created_at": "2025-10-18 00:05:39",
+        "updated_at": "2025-10-18 00:05:39"
+    },
+    {
+        "id": "68f2bdb31c63b4.90760007",
+        "atendido_id": "4",
+        "tipo": "presenca",
+        "data": "2025-10-18",
+        "atividade": "Atendimento",
+        "observacao": "",
+        "registrado_por": "admin001",
+        "registrado_em": "2025-10-18 00:05:39",
+        "created_at": "2025-10-18 00:05:39",
+        "updated_at": "2025-10-18 00:05:39"
     }
 ]

@@ -13,7 +13,24 @@ class AttendanceService {
     const IDADE_DESLIGAMENTO_AUTOMATICO = 18;
     
     public function __construct() {
-        $this->attendanceModel = new Attendance();
+        // Seleciona model conforme disponibilidade do banco
+        $dbAvailable = false;
+        if (class_exists('App') && method_exists('App', 'isDatabaseAvailable')) {
+            $dbAvailable = App::isDatabaseAvailable();
+        } elseif (class_exists('Database')) {
+            // Tenta abrir conexão para validar
+            try { Database::getConnection(); $dbAvailable = true; } catch (Exception $e) { $dbAvailable = false; }
+        }
+
+        if ($dbAvailable) {
+            if (class_exists('AttendanceDB')) {
+                $this->attendanceModel = new AttendanceDB();
+            } else {
+                $this->attendanceModel = new Attendance();
+            }
+        } else {
+            $this->attendanceModel = new Attendance();
+        }
         $this->desligamentoModel = new Desligamento();
         $this->acolhimentoModel = new Acolhimento();
     }
@@ -69,12 +86,16 @@ class AttendanceService {
         // Adicionar informações do atendido
         $atendido = $this->acolhimentoModel->findById($atendidoId);
         if ($atendido) {
+            $aid = $atendido['id'] ?? $atendido['idatendido'] ?? null;
+            $nome = $atendido['nome_completo'] ?? $atendido['nome'] ?? '';
+            $cpf = $atendido['cpf'] ?? '';
+            $dn = $atendido['data_nascimento'] ?? '';
             $stats['atendido'] = [
-                'id' => $atendido['id'],
-                'nome' => $atendido['nome_completo'] ?? '',
-                'cpf' => $atendido['cpf'] ?? '',
-                'data_nascimento' => $atendido['data_nascimento'] ?? '',
-                'idade' => $this->calculateAge($atendido['data_nascimento'] ?? '')
+                'id' => $aid,
+                'nome' => $nome,
+                'cpf' => $cpf,
+                'data_nascimento' => $dn,
+                'idade' => $this->calculateAge($dn)
             ];
             
             // Verificar alertas
@@ -97,16 +118,18 @@ class AttendanceService {
         $atendidos = $this->acolhimentoModel->paginate($page, $perPage);
         
         foreach ($atendidos['data'] as &$atendido) {
-            $stats = $this->attendanceModel->getStatistics($atendido['id']);
-            $atendido['faltas_justificadas'] = $stats['faltas_justificadas'];
-            $atendido['faltas_nao_justificadas'] = $stats['faltas_nao_justificadas'];
-            $atendido['total_presencas'] = $stats['total_presencas'];
+            $aid = $atendido['id'] ?? $atendido['idatendido'] ?? null;
+            if (!$aid) { continue; }
+            $stats = $this->attendanceModel->getStatistics($aid);
+            $atendido['faltas_justificadas'] = $stats['faltas_justificadas'] ?? 0;
+            $atendido['faltas_nao_justificadas'] = $stats['faltas_nao_justificadas'] ?? 0;
+            $atendido['total_presencas'] = $stats['total_presencas'] ?? 0;
             $atendido['ultima_atividade'] = $stats['ultima_atividade']['data'] ?? null;
             $atendido['idade'] = $this->calculateAge($atendido['data_nascimento'] ?? '');
             
             // Verificar alertas
-            $atendido['tem_alerta'] = $this->hasAlertas($atendido['id'], $stats);
-            $atendido['desligado'] = $this->desligamentoModel->isDesligado($atendido['id']);
+            $atendido['tem_alerta'] = $this->hasAlertas($aid, $stats);
+            $atendido['desligado'] = $this->desligamentoModel->isDesligado($aid);
         }
         
         return $atendidos;
@@ -120,8 +143,10 @@ class AttendanceService {
         $comAlertas = [];
         
         foreach ($atendidos as $atendido) {
-            $stats = $this->attendanceModel->getStatistics($atendido['id']);
-            $alertas = $this->getAlertas($atendido['id'], $stats);
+            $aid = $atendido['id'] ?? $atendido['idatendido'] ?? null;
+            if (!$aid) { continue; }
+            $stats = $this->attendanceModel->getStatistics($aid);
+            $alertas = $this->getAlertas($aid, $stats);
             
             if (!empty($alertas)) {
                 $atendido['alertas'] = $alertas;
@@ -245,8 +270,10 @@ class AttendanceService {
         $desligados = [];
         
         foreach ($atendidos as $atendido) {
+            $aid = $atendido['id'] ?? $atendido['idatendido'] ?? null;
+            if (!$aid) { continue; }
             // Pular se já está desligado
-            if ($this->desligamentoModel->isDesligado($atendido['id'])) {
+            if ($this->desligamentoModel->isDesligado($aid)) {
                 continue;
             }
             
@@ -255,7 +282,7 @@ class AttendanceService {
             if ($idade >= self::IDADE_DESLIGAMENTO_AUTOMATICO) {
                 try {
                     $desligamento = $this->processarDesligamento(
-                        $atendido['id'],
+                        $aid,
                         'idade',
                         "Desligamento automático por completar {$idade} anos",
                         true
@@ -265,7 +292,7 @@ class AttendanceService {
                         'desligamento' => $desligamento
                     ];
                 } catch (Exception $e) {
-                    error_log("Erro ao desligar atendido {$atendido['id']}: " . $e->getMessage());
+                    error_log("Erro ao desligar atendido {$aid}: " . $e->getMessage());
                 }
             }
         }
@@ -296,20 +323,21 @@ class AttendanceService {
      * Calcula idade
      */
     private function calculateAge($dataNascimento) {
-        if (empty($dataNascimento)) {
+        if (empty($dataNascimento)) { return null; }
+        $now = new DateTime();
+        // Tenta Y-m-d
+        $date = DateTime::createFromFormat('Y-m-d', $dataNascimento);
+        if ($date instanceof DateTime) { return $now->diff($date)->y; }
+        // Tenta d/m/Y
+        $date = DateTime::createFromFormat('d/m/Y', $dataNascimento);
+        if ($date instanceof DateTime) { return $now->diff($date)->y; }
+        // Fallback parse livre
+        try {
+            $date = new DateTime($dataNascimento);
+            return $now->diff($date)->y;
+        } catch (Exception $e) {
             return null;
         }
-        
-        $parts = explode('/', $dataNascimento);
-        if (count($parts) === 3) {
-            $date = DateTime::createFromFormat('d/m/Y', $dataNascimento);
-            if ($date) {
-                $now = new DateTime();
-                return $now->diff($date)->y;
-            }
-        }
-        
-        return null;
     }
     
     /**
@@ -414,7 +442,9 @@ class AttendanceService {
         $relatorio = [];
         
         foreach ($atendidos as $atendido) {
-            $stats = $this->getAtendidoStatistics($atendido['id']);
+            $aid = $atendido['id'] ?? $atendido['idatendido'] ?? null;
+            if (!$aid) { continue; }
+            $stats = $this->getAtendidoStatistics($aid);
             
             // Aplicar filtros
             if (!empty($filtros['status'])) {
@@ -509,7 +539,9 @@ class AttendanceService {
         
         // Contar atendidos por status
         foreach ($atendidos as $atendido) {
-            $atendidoStats = $this->getAtendidoStatistics($atendido['id']);
+            $aid = $atendido['id'] ?? $atendido['idatendido'] ?? null;
+            if (!$aid) { continue; }
+            $atendidoStats = $this->getAtendidoStatistics($aid);
             
             if ($atendidoStats['desligado']) {
                 $stats['total_atendidos_desligados']++;
@@ -568,7 +600,9 @@ class AttendanceService {
         $ranking = [];
         
         foreach ($atendidos as $atendido) {
-            $stats = $this->getAtendidoStatistics($atendido['id']);
+            $aid = $atendido['id'] ?? $atendido['idatendido'] ?? null;
+            if (!$aid) { continue; }
+            $stats = $this->getAtendidoStatistics($aid);
             
             // Apenas atendidos ativos
             if ($stats['desligado']) continue;

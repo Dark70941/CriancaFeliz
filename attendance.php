@@ -21,6 +21,17 @@ try {
             $attendanceController->index();
             break;
             
+        case 'batch':
+            $attendanceController->batch();
+            break;
+            
+        case 'apply_batch':
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                throw new Exception('Método não permitido');
+            }
+            $attendanceController->applyBatch();
+            break;
+            
         case 'show':
             if (!$id) {
                 throw new Exception('ID do atendido é obrigatório');
