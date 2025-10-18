@@ -22,13 +22,18 @@ class AttendanceController extends BaseController {
             $search = $this->getParam('search', '');
             
             $result = $this->attendanceService->listAtendidosComFaltas($page, 50);
-            
+
+            // Remover desligados do controle de faltas
+            $result['data'] = array_values(array_filter($result['data'] ?? [], function($a) {
+                return empty($a['desligado']);
+            }));
+
             // Filtrar por busca se fornecida
             if (!empty($search)) {
                 $result['data'] = array_filter($result['data'], function($atendido) use ($search) {
                     $searchLower = strtolower($search);
-                    return stripos($atendido['nome_completo'] ?? '', $search) !== false ||
-                           stripos($atendido['cpf'] ?? '', $search) !== false;
+                    return stripos($atendido['nome_completo'] ?? '', $searchLower) !== false ||
+                           stripos($atendido['cpf'] ?? '', $searchLower) !== false;
                 });
                 $result['data'] = array_values($result['data']);
             }
@@ -467,7 +472,14 @@ class AttendanceController extends BaseController {
             
             // Filtrar por grupo
             $filtrados = [];
+            $desligamentoModel = new Desligamento();
             foreach ($atendidos as $a) {
+                // Determinar ID do atendido
+                $aid = $a['id'] ?? $a['idatendido'] ?? null;
+                if (!$aid) continue;
+                // Ocultar desligados (fonte oficial)
+                if ($desligamentoModel->isDesligado($aid)) continue;
+                // Também respeitar campo de status se existir
                 if (($a['status'] ?? 'Ativo') !== 'Ativo') continue;
                 $idade = $this->calcAgeFromYmd($a['data_nascimento'] ?? null, $date);
                 if ($grupo === 'Crianca' && !($idade !== null && $idade < 12)) continue;

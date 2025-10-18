@@ -18,5 +18,15 @@
         "user_name": "Administrador",
         "timestamp": "2025-10-10 02:11:06",
         "ip": "::1"
+    },
+    {
+        "id": "68f2d785b7556",
+        "action": "desligamento",
+        "atendido_id": "2",
+        "description": "Desligamento: outro",
+        "user_id": "admin001",
+        "user_name": "Administrador",
+        "timestamp": "2025-10-18 01:55:49",
+        "ip": "::1"
     }
 ]
