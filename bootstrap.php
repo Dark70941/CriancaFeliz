@@ -99,6 +99,21 @@ function layout($layoutName, $content, $data = []) {
     }
 }
 
+/**
+ * Recuperar valor antigo do campo após erro
+ * Útil para manter valores preenchidos quando formulário retorna com erro
+ * 
+ * Uso: value="<?php echo old('nome'); ?>"
+ */
+function old($key, $default = '') {
+    if (isset($_SESSION['old_input'][$key])) {
+        $value = $_SESSION['old_input'][$key];
+        // Se for array, retornar JSON para campos múltiplos
+        return is_array($value) ? htmlspecialchars(json_encode($value)) : htmlspecialchars($value);
+    }
+    return htmlspecialchars($default);
+}
+
 // Criar diretório de dados se não existir
 if (!is_dir(DATA_PATH)) {
     mkdir(DATA_PATH, 0777, true);

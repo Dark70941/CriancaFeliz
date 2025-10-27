@@ -17,6 +17,7 @@ class BaseController {
         // Adicionar dados globais
         $data['currentUser'] = $this->authService->getCurrentUser();
         $data['isLoggedIn'] = $this->authService->isLoggedIn();
+        $data['old_input'] = $_SESSION['old_input'] ?? [];
         
         view($view, $data);
     }
@@ -28,6 +29,12 @@ class BaseController {
         // Adicionar dados globais
         $data['currentUser'] = $this->authService->getCurrentUser();
         $data['isLoggedIn'] = $this->authService->isLoggedIn();
+        $data['old_input'] = $_SESSION['old_input'] ?? [];
+        
+        // Limpar old_input após usar (para não aparecer em próximas páginas)
+        if (isset($_SESSION['old_input'])) {
+            unset($_SESSION['old_input']);
+        }
         
         // Capturar conteúdo da view
         ob_start();
@@ -49,8 +56,14 @@ class BaseController {
     /**
      * Redireciona com mensagem de erro
      */
-    protected function redirectWithError($url, $message) {
+    protected function redirectWithError($url, $message, $preserveInput = true) {
         $_SESSION['flash_error'] = $message;
+        
+        // Preservar valores dos campos após erro
+        if ($preserveInput && !empty($_POST)) {
+            $_SESSION['old_input'] = $_POST;
+        }
+        
         redirect($url);
     }
     
@@ -138,14 +151,36 @@ class BaseController {
     }
     
     /**
+     * Obter valor antigo de campo (após erro)
+     */
+    protected function old($key, $default = '') {
+        if (isset($_SESSION['old_input'][$key])) {
+            return $_SESSION['old_input'][$key];
+        }
+        return $default;
+    }
+    
+    /**
+     * Limpar valores antigos
+     */
+    protected function clearOldInput() {
+        if (isset($_SESSION['old_input'])) {
+            unset($_SESSION['old_input']);
+        }
+    }
+    
+    /**
      * Valida CSRF token
      */
     protected function validateCSRF() {
-        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
+        // Aceitar tanto csrf_token quanto _csrf_token
+        $token = $_POST['csrf_token'] ?? $_POST['_csrf_token'] ?? null;
+        
+        if (!$token || !isset($_SESSION['csrf_token'])) {
             throw new Exception('Token CSRF inválido');
         }
         
-        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        if (!hash_equals($_SESSION['csrf_token'], $token)) {
             throw new Exception('Token CSRF inválido');
         }
     }
