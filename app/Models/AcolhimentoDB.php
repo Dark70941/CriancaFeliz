@@ -112,7 +112,7 @@ class AcolhimentoDB extends BaseModelDB {
             // 1. Criar/Buscar Responsável
             $responsavelId = $this->createOrGetResponsavel($data);
             
-            // 2. Criar Atendido
+            // 2. Criar Atendido com todos os dados
             $atendidoData = [
                 'nome' => $data['nome_completo'],
                 'cpf' => $data['cpf'],
@@ -124,35 +124,36 @@ class AcolhimentoDB extends BaseModelDB {
                 'complemento' => $data['complemento'] ?? null,
                 'bairro' => $data['bairro'],
                 'cidade' => $data['cidade'],
+                'estado' => $data['estado'] ?? null,
                 'cep' => $data['cep'],
+                'telefone' => $data['contato_1'] ?? null,
+                'email' => $data['email'] ?? null,
                 'foto' => $data['foto'] ?? null,
                 'status' => 'Ativo',
                 'id_responsavel' => $responsavelId,
-                'faixa_etaria' => $this->calculateAge($data['data_nascimento'])
+                'faixa_etaria' => $this->calculateAge($data['data_nascimento']),
+                // Campos que estavam na Ficha_Acolhimento
+                'data_acolhimento' => $this->convertDate($data['data_acolhimento'] ?? null),
+                'encaminha_por' => $data['encaminha_por'] ?? null,
+                'queixa_principal' => $data['queixa_principal'] ?? null,
+                'escola' => $data['escola'] ?? null,
+                'periodo' => $data['periodo'] ?? null,
+                'ponto_referencia' => $data['ponto_referencia'] ?? null,
+                'cras' => $data['cras'] ?? null,
+                'ubs' => $data['ubs'] ?? null,
+                'cad_unico' => $data['cad_unico'] ?? null,
+                'acolhimento_responsavel' => $data['acolhimento_responsavel'] ?? null,
+                'acolhimento_funcao' => $data['acolhimento_funcao'] ?? null,
+                'carimbo' => $data['carimbo'] ?? null
             ];
+            
+            // Remover campos nulos para evitar erros
+            $atendidoData = array_filter($atendidoData, function($value) {
+                return $value !== null;
+            });
             
             $atendido = $this->create($atendidoData);
             $atendidoId = $atendido['idatendido'];
-            
-            // 3. Criar Ficha de Acolhimento
-            $this->query(
-                "INSERT INTO Ficha_Acolhimento (id_atendido, data_acolhimento, encaminha_por, queixa_principal, escola, periodo, ponto_referencia, cras, ubs, cad_unico, acolhimento_responsavel, acolhimento_funcao, carimbo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [
-                    $atendidoId,
-                    $this->convertDate($data['data_acolhimento']),
-                    $data['encaminha_por'] ?? null,
-                    $data['queixa_principal'],
-                    $data['escola'] ?? null,
-                    $data['periodo'] ?? null,
-                    $data['ponto_referencia'] ?? null,
-                    $data['cras'] ?? null,
-                    $data['ubs'] ?? null,
-                    $data['cad_unico'] ?? null,
-                    $data['acolhimento_responsavel'] ?? null,
-                    $data['acolhimento_funcao'] ?? null,
-                    $data['carimbo'] ?? null
-                ]
-            );
             
             Database::commit();
             
@@ -176,22 +177,9 @@ class AcolhimentoDB extends BaseModelDB {
                 r.cpf as cpf_responsavel,
                 r.rg as rg_responsavel,
                 r.telefone as contato_1,
-                r.parentesco as grau_parentesco,
-                f.data_acolhimento,
-                f.encaminha_por,
-                f.queixa_principal,
-                f.escola,
-                f.periodo,
-                f.ponto_referencia,
-                f.cras,
-                f.ubs,
-                f.cad_unico,
-                f.acolhimento_responsavel,
-                f.acolhimento_funcao,
-                f.carimbo
+                r.parentesco as grau_parentesco
             FROM Atendido a
             LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel
-            LEFT JOIN Ficha_Acolhimento f ON a.idatendido = f.id_atendido
             WHERE a.idatendido = ?
         ", [$id]);
         
@@ -245,12 +233,9 @@ class AcolhimentoDB extends BaseModelDB {
                 a.cpf,
                 a.data_nascimento,
                 a.status,
-                f.data_acolhimento,
                 r.nome as nome_responsavel
             FROM Atendido a
-            LEFT JOIN Ficha_Acolhimento f ON a.idatendido = f.id_atendido
             LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel
-            WHERE f.id_atendido IS NOT NULL
             ORDER BY a.data_cadastro DESC
             LIMIT ? OFFSET ?
         ", [$perPage, $offset]);
@@ -260,7 +245,6 @@ class AcolhimentoDB extends BaseModelDB {
         // Formatar datas e calcular idade
         foreach ($fichas as &$ficha) {
             $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
-            $ficha['data_acolhimento'] = $this->formatDate($ficha['data_acolhimento']);
             $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
             $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
         }
@@ -269,7 +253,6 @@ class AcolhimentoDB extends BaseModelDB {
         $stmt = $this->query("
             SELECT COUNT(*) as total 
             FROM Atendido a
-            INNER JOIN Ficha_Acolhimento f ON a.idatendido = f.id_atendido
         ");
         $result = $stmt->fetch();
         $total = $result['total'];
@@ -297,18 +280,35 @@ class AcolhimentoDB extends BaseModelDB {
             // Normalizar dados
             $data = $this->normalizeData($data);
             
-            // 1. Atualizar Atendido
+            // 1. Atualizar Atendido (todos os campos consolidados)
             $atendidoData = [
                 'nome' => $data['nome_completo'],
                 'cpf' => $data['cpf'],
                 'rg' => $data['rg'],
                 'data_nascimento' => $this->convertDate($data['data_nascimento']),
-                'endereco' => $data['endereco'],
-                'numero' => $data['numero'],
+                'endereco' => $data['endereco'] ?? null,
+                'numero' => $data['numero'] ?? null,
                 'complemento' => $data['complemento'] ?? null,
-                'bairro' => $data['bairro'],
-                'cidade' => $data['cidade'],
-                'cep' => $data['cep']
+                'bairro' => $data['bairro'] ?? null,
+                'cidade' => $data['cidade'] ?? null,
+                'estado' => $data['estado'] ?? null,
+                'cep' => $data['cep'] ?? null,
+                'telefone' => $data['contato_1'] ?? null,
+                'email' => $data['email'] ?? null,
+                'status' => $data['status'] ?? 'Ativo',
+                // Campos consolidados da antiga Ficha_Acolhimento
+                'data_acolhimento' => $this->convertDate($data['data_acolhimento'] ?? null),
+                'encaminha_por' => $data['encaminha_por'] ?? null,
+                'queixa_principal' => $data['queixa_principal'] ?? null,
+                'escola' => $data['escola'] ?? null,
+                'periodo' => $data['periodo'] ?? null,
+                'ponto_referencia' => $data['ponto_referencia'] ?? null,
+                'cras' => $data['cras'] ?? null,
+                'ubs' => $data['ubs'] ?? null,
+                'cad_unico' => $data['cad_unico'] ?? null,
+                'acolhimento_responsavel' => $data['acolhimento_responsavel'] ?? null,
+                'acolhimento_funcao' => $data['acolhimento_funcao'] ?? null,
+                'carimbo' => $data['carimbo'] ?? null
             ];
             
             $this->update($id, $atendidoData);
@@ -328,37 +328,7 @@ class AcolhimentoDB extends BaseModelDB {
                     ]
                 );
             }
-            
-            // 3. Atualizar Ficha de Acolhimento
-            $this->query(
-                "UPDATE Ficha_Acolhimento SET 
-                    data_acolhimento = ?,
-                    encaminha_por = ?,
-                    queixa_principal = ?,
-                    escola = ?,
-                    periodo = ?,
-                    ponto_referencia = ?,
-                    cras = ?,
-                    ubs = ?,
-                    cad_unico = ?,
-                    acolhimento_responsavel = ?,
-                    acolhimento_funcao = ?
-                WHERE id_atendido = ?",
-                [
-                    $this->convertDate($data['data_acolhimento']),
-                    $data['encaminha_por'] ?? null,
-                    $data['queixa_principal'],
-                    $data['escola'] ?? null,
-                    $data['periodo'] ?? null,
-                    $data['ponto_referencia'] ?? null,
-                    $data['cras'] ?? null,
-                    $data['ubs'] ?? null,
-                    $data['cad_unico'] ?? null,
-                    $data['acolhimento_responsavel'] ?? null,
-                    $data['acolhimento_funcao'] ?? null,
-                    $id
-                ]
-            );
+
             
             Database::commit();
             
@@ -395,27 +365,7 @@ class AcolhimentoDB extends BaseModelDB {
      * Busca avançada
      */
     public function searchAdvanced($query) {
-        $stmt = $this->query("
-            SELECT 
-                a.idatendido as id,
-                a.nome as nome_completo,
-                a.cpf,
-                a.rg,
-                a.data_nascimento,
-                r.nome as nome_responsavel,
-                r.cpf as cpf_responsavel
-            FROM Atendido a
-            LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel
-            LEFT JOIN Ficha_Acolhimento f ON a.idatendido = f.id_atendido
-            WHERE f.id_atendido IS NOT NULL
-            AND (
-                a.nome LIKE ? OR
-                a.cpf LIKE ? OR
-                a.rg LIKE ? OR
-                r.nome LIKE ? OR
-                r.cpf LIKE ?
-            )
-        ", ["%$query%", "%$query%", "%$query%", "%$query%", "%$query%"]);
+        $stmt = $this->query("\n            SELECT \n                a.idatendido as id,\n                a.nome as nome_completo,\n                a.cpf,\n                a.rg,\n                a.data_nascimento,\n                r.nome as nome_responsavel,\n                r.cpf as cpf_responsavel\n            FROM Atendido a\n            LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel\n            WHERE a.nome LIKE ?\n            ORDER BY a.data_cadastro DESC\n        ", ["%$query%"]);
         
         return $stmt->fetchAll();
     }

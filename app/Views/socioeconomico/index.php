@@ -90,25 +90,34 @@
                             </span>
                         </td>
                         <td style="padding:12px; text-align:center;">
-                            <a href="socioeconomico_view.php?id=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn-icon" 
-                               title="Visualizar"
-                               style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="socioeconomico_form.php?id=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn-icon" 
-                               title="Editar"
-                               style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="socioeconomico_list.php?delete=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn-icon" 
-                               title="Excluir"
-                               onclick="return confirm('Tem certeza que deseja excluir esta ficha?')"
-                               style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
-                                <i class="fas fa-trash"></i>
-                            </a>
+                            <?php if (isset($ficha['id']) && !empty($ficha['id'])): ?>
+                                <?php 
+                                $id = $ficha['id'];
+                                // Botão Visualizar
+                                echo '<a href="socioeconomico_view.php?id=' . urlencode($id) . '" ';
+                                echo 'class="btn-icon" ';
+                                echo 'title="Visualizar" ';
+                                echo 'style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
+                                echo '<i class="fas fa-eye"></i></a> ';
+                                
+                                // Botão Editar
+                                echo '<a href="socioeconomico_form.php?id=' . urlencode($id) . '" ';
+                                echo 'class="btn-icon" ';
+                                echo 'title="Editar" ';
+                                echo 'style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
+                                echo '<i class="fas fa-edit"></i></a> ';
+                                
+                                // Botão Excluir
+                                echo '<a href="socioeconomico_list.php?delete=' . urlencode($id) . '" ';
+                                echo 'class="btn-icon" ';
+                                echo 'title="Excluir" ';
+                                echo 'onclick="return confirm(\'Tem certeza que deseja excluir esta ficha?\')" ';
+                                echo 'style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
+                                echo '<i class="fas fa-trash"></i></a>';
+                                ?>
+                            <?php else: ?>
+                                <span style="color: #999; font-size: 12px;">ID inválido</span>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

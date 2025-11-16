@@ -14,6 +14,11 @@ class AcolhimentoService {
      * Lista todas as fichas com paginação
      */
     public function listFichas($page = 1, $perPage = 10) {
+        // Usar a listagem específica que já retorna os campos mapeados (id, nome_completo, etc.)
+        if (method_exists($this->acolhimentoModel, 'listFichas')) {
+            return $this->acolhimentoModel->listFichas($page, $perPage);
+        }
+        // Fallback: paginate (menos ideal pois não mapeia campos), mantido por segurança
         return $this->acolhimentoModel->paginate($page, $perPage);
     }
     
@@ -21,16 +26,21 @@ class AcolhimentoService {
      * Busca ficha por ID
      */
     public function getFicha($id) {
-        $ficha = $this->acolhimentoModel->findById($id);
-        
+        // Usar método especializado que já retorna campos mapeados (id, nome_completo, etc.) e datas formatadas
+        if (method_exists($this->acolhimentoModel, 'getFicha')) {
+            $ficha = $this->acolhimentoModel->getFicha($id);
+        } else {
+            $ficha = $this->acolhimentoModel->findById($id);
+        }
+
         if (!$ficha) {
             throw new Exception('Ficha não encontrada');
         }
-        
-        // Adicionar dados calculados
+
+        // Adicionar dados calculados (idempotente)
         $ficha['idade'] = $this->acolhimentoModel->calculateAge($ficha['data_nascimento'] ?? '');
         $ficha['categoria'] = $this->acolhimentoModel->categorizeByAge($ficha['idade']);
-        
+
         return $ficha;
     }
     

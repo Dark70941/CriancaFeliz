@@ -41,7 +41,8 @@ class AcolhimentoController extends BaseController {
                 'current_page' => $result['current_page'] ?? 1,
                 'last_page' => $result['last_page'] ?? 1,
                 'per_page' => $result['per_page'] ?? 10,
-                'messages' => $this->getFlashMessages()
+                'messages' => $this->getFlashMessages(),
+                'csrf_token' => $this->generateCSRF()
             ];
             
             $this->renderWithLayout('main', 'acolhimento/index', $data);
@@ -126,7 +127,10 @@ class AcolhimentoController extends BaseController {
             
         } catch (Exception $e) {
             error_log('ERRO no store: ' . $e->getMessage());
-            $this->redirectWithError('acolhimento_form.php', $e->getMessage());
+            // Se estava editando, manter o id na URL para voltar ao modo edição
+            $backId = $_POST['id'] ?? null;
+            $target = 'acolhimento_form.php' . ($backId ? ('?id=' . urlencode($backId)) : '');
+            $this->redirectWithError($target, $e->getMessage());
         }
     }
     

@@ -7,6 +7,21 @@
     <div class="step">4. Documentos</div>
 </div>
 
+<?php
+// Obter mensagens de erro da sessão, se houver
+$errorMessage = '';
+if (isset($_SESSION['flash_error'])) {
+    $errorMessage = $_SESSION['flash_error'];
+    unset($_SESSION['flash_error']);
+}
+?>
+
+<?php if (!empty($errorMessage)): ?>
+    <div class="alert alert-danger" role="alert" style="margin-bottom: 20px; padding: 15px; border-radius: 4px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;">
+        <?php echo htmlspecialchars($errorMessage); ?>
+    </div>
+<?php endif; ?>
+
 <form method="post" enctype="multipart/form-data" class="acolhimento-form" id="acolhimentoForm">
     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
     <?php if (!empty($editId)): ?>
@@ -19,27 +34,57 @@
         <div class="form-grid">
             <div class="form-field">
                 <label>Nome Completo <span class="required">*</span></label>
-                <input type="text" name="nome_completo" value="<?php echo htmlspecialchars($ficha['nome_completo'] ?? ''); ?>" required>
+                <input type="text" name="nome_completo" value="<?php echo htmlspecialchars($ficha['nome_completo'] ?? ($_SESSION['old_input']['nome_completo'] ?? '')); ?>" required>
+                <?php if (isset($_SESSION['field_errors']['nome_completo'])): ?>
+                    <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
+                        <?php echo htmlspecialchars($_SESSION['field_errors']['nome_completo']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="form-field">
                 <label>RG <span class="required">*</span></label>
-                <input type="text" name="rg" value="<?php echo htmlspecialchars($ficha['rg'] ?? ''); ?>" required>
+                <input type="text" name="rg" value="<?php echo htmlspecialchars($ficha['rg'] ?? ($_SESSION['old_input']['rg'] ?? '')); ?>" required>
+                <?php if (isset($_SESSION['field_errors']['rg'])): ?>
+                    <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
+                        <?php echo htmlspecialchars($_SESSION['field_errors']['rg']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="form-field">
                 <label>CPF <span class="required">*</span></label>
-                <input type="text" name="cpf" value="<?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?>" required>
+                <input type="text" name="cpf" value="<?php echo htmlspecialchars($ficha['cpf'] ?? ($_SESSION['old_input']['cpf'] ?? '')); ?>" required>
+                <?php if (isset($_SESSION['field_errors']['cpf'])): ?>
+                    <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
+                        <?php echo htmlspecialchars($_SESSION['field_errors']['cpf']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="form-field">
                 <label>Data de Nascimento <span class="required">*</span></label>
-                <input type="text" name="data_nascimento" value="<?php echo htmlspecialchars($ficha['data_nascimento'] ?? ''); ?>" placeholder="dd/mm/aaaa" required>
+                <input type="text" name="data_nascimento" value="<?php echo htmlspecialchars($ficha['data_nascimento'] ?? ($_SESSION['old_input']['data_nascimento'] ?? '')); ?>" placeholder="dd/mm/aaaa" required>
+                <?php if (isset($_SESSION['field_errors']['data_nascimento'])): ?>
+                    <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
+                        <?php echo htmlspecialchars($_SESSION['field_errors']['data_nascimento']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="form-field">
                 <label>Data de Acolhimento <span class="required">*</span></label>
-                <input type="text" name="data_acolhimento" value="<?php echo htmlspecialchars($ficha['data_acolhimento'] ?? ''); ?>" placeholder="dd/mm/aaaa" required>
+                <input type="text" name="data_acolhimento" value="<?php echo htmlspecialchars($ficha['data_acolhimento'] ?? ($_SESSION['old_input']['data_acolhimento'] ?? '')); ?>" placeholder="dd/mm/aaaa" required>
+                <?php if (isset($_SESSION['field_errors']['data_acolhimento'])): ?>
+                    <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
+                        <?php echo htmlspecialchars($_SESSION['field_errors']['data_acolhimento']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="form-field">
                 <label>Encaminhado por</label>
-                <input type="text" name="encaminha_por" value="<?php echo htmlspecialchars($ficha['encaminha_por'] ?? ''); ?>">
+                <input type="text" name="encaminha_por" value="<?php echo htmlspecialchars($ficha['encaminha_por'] ?? ($_SESSION['old_input']['encaminha_por'] ?? '')); ?>">
+                <?php if (isset($_SESSION['field_errors']['encaminha_por'])): ?>
+                    <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
+                        <?php echo htmlspecialchars($_SESSION['field_errors']['encaminha_por']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="form-field" style="grid-column: 1 / 2;">
                 <label>Foto 3x4</label>
@@ -48,7 +93,12 @@
             </div>
             <div class="form-field" style="grid-column: 1 / -1;">
                 <label>Queixa Principal <span class="required">*</span></label>
-                <textarea name="queixa_principal" required><?php echo htmlspecialchars($ficha['queixa_principal'] ?? ''); ?></textarea>
+                <textarea name="queixa_principal" required><?php echo htmlspecialchars($ficha['queixa_principal'] ?? ($_SESSION['old_input']['queixa_principal'] ?? '')); ?></textarea>
+                <?php if (isset($_SESSION['field_errors']['queixa_principal'])): ?>
+                    <div class="error-message" style="color: #dc3545; font-size: 0.875em; margin-top: 4px;">
+                        <?php echo htmlspecialchars($_SESSION['field_errors']['queixa_principal']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
     </div>

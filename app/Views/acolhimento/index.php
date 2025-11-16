@@ -3,6 +3,92 @@
     <a href="acolhimento_form.php" class="btn" style="background:#ff7a00; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">+ Cadastrar</a>
 </div>
 
+<script>
+ document.addEventListener('DOMContentLoaded', function() {
+   const inputNome = document.querySelector('input[name="q"]');
+   const inputCpf = document.querySelector('input[name="cpf"]');
+   const tbody = document.getElementById('fichas-body');
+  const initialTbodyHTML = tbody ? tbody.innerHTML : '';
+   const pagination = document.querySelector('.pagination');
+   const csrfToken = '<?php echo htmlspecialchars($csrf_token ?? ""); ?>';
+
+   function formatStatus(status) {
+     const isAtivo = (status || 'Ativo') === 'Ativo';
+     const style = isAtivo ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;';
+     return `<span class="status" style="${style}">${status || 'Ativo'}</span>`;
+   }
+
+   function formatCategoria(cat) {
+     const c = (cat || 'Indefinido').toLowerCase();
+     let style = 'background:#f8d7da; color:#721c24;';
+     if (c === 'criança' || c === 'crianca') style = 'background:#e8f6ea; color:#6fb64f;';
+     else if (c === 'adolescente') style = 'background:#fff3cd; color:#856404;';
+     else if (c === 'adulto') style = 'background:#d1ecf1; color:#0c5460;';
+     const label = (cat || 'Indefinido');
+     return `<span class="badge" style="${style}">${label}</span>`;
+   }
+
+   function renderRows(items) {
+     if (!Array.isArray(items)) return;
+     tbody.innerHTML = items.map(it => {
+       const id = it.id || '';
+       const nome = it.nome_completo || '';
+       const cpf = it.cpf || '';
+       const idade = (it.idade != null && it.idade !== '') ? `${it.idade} anos` : 'N/A anos';
+       const categoria = formatCategoria(it.categoria);
+       const responsavel = it.responsavel || '';
+       const status = formatStatus(it.status);
+       const btns = id ? (
+         `<a href="acolhimento_view.php?id=${id}" class="btn-icon" title="Visualizar" style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;"><i class=\"fas fa-eye\"></i></a>
+          <a href="acolhimento_form.php?id=${id}" class="btn-icon" title="Editar" style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;"><i class=\"fas fa-edit\"></i></a>
+          <form method="POST" action="acolhimento_list.php?delete=${id}" style="display:inline; margin:0 4px;" onsubmit="return confirm('Tem certeza que deseja excluir esta ficha?')">
+            <input type="hidden" name="csrf_token" value="${csrfToken}">
+            <button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px;"><i class=\"fas fa-trash\"></i></button>
+          </form>`
+       ) : '<span style="color:#999; font-size:12px;">ID inválido</span>';
+       return `<tr style="border-bottom:1px solid #dee2e6;">
+                 <td style="padding:12px; color:#212529;">${nome}</td>
+                 <td style="padding:12px; color:#212529;">${cpf}</td>
+                 <td style="padding:12px; color:#212529;">${idade}</td>
+                 <td style="padding:12px; color:#212529;">${categoria}</td>
+                 <td style="padding:12px; color:#212529;">${responsavel}</td>
+                 <td style="padding:12px; color:#212529;">${status}</td>
+                 <td style="padding:12px; text-align:center;">${btns}</td>
+               </tr>`;
+     }).join('');
+   }
+
+   let timer = null;
+   function triggerSearch() {
+     const q = (inputNome?.value || '').trim();
+     const cpf = (inputCpf?.value || '').trim();
+     if (!q) {
+       // Sem texto: restaurar lista completa renderizada no servidor
+       if (tbody) tbody.innerHTML = initialTbodyHTML;
+       if (pagination) pagination.style.display = '';
+       return;
+     }
+     if (pagination) pagination.style.display = 'none';
+     clearTimeout(timer);
+     timer = setTimeout(async () => {
+       try {
+         const params = new URLSearchParams();
+         params.set('q', q);
+         const url = 'acolhimento_search.php' + (params.toString() ? ('?' + params.toString()) : '');
+         const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+         const data = await res.json();
+         renderRows(Array.isArray(data) ? data : []);
+       } catch (e) {
+         console.error(e);
+       }
+     }, 300);
+   }
+
+   if (inputNome) inputNome.addEventListener('input', triggerSearch);
+   if (inputCpf) inputCpf.addEventListener('input', triggerSearch);
+ });
+</script>
+
 <!-- Filtros de busca -->
 <div class="search-filters" style="background:#fff; border-radius:12px; padding:16px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
     <form method="GET" style="display:grid; grid-template-columns: 1fr 200px 120px; gap:12px; align-items:end;">
@@ -37,7 +123,7 @@
                     <th style="padding:12px; text-align:center; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; width:160px;">Ações</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="fichas-body">
                 <?php foreach ($fichas as $ficha): ?>
                     <tr style="border-bottom:1px solid #dee2e6;">
                         <td style="padding:12px; color:#212529;"><?php echo htmlspecialchars($ficha['nome_completo'] ?? ''); ?></td>
@@ -65,25 +151,33 @@
                             </span>
                         </td>
                         <td style="padding:12px; text-align:center;">
-                            <a href="acolhimento_view.php?id=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn-icon" 
-                               title="Visualizar"
-                               style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="acolhimento_form.php?id=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn-icon" 
-                               title="Editar"
-                               style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <a href="acolhimento_list.php?delete=<?php echo urlencode($ficha['id']); ?>" 
-                               class="btn-icon" 
-                               title="Excluir"
-                               onclick="return confirm('Tem certeza que deseja excluir esta ficha?')"
-                               style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">
-                                <i class="fas fa-trash"></i>
-                            </a>
+                            <?php if (isset($ficha['id']) && !empty($ficha['id'])): ?>
+                                <?php 
+                                $id = $ficha['id'];
+                                // Botão Visualizar
+                                echo '<a href="acolhimento_view.php?id=' . $id . '" ';
+                                echo 'class="btn-icon" ';
+                                echo 'title="Visualizar" ';
+                                echo 'style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
+                                echo '<i class="fas fa-eye"></i></a> ';
+                                
+                                // Botão Editar
+                                echo '<a href="acolhimento_form.php?id=' . $id . '" ';
+                                echo 'class="btn-icon" ';
+                                echo 'title="Editar" ';
+                                echo 'style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
+                                echo '<i class="fas fa-edit"></i></a> ';
+                                
+                                // Botão Excluir (formulário POST com CSRF)
+                                echo '<form method="POST" action="acolhimento_list.php?delete=' . $id . '" style="display:inline; margin:0 4px;" onsubmit="return confirm(\'Tem certeza que deseja excluir esta ficha?\')">';
+                                echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrf_token ?? '') . '">';
+                                echo '<button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px;">';
+                                echo '<i class="fas fa-trash"></i></button>';
+                                echo '</form>';
+                                ?>
+                            <?php else: ?>
+                                <span style="color: #999; font-size: 12px;">ID inválido</span>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>

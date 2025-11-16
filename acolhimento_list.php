@@ -10,6 +10,6 @@ if (isset($_GET['delete'])) {
     $_POST['csrf_token'] = $_SESSION['csrf_token'] ?? '';
     $acolhimentoController->delete($_GET['delete']);
 } else {
-    // Exibir lista
+    // Exibir lista com layout padrão (menu lateral etc.)
     $acolhimentoController->index();
 }
