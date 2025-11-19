@@ -14,6 +14,11 @@ class SocioeconomicoService {
      * Lista todas as fichas com paginação
      */
     public function listFichas($page = 1, $perPage = 10) {
+        // Chamar o método específico do SocioeconomicoDB
+        if (method_exists($this->socioeconomicoModel, 'listFichas')) {
+            return $this->socioeconomicoModel->listFichas($page, $perPage);
+        }
+        // Fallback para método genérico
         return $this->socioeconomicoModel->paginate($page, $perPage);
     }
     

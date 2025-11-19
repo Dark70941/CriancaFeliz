@@ -220,7 +220,7 @@ if (isset($_SESSION['flash_error'])) {
     </div>
 
     <div class="form-actions">
-        <a href="prontuarios.php" class="btn-secondary">Voltar</a>
+        <a href="<?php echo !empty($editId) ? 'acolhimento_list.php' : 'prontuarios.php'; ?>" class="btn-secondary">Voltar</a>
         <button class="btn-primary" type="submit">
             <?php if (!empty($editId)): ?>
                 <i class="fas fa-save"></i> Salvar Alteração

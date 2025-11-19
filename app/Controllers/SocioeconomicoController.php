@@ -25,23 +25,12 @@ class SocioeconomicoController extends BaseController {
             
             // Adicionar dados calculados
             foreach ($result['data'] as &$ficha) {
-                // Debug
-                error_log('=== PROCESSANDO FICHA ===');
-                error_log('ID: ' . ($ficha['id'] ?? 'N/A'));
-                error_log('Nome: ' . ($ficha['nome_entrevistado'] ?? 'N/A'));
-                error_log('CPF: ' . ($ficha['cpf'] ?? 'N/A'));
-                error_log('Data Nascimento: ' . ($ficha['data_nascimento'] ?? 'N/A'));
-                error_log('Familia JSON: ' . ($ficha['familia_json'] ?? 'N/A'));
-                
                 $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
                 $ficha['renda_familiar'] = $this->calculateRendaFamiliar($ficha);
                 $ficha['situacao_economica'] = $this->categorizeSituacao(
                     $ficha['renda_familiar'], 
                     intval($ficha['numero_membros'] ?? 1)
                 );
-                
-                error_log('Idade calculada: ' . ($ficha['idade'] ?? 'N/A'));
-                error_log('Renda calculada: ' . $ficha['renda_familiar']);
             }
             
             $data = [

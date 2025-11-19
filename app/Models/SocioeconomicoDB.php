@@ -98,10 +98,10 @@ class SocioeconomicoDB extends BaseModelDB {
             
             // 1. Criar Atendido (se não existir)
             $atendidoData = [
-                'nome' => $data['nome_entrevistado'],
-                'cpf' => $data['cpf'],
-                'rg' => $data['rg'],
-                'data_nascimento' => $this->convertDate($data['data_acolhimento']),
+                'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
+                'cpf' => $data['cpf'] ?? '',
+                'rg' => $data['rg'] ?? '',
+                'data_nascimento' => $this->convertDate($data['data_nascimento'] ?? ''),
                 'data_cadastro' => date('Y-m-d'),
                 'endereco' => $data['endereco'] ?? null,
                 'numero' => $data['numero'] ?? null,
@@ -110,13 +110,21 @@ class SocioeconomicoDB extends BaseModelDB {
                 'cidade' => $data['cidade'] ?? null,
                 'cep' => $data['cep'] ?? null,
                 'status' => 'Ativo',
-                'faixa_etaria' => $this->calculateAge($data['data_acolhimento'])
+                'faixa_etaria' => $this->calculateAge($data['data_nascimento'] ?? '')
             ];
             
             $atendido = $this->create($atendidoData);
             $atendidoId = $atendido['idatendido'];
             
             // 2. Criar Ficha Socioeconômica
+            // Converter renda_familiar para número (remover R$, pontos e converter vírgula)
+            $rendaFamiliar = 0;
+            if (!empty($data['renda_familiar'])) {
+                $renda = $data['renda_familiar'];
+                $renda = str_replace(['R$', '.', ','], ['', '', '.'], $renda);
+                $rendaFamiliar = floatval($renda);
+            }
+            
             $this->query(
                 "INSERT INTO Ficha_Socioeconomico (
                     id_atendido, agua, esgoto, energia, renda_familiar, 
@@ -128,15 +136,15 @@ class SocioeconomicoDB extends BaseModelDB {
                     isset($data['agua']) ? 1 : 0,
                     isset($data['esgoto']) ? 1 : 0,
                     isset($data['energia']) ? 1 : 0,
-                    $data['renda_familiar'] ?? 0,
-                    $data['qtd_pessoas'] ?? 0,
-                    $data['cond_residencia'] ?? null,
-                    $data['moradia'] ?? null,
+                    $rendaFamiliar,
+                    $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
+                    $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
+                    $data['tipo_moradia'] ?? $data['moradia'] ?? null,
                     $data['nr_veiculos'] ?? 0,
                     $data['observacoes'] ?? null,
-                    $data['nome_entrevistado'],
+                    $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
                     $data['residencia'] ?? null,
-                    $data['nr_comodos'] ?? 0,
+                    $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
                     $data['construcao'] ?? null
                 ]
             );
@@ -230,10 +238,21 @@ class SocioeconomicoDB extends BaseModelDB {
     public function listFichas($page = 1, $perPage = 10) {
         $offset = ($page - 1) * $perPage;
         
+        // Contar total
+        $countStmt = $this->query("
+            SELECT COUNT(*) as total 
+            FROM Atendido a
+            INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+        ");
+        $countResult = $countStmt->fetch();
+        
         $stmt = $this->query("
             SELECT 
                 a.idatendido as id,
+                a.idatendido,
+                a.nome,
                 a.nome as nome_entrevistado,
+                a.nome as nome_completo,
                 a.cpf,
                 a.data_nascimento,
                 a.status,
@@ -247,11 +266,16 @@ class SocioeconomicoDB extends BaseModelDB {
         
         $fichas = $stmt->fetchAll();
         
-        // Formatar datas
+        // Formatar datas e adicionar dados calculados
         foreach ($fichas as &$ficha) {
             $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
             $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
             $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
+            
+            // Garantir que nome_completo existe (compatibilidade com view)
+            if (empty($ficha['nome_completo'])) {
+                $ficha['nome_completo'] = $ficha['nome_entrevistado'];
+            }
         }
         
         // Contar total
@@ -288,14 +312,23 @@ class SocioeconomicoDB extends BaseModelDB {
             
             // 1. Atualizar Atendido
             $atendidoData = [
-                'nome' => $data['nome_entrevistado'],
-                'cpf' => $data['cpf'],
-                'rg' => $data['rg']
+                'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
+                'cpf' => $data['cpf'] ?? '',
+                'rg' => $data['rg'] ?? '',
+                'data_nascimento' => $this->convertDate($data['data_nascimento'] ?? '')
             ];
             
             $this->update($id, $atendidoData);
             
             // 2. Atualizar Ficha Socioeconômica
+            // Converter renda_familiar para número (remover R$, pontos e converter vírgula)
+            $rendaFamiliar = 0;
+            if (!empty($data['renda_familiar'])) {
+                $renda = $data['renda_familiar'];
+                $renda = str_replace(['R$', '.', ','], ['', '', '.'], $renda);
+                $rendaFamiliar = floatval($renda);
+            }
+            
             $this->query(
                 "UPDATE Ficha_Socioeconomico SET 
                     agua = ?, esgoto = ?, energia = ?, renda_familiar = ?,
@@ -306,13 +339,13 @@ class SocioeconomicoDB extends BaseModelDB {
                     isset($data['agua']) ? 1 : 0,
                     isset($data['esgoto']) ? 1 : 0,
                     isset($data['energia']) ? 1 : 0,
-                    $data['renda_familiar'] ?? 0,
-                    $data['qtd_pessoas'] ?? 0,
-                    $data['cond_residencia'] ?? null,
-                    $data['moradia'] ?? null,
+                    $rendaFamiliar,
+                    $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
+                    $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
+                    $data['tipo_moradia'] ?? $data['moradia'] ?? null,
                     $data['nr_veiculos'] ?? 0,
                     $data['observacoes'] ?? null,
-                    $data['nr_comodos'] ?? 0,
+                    $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
                     $data['construcao'] ?? null,
                     $id
                 ]

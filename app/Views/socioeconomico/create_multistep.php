@@ -324,7 +324,7 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
         </div>
         
         <div class="form-actions">
-            <a href="socioeconomico_list.php" class="btn btn-secondary">
+            <a href="prontuarios.php" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Voltar
             </a>
             <button type="button" onclick="nextStep()" class="btn btn-primary">

@@ -198,5 +198,35 @@
         "user_name": "Administrador",
         "timestamp": "2025-10-14 05:31:29",
         "ip": "::1"
+    },
+    {
+        "id": "691d31f384831",
+        "action": "create",
+        "ficha_id": 8,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-19 03:56:51",
+        "ip": "::1"
+    },
+    {
+        "id": "691d32d230b5b",
+        "action": "create",
+        "ficha_id": 9,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-19 04:00:34",
+        "ip": "::1"
+    },
+    {
+        "id": "691d33c2a0591",
+        "action": "create",
+        "ficha_id": 10,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-19 04:04:34",
+        "ip": "::1"
     }
 ]

@@ -28,20 +28,20 @@
         <table style="width:100%; border-collapse:collapse;">
             <thead style="background:#f8f9fa;">
                 <tr>
-                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Nome</th>
-                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">CPF</th>
-                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Idade</th>
-                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Renda Familiar</th>
-                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Benefícios</th>
-                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Status</th>
-                    <th style="padding:12px; text-align:center; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; width:160px;">Ações</th>
+                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:150px;">Nome</th>
+                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:120px;">CPF</th>
+                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:80px;">Idade</th>
+                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:120px;">Renda</th>
+                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:100px;">Benefícios</th>
+                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:80px;">Status</th>
+                    <th style="padding:12px; text-align:center; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; width:120px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
                 <?php foreach ($fichas as $ficha): ?>
                     <tr style="border-bottom:1px solid #dee2e6;">
-                        <td style="padding:12px; color:#212529;"><?php echo htmlspecialchars($ficha['nome_entrevistado'] ?? $ficha['nome_completo'] ?? ''); ?></td>
-                        <td style="padding:12px; color:#212529;">
+                        <td style="padding:12px; color:#212529; word-break:break-word;"><?php echo htmlspecialchars($ficha['nome_entrevistado'] ?? $ficha['nome_completo'] ?? ''); ?></td>
+                        <td style="padding:12px; color:#212529; font-size:13px;">
                             <?php 
                             $cpf = $ficha['cpf'] ?? '';
                             if ($cpf && strlen($cpf) == 11) {
@@ -51,7 +51,7 @@
                             }
                             ?>
                         </td>
-                        <td style="padding:12px; color:#212529;">
+                        <td style="padding:12px; color:#212529; text-align:center;">
                             <?php 
                             $idade = 'N/A';
                             if (!empty($ficha['data_nascimento'])) {
@@ -65,59 +65,58 @@
                                 }
                             }
                             echo $idade;
-                            ?> anos
+                            ?>
                         </td>
-                        <td style="padding:12px; color:#212529;">
+                        <td style="padding:12px; color:#212529; font-size:13px;">
                             <?php 
                             $renda = $ficha['renda_familiar'] ?? 0;
-                            echo $renda > 0 ? 'R$ ' . number_format($renda, 2, ',', '.') : 'Não informado';
+                            if (is_string($renda)) {
+                                $renda = floatval(str_replace(['R$', '.', ','], ['', '', '.'], $renda));
+                            }
+                            echo $renda > 0 ? 'R$ ' . number_format($renda, 2, ',', '.') : 'N/I';
                             ?>
                         </td>
-                        <td style="padding:12px; color:#212529;">
-                            <?php 
-                            $beneficios = [];
-                            if (!empty($ficha['bolsa_familia'])) $beneficios[] = 'Bolsa Família';
-                            if (!empty($ficha['auxilio_brasil'])) $beneficios[] = 'Auxílio Brasil';
-                            if (!empty($ficha['bpc'])) $beneficios[] = 'BPC';
-                            echo !empty($beneficios) ? implode(', ', $beneficios) : 'Nenhum';
-                            ?>
+                        <td style="padding:12px; color:#212529; font-size:12px;">
+                            Nenhum
                         </td>
                         <td style="padding:12px; color:#212529;">
                             <span class="status <?php echo strtolower($ficha['status'] ?? 'ativo'); ?>" 
-                                  style="padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500;
+                                  style="padding:4px 8px; border-radius:12px; font-size:11px; font-weight:500; display:inline-block;
                                          <?php echo ($ficha['status'] ?? 'Ativo') === 'Ativo' ? 'background:#e8f6ea; color:#6fb64f;' : 'background:#f8d7da; color:#721c24;'; ?>">
                                 <?php echo $ficha['status'] ?? 'Ativo'; ?>
                             </span>
                         </td>
-                        <td style="padding:12px; text-align:center;">
-                            <?php if (isset($ficha['id']) && !empty($ficha['id'])): ?>
-                                <?php 
-                                $id = $ficha['id'];
+                        <td style="padding:12px; text-align:center; white-space:nowrap;">
+                            <?php 
+                            // Tentar obter ID de diferentes fontes
+                            $id = $ficha['id'] ?? $ficha['idatendido'] ?? null;
+                            
+                            if (!empty($id)): 
                                 // Botão Visualizar
                                 echo '<a href="socioeconomico_view.php?id=' . urlencode($id) . '" ';
                                 echo 'class="btn-icon" ';
                                 echo 'title="Visualizar" ';
-                                echo 'style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
-                                echo '<i class="fas fa-eye"></i></a> ';
+                                echo 'style="background:#17a2b8; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
+                                echo '<i class="fas fa-eye"></i></a>';
                                 
                                 // Botão Editar
                                 echo '<a href="socioeconomico_form.php?id=' . urlencode($id) . '" ';
                                 echo 'class="btn-icon" ';
                                 echo 'title="Editar" ';
-                                echo 'style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
-                                echo '<i class="fas fa-edit"></i></a> ';
+                                echo 'style="background:#ffc107; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
+                                echo '<i class="fas fa-edit"></i></a>';
                                 
                                 // Botão Excluir
                                 echo '<a href="socioeconomico_list.php?delete=' . urlencode($id) . '" ';
                                 echo 'class="btn-icon" ';
                                 echo 'title="Excluir" ';
                                 echo 'onclick="return confirm(\'Tem certeza que deseja excluir esta ficha?\')" ';
-                                echo 'style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
+                                echo 'style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
                                 echo '<i class="fas fa-trash"></i></a>';
-                                ?>
-                            <?php else: ?>
-                                <span style="color: #999; font-size: 12px;">ID inválido</span>
-                            <?php endif; ?>
+                            else: 
+                                echo '<span style="color: #999; font-size: 12px;">ID inválido</span>';
+                            endif; 
+                            ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -169,6 +168,17 @@
 
 <style>
     /* Responsividade para tabela */
+    @media (max-width: 1024px) {
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            min-width: 1000px;
+        }
+    }
+    
     @media (max-width: 768px) {
         .search-filters form {
             grid-template-columns: 1fr !important;
@@ -177,10 +187,17 @@
         
         .table-container {
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         table {
             min-width: 900px;
+        }
+        
+        table th,
+        table td {
+            padding: 10px 8px !important;
+            font-size: 12px !important;
         }
         
         .actions {
@@ -198,16 +215,30 @@
             padding: 12px !important;
         }
         
+        .search-filters form {
+            grid-template-columns: 1fr !important;
+        }
+        
         table th,
         table td {
-            padding: 8px !important;
-            font-size: 14px;
+            padding: 8px 6px !important;
+            font-size: 11px !important;
+        }
+        
+        table th {
+            min-width: 80px !important;
         }
         
         .btn-sm {
-            padding: 4px 8px !important;
+            padding: 4px 6px !important;
+            font-size: 10px !important;
+            min-width: 40px !important;
+        }
+        
+        .btn-icon {
+            padding: 4px 6px !important;
             font-size: 11px !important;
-            min-width: 50px !important;
+            margin: 0 1px !important;
         }
     }
 </style>
