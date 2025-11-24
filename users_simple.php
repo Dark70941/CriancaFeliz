@@ -173,7 +173,7 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                     <select name="role" required>
                         <option value="">Selecione</option>
                         <option value="admin">Administrador</option>
-                        <option value="psicologo">Psicólogo</option>
+                        <option value="psicologo">Psicólogo - Assistente Social</option>
                         <option value="funcionario">Funcionário</option>
                     </select>
                 </div>

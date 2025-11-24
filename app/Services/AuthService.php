@@ -145,7 +145,12 @@ class AuthService {
                 'view_all_records',
                 'psychological_notes',
                 'view_psychological_area',
-                'edit_psychological_notes'
+                'edit_psychological_notes',
+                // Removendo permissões de frequência e desligamento
+                // 'view_attendance',
+                // 'view_attendance_alerts',
+                // 'view_attendance_reports',
+                // 'manage_attendance_batch'
             ],
             'funcionario' => [
                 'view_all_records'

@@ -142,10 +142,12 @@
             <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'prontuarios') !== false) ? 'active' : ''; ?>" href="prontuarios.php" title="Prontuários"><i class="fas fa-users"></i></a>
             
             <!-- Sistema de Faltas Novo -->
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && (!isset($_GET['action']) || $_GET['action']==='index')) ? 'active' : ''; ?>" href="faltas.php" title="Faltas - Por Dia"><i class="fas fa-calendar-day"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'oficina') ? 'active' : ''; ?>" href="faltas.php?action=oficina" title="Faltas - Por Oficina"><i class="fas fa-chalkboard-teacher"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'alertas') ? 'active' : ''; ?>" href="faltas.php?action=alertas" title="Alertas de Faltas"><i class="fas fa-exclamation-triangle"></i></a>
-            <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'desligamento') !== false) ? 'active' : ''; ?>" href="desligamento.php" title="Desligamentos"><i class="fas fa-user-times"></i></a>
+            <?php if ($currentUser['role'] !== 'psicologo'): ?>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && (!isset($_GET['action']) || $_GET['action']==='index')) ? 'active' : ''; ?>" href="faltas.php" title="Faltas - Por Dia"><i class="fas fa-calendar-day"></i></a>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'oficina') ? 'active' : ''; ?>" href="faltas.php?action=oficina" title="Faltas - Por Oficina"><i class="fas fa-chalkboard-teacher"></i></a>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'alertas') ? 'active' : ''; ?>" href="faltas.php?action=alertas" title="Alertas de Faltas"><i class="fas fa-exclamation-triangle"></i></a>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'desligamento') !== false) ? 'active' : ''; ?>" href="desligamento.php" title="Desligamentos"><i class="fas fa-user-times"></i></a>
+            <?php endif; ?>
             
             <?php if ($currentUser['role'] === 'psicologo'): ?>
                 <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'psychology') !== false) ? 'active' : ''; ?>" href="psychology.php" title="Área Psicológica"><i class="fas fa-brain"></i></a>

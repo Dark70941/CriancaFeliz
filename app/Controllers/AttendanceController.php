@@ -16,6 +16,7 @@ class AttendanceController extends BaseController {
      */
     public function index() {
         $this->requireAuth();
+        $this->requirePermission('view_attendance');
         
         try {
             $page = intval($this->getParam('page', 1));
@@ -253,6 +254,10 @@ class AttendanceController extends BaseController {
     public function showDesligamento($id) {
         $this->requireAuth();
         $this->requirePermission('manage_users');
+        // Deny access to psychologists
+        if ($this->authService->hasPermission('view_psychological_area')) {
+            throw new Exception('Acesso negado: Psicólogos não têm permissão para acessar esta funcionalidade');
+        }
         
         try {
             $stats = $this->attendanceService->getAtendidoStatistics($id);
@@ -396,6 +401,7 @@ class AttendanceController extends BaseController {
      */
     public function alertas() {
         $this->requireAuth();
+        $this->requirePermission('view_attendance_alerts');
         
         try {
             $atendidos = $this->attendanceService->getAtendidosComAlertas();
@@ -419,6 +425,7 @@ class AttendanceController extends BaseController {
      */
     public function relatorios() {
         $this->requireAuth();
+        $this->requirePermission('view_attendance_reports');
         
         try {
             // Obter filtros
@@ -461,6 +468,7 @@ class AttendanceController extends BaseController {
      */
     public function batch() {
         $this->requireAuth();
+        $this->requirePermission('manage_attendance_batch');
         
         try {
             $date = $this->getParam('data', date('Y-m-d'));

@@ -228,5 +228,15 @@
         "user_name": "Administrador",
         "timestamp": "2025-11-19 04:04:34",
         "ip": "::1"
+    },
+    {
+        "id": "6924910599c03",
+        "action": "create",
+        "ficha_id": 5,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-11-24 18:08:21",
+        "ip": "::1"
     }
 ]

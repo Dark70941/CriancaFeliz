@@ -56,7 +56,7 @@
                         style="padding:12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
                     <option value="">Selecione o nível de acesso</option>
                     <option value="admin">Administrador</option>
-                    <option value="psicologo">Psicólogo</option>
+                    <option value="psicologo">Psicólogo - Assistente Social</option>
                     <option value="funcionario">Funcionário</option>
                 </select>
             </div>
@@ -82,7 +82,7 @@
             </div>
             
             <div class="permission-item" style="background:white; padding:16px; border-radius:8px; border-left:4px solid #17a2b8;">
-                <div style="font-weight:600; color:#17a2b8; margin-bottom:8px;">🧠 Psicólogo</div>
+                <div style="font-weight:600; color:#17a2b8; margin-bottom:8px;">🧠 Psicólogo - Assistente Social</div>
                 <div style="font-size:14px; color:#6c757d; line-height:1.5;">
                     • Visualização de todas as fichas<br>
                     • Acesso exclusivo à área psicológica<br>
