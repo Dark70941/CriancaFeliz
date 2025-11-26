@@ -82,51 +82,86 @@ class PsychologyService {
      * Obtém todos os pacientes (crianças com fichas de acolhimento)
      */
     public function getAllPatients() {
-        $fichas = $this->acolhimentoModel->getAll();
-        $patients = [];
-        
-        foreach ($fichas as $ficha) {
-            $patients[] = [
-                'cpf' => $ficha['cpf'] ?? 'Não informado',
-                'nome_completo' => $ficha['nome_completo'] ?? 'Não informado',
-                'data_nascimento' => $ficha['data_nascimento'] ?? '',
-                'idade' => isset($ficha['data_nascimento']) ? $this->calculateAge($ficha['data_nascimento']) : 0,
-                'responsavel' => $ficha['nome_responsavel'] ?? 'Não informado',
-                'data_acolhimento' => $ficha['data_acolhimento'] ?? '',
-                'last_note' => $this->getLastNoteDate($ficha['cpf'] ?? '')
-            ];
+        try {
+            // Obter todas as fichas de acolhimento
+            $fichas = $this->acolhimentoModel->getAll();
+            
+            error_log("Número total de fichas encontradas: " . count($fichas));
+            
+            $patients = [];
+            
+            foreach ($fichas as $ficha) {
+                // Verificar se o registro tem um ID de atendido (indicando que está ativo)
+                if (isset($ficha['idatendido']) && $ficha['idatendido']) {
+                    $patients[] = [
+                        'cpf' => $ficha['cpf'] ?? 'Não informado',
+                        'nome_completo' => $ficha['nome'] ?? 'Não informado',
+                        'data_nascimento' => $ficha['data_nascimento'] ?? '',
+                        'idade' => isset($ficha['data_nascimento']) ? $this->calculateAge($ficha['data_nascimento']) : 0,
+                        'responsavel' => $ficha['nome_responsavel'] ?? 'Não informado',
+                        'data_acolhimento' => $ficha['data_cadastro'] ?? '',
+                        'last_note' => $this->getLastNoteDate($ficha['cpf'] ?? '')
+                    ];
+                }
+            }
+            
+            error_log("Número de pacientes processados: " . count($patients));
+            
+            // Ordenar por nome
+            usort($patients, function($a, $b) {
+                return strcmp($a['nome_completo'], $b['nome_completo']);
+            });
+            
+            return $patients;
+            
+        } catch (Exception $e) {
+            error_log("Erro ao buscar pacientes: " . $e->getMessage());
+            return [];
         }
-        
-        // Ordenar por nome
-        usort($patients, function($a, $b) {
-            return strcmp($a['nome_completo'], $b['nome_completo']);
-        });
-        
-        return $patients;
     }
     
     /**
      * Obtém paciente específico
      */
     public function getPatient($cpf) {
-        $ficha = $this->acolhimentoModel->findByCpf($cpf);
+        // Primeiro, buscar o atendido pelo CPF
+        $atendido = $this->acolhimentoModel->findByCpf($cpf);
         
-        if (!$ficha) {
+        if (!$atendido) {
+            error_log("Paciente não encontrado com CPF: " . $cpf);
             return null;
         }
         
-        return [
-            'cpf' => $ficha['cpf'] ?? 'Não informado',
-            'nome_completo' => $ficha['nome_completo'] ?? 'Não informado',
-            'data_nascimento' => $ficha['data_nascimento'] ?? '',
-            'idade' => isset($ficha['data_nascimento']) ? $this->calculateAge($ficha['data_nascimento']) : 0,
-            'responsavel' => $ficha['nome_responsavel'] ?? 'Não informado',
-            'contato' => $ficha['contato_1'] ?? 'Não informado',
-            'endereco' => $this->formatAddress($ficha),
-            'data_acolhimento' => $ficha['data_acolhimento'] ?? '',
-            'queixa_principal' => $ficha['queixa_principal'] ?? 'Não informado',
-            'encaminhado_por' => $ficha['encaminha_por'] ?? 'Não informado'
-        ];
+        try {
+            // Buscar a ficha de acolhimento correspondente
+            $sql = "SELECT * FROM Ficha_Acolhimento WHERE id_atendido = ?";
+            $stmt = $this->acolhimentoModel->query($sql, [$atendido['idatendido']]);
+            $ficha = $stmt->fetch();
+            
+            if (!$ficha) {
+                error_log("Ficha de acolhimento não encontrada para o paciente com ID: " . $atendido['idatendido']);
+            }
+            
+            // Combinar os dados do atendido com os da ficha
+            $dadosPaciente = array_merge($atendido, $ficha ?: []);
+            
+            return [
+                'cpf' => $dadosPaciente['cpf'] ?? 'Não informado',
+                'nome_completo' => $dadosPaciente['nome'] ?? 'Não informado',
+                'data_nascimento' => $dadosPaciente['data_nascimento'] ?? '',
+                'idade' => isset($dadosPaciente['data_nascimento']) ? $this->calculateAge($dadosPaciente['data_nascimento']) : 0,
+                'responsavel' => $dadosPaciente['nome_responsavel'] ?? $dadosPaciente['acolhimento_responsavel'] ?? 'Não informado',
+                'contato' => $dadosPaciente['contato_1'] ?? 'Não informado',
+                'endereco' => $this->formatAddress($dadosPaciente),
+                'data_acolhimento' => $dadosPaciente['data_acolhimento'] ?? $dadosPaciente['data_cadastro'] ?? '',
+                'queixa_principal' => $dadosPaciente['queixa_principal'] ?? 'Não informado',
+                'encaminhado_por' => $dadosPaciente['encaminha_por'] ?? 'Não informado'
+            ];
+            
+        } catch (Exception $e) {
+            error_log("Erro ao buscar ficha do paciente: " . $e->getMessage());
+            return null;
+        }
     }
     
     /**

@@ -69,13 +69,22 @@ class PsychologyController extends BaseController {
         $this->requirePermission('view_psychological_area');
         
         try {
+            error_log("Buscando paciente com CPF: " . $cpf);
+            
             $patient = $this->psychologyService->getPatient($cpf);
-            $notes = $this->psychologyService->getPatientNotes($cpf);
-            $assessments = $this->psychologyService->getPatientAssessments($cpf);
             
             if (!$patient) {
+                error_log("Paciente não encontrado no serviço para o CPF: " . $cpf);
                 throw new Exception('Paciente não encontrado');
             }
+            
+            error_log("Paciente encontrado: " . $patient['nome_completo']);
+            
+            $notes = $this->psychologyService->getPatientNotes($cpf);
+            error_log("Total de anotações encontradas: " . count($notes));
+            
+            $assessments = $this->psychologyService->getPatientAssessments($cpf);
+            error_log("Total de avaliações encontradas: " . count($assessments));
             
             $data = [
                 'title' => 'Prontuário Psicológico',
@@ -90,6 +99,7 @@ class PsychologyController extends BaseController {
             $this->renderWithLayout('main', 'psychology/patient', $data);
             
         } catch (Exception $e) {
+            error_log("Erro no método patient: " . $e->getMessage());
             $this->handleException($e);
         }
     }

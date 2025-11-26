@@ -5,6 +5,20 @@
  */
 class Acolhimento extends BaseModelDB {
     
+    /**
+     * Executa uma consulta SQL personalizada
+     */
+    public function query($sql, $params = []) {
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            error_log("Erro na consulta SQL: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
     public function __construct() {
         parent::__construct('Atendido', 'idatendido');
     }
@@ -149,16 +163,65 @@ class Acolhimento extends BaseModelDB {
      * Busca por CPF
      */
     public function findByCpf($cpf) {
-        $cpf = preg_replace('/\D+/', '', $cpf);
-        
-        foreach ($this->data as $ficha) {
-            $fichaCpf = preg_replace('/\D+/', '', $ficha['cpf'] ?? '');
-            if ($fichaCpf === $cpf) {
-                return $ficha;
+        try {
+            // Log do CPF recebido
+            error_log("Buscando CPF: " . $cpf);
+            
+            // Remover caracteres não numéricos do CPF
+            $cpf = preg_replace('/\D+/', '', $cpf);
+            error_log("CPF após limpeza: " . $cpf);
+            
+            // Verificar se o CPF tem 11 dígitos
+            if (strlen($cpf) !== 11) {
+                error_log("CPF inválido (não tem 11 dígitos): " . $cpf);
+                return null;
             }
+            
+            // 1. Tentar encontrar o CPF exato
+            $sql = "SELECT * FROM {$this->table} WHERE cpf = ?";
+            error_log("SQL 1: " . $sql . " (CPF: " . $cpf . ")");
+            
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([$cpf]);
+            $result = $stmt->fetch();
+            
+            if ($result) {
+                error_log("Paciente encontrado com CPF exato: " . $cpf);
+                return $result;
+            }
+            
+            // 2. Se não encontrou, tentar com LIKE (caso tenha formatação diferente)
+            $sql = "SELECT * FROM {$this->table} WHERE cpf LIKE ?";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(["%$cpf%"]);
+            $result = $stmt->fetch();
+            
+            if ($result) {
+                error_log("Paciente encontrado com LIKE: " . $cpf);
+                return $result;
+            }
+            
+            // 3. Verificar se existem registros na tabela
+            $count = $this->pdo->query("SELECT COUNT(*) FROM {$this->table}")->fetchColumn();
+            error_log("Total de registros na tabela: " . $count);
+            
+            // 4. Verificar os primeiros 5 CPFs da tabela para ver o formato
+            $sql = "SELECT cpf FROM {$this->table} LIMIT 5";
+            $stmt = $this->pdo->query($sql);
+            $sampleCpfs = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            if (!empty($sampleCpfs)) {
+                error_log("Amostra de CPFs na tabela: " . implode(", ", $sampleCpfs));
+            } else {
+                error_log("Nenhum CPF encontrado na tabela");
+            }
+            
+            return null;
+            
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar por CPF: " . $e->getMessage());
+            return null;
         }
-        
-        return null;
     }
     
     /**
@@ -182,6 +245,51 @@ class Acolhimento extends BaseModelDB {
     /**
      * Calcula idade baseada na data de nascimento
      */
+    /**
+     * Busca todos os pacientes com status 'Atendido'
+     */
+    public function getAtendidos() {
+        try {
+            $sql = "SELECT * FROM {$this->table} WHERE status = 'Atendido'";
+            error_log("SQL: " . $sql); // Log da consulta SQL
+            
+            $stmt = $this->pdo->query($sql);
+            $result = $stmt->fetchAll();
+            
+            error_log("Número de registros encontrados: " . count($result)); // Log do número de registros
+            if (count($result) === 0) {
+                error_log("Nenhum registro encontrado com status 'Atendido'"); // Log se não encontrar registros
+                // Vamos verificar se existem registros na tabela
+                $countAll = $this->pdo->query("SELECT COUNT(*) FROM {$this->table}")->fetchColumn();
+                error_log("Total de registros na tabela: " . $countAll);
+                
+                // Verificar valores de status existentes
+                $this->getStatusValues();
+            }
+            
+            return $result;
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar atendidos: " . $e->getMessage()); // Log de erro
+            return [];
+        }
+    }
+    
+    /**
+     * Obtém todos os valores únicos de status da tabela
+     */
+    public function getStatusValues() {
+        try {
+            $sql = "SELECT DISTINCT status FROM {$this->table}";
+            $stmt = $this->pdo->query($sql);
+            $statusValues = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            error_log("Valores de status encontrados na tabela: " . implode(", ", $statusValues));
+            return $statusValues;
+        } catch (PDOException $e) {
+            error_log("Erro ao buscar valores de status: " . $e->getMessage());
+            return [];
+        }
+    }
+    
     public function calculateAge($dataNascimento) {
         if (empty($dataNascimento)) {
             return null;
