@@ -123,46 +123,44 @@ class PsychologyService {
     /**
      * Obtém paciente específico
      */
-    public function getPatient($cpf) {
-        // Primeiro, buscar o atendido pelo CPF
+   public function getPatient($cpf) {
+    try {
+        error_log("Buscando paciente com CPF: " . $cpf);
+        
+        // Busca o atendido pelo CPF
         $atendido = $this->acolhimentoModel->findByCpf($cpf);
         
         if (!$atendido) {
             error_log("Paciente não encontrado com CPF: " . $cpf);
+            
+            // Tenta buscar qualquer paciente para depuração
+            $sql = "SELECT * FROM Atendido WHERE cpf IS NOT NULL LIMIT 1";
+            $stmt = $this->acolhimentoModel->query($sql);
+            $teste = $stmt->fetch();
+            error_log("Teste de busca: " . ($teste ? "Encontrado" : "Nenhum registro"));
+            
             return null;
         }
         
-        try {
-            // Buscar a ficha de acolhimento correspondente
-            $sql = "SELECT * FROM Ficha_Acolhimento WHERE id_atendido = ?";
-            $stmt = $this->acolhimentoModel->query($sql, [$atendido['idatendido']]);
-            $ficha = $stmt->fetch();
-            
-            if (!$ficha) {
-                error_log("Ficha de acolhimento não encontrada para o paciente com ID: " . $atendido['idatendido']);
-            }
-            
-            // Combinar os dados do atendido com os da ficha
-            $dadosPaciente = array_merge($atendido, $ficha ?: []);
-            
-            return [
-                'cpf' => $dadosPaciente['cpf'] ?? 'Não informado',
-                'nome_completo' => $dadosPaciente['nome'] ?? 'Não informado',
-                'data_nascimento' => $dadosPaciente['data_nascimento'] ?? '',
-                'idade' => isset($dadosPaciente['data_nascimento']) ? $this->calculateAge($dadosPaciente['data_nascimento']) : 0,
-                'responsavel' => $dadosPaciente['nome_responsavel'] ?? $dadosPaciente['acolhimento_responsavel'] ?? 'Não informado',
-                'contato' => $dadosPaciente['contato_1'] ?? 'Não informado',
-                'endereco' => $this->formatAddress($dadosPaciente),
-                'data_acolhimento' => $dadosPaciente['data_acolhimento'] ?? $dadosPaciente['data_cadastro'] ?? '',
-                'queixa_principal' => $dadosPaciente['queixa_principal'] ?? 'Não informado',
-                'encaminhado_por' => $dadosPaciente['encaminha_por'] ?? 'Não informado'
-            ];
-            
-        } catch (Exception $e) {
-            error_log("Erro ao buscar ficha do paciente: " . $e->getMessage());
-            return null;
-        }
+        // Formata os dados para retorno
+        return [
+            'cpf' => $atendido['cpf'] ?? 'Não informado',
+            'nome_completo' => $atendido['nome'] ?? 'Não informado',
+            'data_nascimento' => $atendido['data_nascimento'] ?? '',
+            'idade' => isset($atendido['data_nascimento']) ? $this->calculateAge($atendido['data_nascimento']) : 0,
+            'responsavel' => $atendido['nome_responsavel'] ?? 'Não informado',
+            'contato' => $atendido['contato_1'] ?? 'Não informado',
+            'endereco' => $this->formatAddress($atendido),
+            'data_acolhimento' => $atendido['data_cadastro'] ?? '',
+            'queixa_principal' => $atendido['queixa_principal'] ?? 'Não informado',
+            'encaminhado_por' => $atendido['encaminha_por'] ?? 'Não informado'
+        ];
+        
+    } catch (Exception $e) {
+        error_log("Erro ao buscar paciente: " . $e->getMessage());
+        return null;
     }
+}
     
     /**
      * Obtém anotações de um paciente
@@ -244,30 +242,65 @@ class PsychologyService {
     /**
      * Salva anotação psicológica
      */
-    public function saveNote($data) {
-        global $authService;
-        $currentUser = $authService->getCurrentUser();
+ public function saveNote($data) {
+    try {
+        // Log inicial detalhado
+        error_log("=== INÍCIO DO SAVE NOTE ===");
+        error_log("Dados recebidos: " . print_r($data, true));
         
+        // Garante que o id_psicologo está presente
+        if (empty($_SESSION['user_id'])) {
+            $errorMsg = "Usuário não autenticado";
+            error_log($errorMsg);
+            return ['success' => false, 'message' => $errorMsg];
+        }
+
+        // Validação dos dados obrigatórios
+        $required = ['id_atendido', 'tipo', 'conteudo'];
+        foreach ($required as $field) {
+            if (empty($data[$field])) {
+                $errorMsg = "Campo obrigatório faltando: " . $field;
+                error_log($errorMsg);
+                return ['success' => false, 'message' => $errorMsg];
+            }
+        }
+
+        // Prepara os dados para inserção
         $noteData = [
-            'id' => uniqid('note_'),
-            'patient_cpf' => sanitizeInput($data['patient_cpf']),
-            'psychologist_id' => $currentUser['id'],
-            'psychologist_name' => $currentUser['name'],
-            'note_type' => $data['note_type'],
-            'title' => sanitizeInput($data['title'] ?? ''),
-            'content' => sanitizeInput($data['content']),
-            'mood_assessment' => $data['mood_assessment'] ?? null,
-            'behavior_notes' => sanitizeInput($data['behavior_notes'] ?? ''),
-            'recommendations' => sanitizeInput($data['recommendations'] ?? ''),
-            'next_session' => $data['next_session'] ?? null,
-            'confidential' => true,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
+            'id_atendido' => (int)$data['id_atendido'],
+            'id_psicologo' => (int)$_SESSION['user_id'], // Usa o ID do usuário logado
+            'tipo' => $data['tipo'],
+            'conteudo' => $data['conteudo'],
+            'data_anotacao' => $data['data_anotacao'] ?? date('Y-m-d H:i:s'),
+            'titulo' => $data['titulo'] ?? 'Sem título',
+            'humor' => isset($data['humor']) ? (int)$data['humor'] : null,
+            'observacoes_comportamentais' => $data['observacoes_comportamentais'] ?? null,
+            'recomendacoes' => $data['recomendacoes'] ?? null,
+            'proxima_sessao' => !empty($data['proxima_sessao']) ? $data['proxima_sessao'] : null
         ];
+
+        error_log("Dados preparados para inserção: " . print_r($noteData, true));
+
+        // Tenta inserir
+        $result = $this->acolhimentoModel->insert('anotacao_psicologica', $noteData);
         
-        return $this->psychologyModel->create($noteData);
+        if (!$result) {
+            $error = "Falha ao inserir no banco de dados";
+            error_log($error);
+            $errorInfo = $this->acolhimentoModel->getLastError();
+            error_log("Erro do banco: " . print_r($errorInfo, true));
+            return ['success' => false, 'message' => $error . ': ' . print_r($errorInfo, true)];
+        }
+
+        error_log("Anotação salva com sucesso! ID: " . $result);
+        return ['success' => true, 'message' => 'Anotação salva com sucesso!', 'id' => $result];
+
+    } catch (Exception $e) {
+        $errorMsg = "Erro ao salvar anotação: " . $e->getMessage() . "\n" . $e->getTraceAsString();
+        error_log($errorMsg);
+        return ['success' => false, 'message' => 'Erro ao salvar anotação: ' . $e->getMessage()];
     }
-    
+}
     /**
      * Exclui anotação
      */

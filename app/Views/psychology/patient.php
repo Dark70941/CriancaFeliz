@@ -185,6 +185,9 @@
     <?php endif; ?>
 </div>
 
+<!-- Seção de Nova Anotação (para âncora) -->
+<div id="new-note"></div>
+
 <!-- Modal para Nova Anotação -->
 <div id="noteModal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; padding:20px; box-sizing:border-box; overflow-y:auto;">
     <div class="modal-content" style="background:#fff; border-radius:12px; max-width:800px; margin:0 auto; padding:0; position:relative; max-height:90vh; overflow-y:auto;">
@@ -278,6 +281,14 @@
 </div>
 
 <script>
+// Verificar se deve abrir o modal automaticamente
+if (window.location.hash === '#new-note') {
+    // Rolar suavemente até a seção
+    document.getElementById('new-note').scrollIntoView({ behavior: 'smooth' });
+    // Abrir o modal após um pequeno atraso para melhor experiência
+    setTimeout(openNewNoteModal, 500);
+}
+
 function openNewNoteModal() {
     document.getElementById('noteModal').style.display = 'block';
     document.body.style.overflow = 'hidden';

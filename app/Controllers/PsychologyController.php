@@ -107,52 +107,65 @@ class PsychologyController extends BaseController {
     /**
      * Salva anotação psicológica
      */
-    public function saveNote() {
-        $this->requireAuth();
-        $this->requirePermission('psychological_notes');
-        
-        if (!$this->isPost()) {
-            $this->json(['error' => 'Método não permitido'], 405);
+ public function saveNote() {
+    $this->requireAuth();
+    $this->requirePermission('add_psychological_note');
+    
+    try {
+        // Verifica se é uma requisição POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            throw new Exception('Método não permitido');
         }
-        
-        try {
-            $this->validateCSRF();
-            $data = $this->getPostData();
-            
-            // Validações
-            if (empty($data['patient_cpf'])) {
-                throw new Exception('CPF do paciente é obrigatório');
-            }
-            
-            if (empty($data['note_type'])) {
-                throw new Exception('Tipo de anotação é obrigatório');
-            }
-            
-            if (empty($data['content'])) {
-                throw new Exception('Conteúdo da anotação é obrigatório');
-            }
-            
-            // Verificar se é edição ou criação
-            if (!empty($data['note_id'])) {
-                // Edição
-                $noteId = $this->psychologyService->updateNote($data['note_id'], $data);
-                $message = 'Anotação atualizada com sucesso';
-            } else {
-                // Criação
-                $noteId = $this->psychologyService->saveNote($data);
-                $message = 'Anotação salva com sucesso';
-            }
-            
-            $this->json([
-                'success' => true,
-                'message' => $message,
-                'note_id' => $noteId
-            ]);
-            
-        } catch (Exception $e) {
-            $this->json(['error' => $e->getMessage()], 400);
+
+        // Valida CSRF
+        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            throw new Exception('Token CSRF inválido');
         }
+
+        // Obtém os dados do formulário
+        $data = [
+            'id_anotacao' => $_POST['id_anotacao'] ?? null,
+            'id_atendido' => $_POST['id_atendido'] ?? null,
+            'id_psicologo' => $_SESSION['user_id'],
+            'tipo' => $_POST['tipo'] ?? 'consulta',
+            'titulo' => $_POST['titulo'] ?? 'Sem título',
+            'conteudo' => $_POST['conteudo'] ?? '',
+            'data_anotacao' => $_POST['data_anotacao'] ?? date('Y-m-d H:i:s'),
+            'humor' => $_POST['humor'] ?? null,
+            'observacoes_comportamentais' => $_POST['observacoes_comportamentais'] ?? null,
+            'recomendacoes' => $_POST['recomendacoes'] ?? null,
+            'proxima_sessao' => !empty($_POST['proxima_sessao']) ? $_POST['proxima_sessao'] : null
+        ];
+
+        // Validação básica
+        if (empty($data['id_atendido'])) {
+            throw new Exception('ID do paciente não informado');
+        }
+
+        if (empty($data['conteudo'])) {
+            throw new Exception('O conteúdo da anotação é obrigatório');
+        }
+
+        // Salva a anotação
+        $result = $this->psychologyService->saveNote($data);
+
+        if ($result['success']) {
+            $_SESSION['success_message'] = $result['message'];
+        } else {
+            throw new Exception($result['message']);
+        }
+
+        // Redireciona de volta para a página do paciente
+        header('Location: psychology.php?action=patient&cpf=' . urlencode($_POST['cpf_paciente']));
+        exit;
+
+    } catch (Exception $e) {
+        error_log("Erro no saveNote: " . $e->getMessage());
+        $_SESSION['error_message'] = $e->getMessage();
+        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        exit;
     }
+}
     
     /**
      * Obtém uma anotação específica

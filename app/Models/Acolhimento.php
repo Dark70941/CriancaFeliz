@@ -163,66 +163,63 @@ class Acolhimento extends BaseModelDB {
      * Busca por CPF
      */
     public function findByCpf($cpf) {
-        try {
-            // Log do CPF recebido
-            error_log("Buscando CPF: " . $cpf);
-            
-            // Remover caracteres não numéricos do CPF
-            $cpf = preg_replace('/\D+/', '', $cpf);
-            error_log("CPF após limpeza: " . $cpf);
-            
-            // Verificar se o CPF tem 11 dígitos
-            if (strlen($cpf) !== 11) {
-                error_log("CPF inválido (não tem 11 dígitos): " . $cpf);
-                return null;
-            }
-            
-            // 1. Tentar encontrar o CPF exato
-            $sql = "SELECT * FROM {$this->table} WHERE cpf = ?";
-            error_log("SQL 1: " . $sql . " (CPF: " . $cpf . ")");
-            
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([$cpf]);
-            $result = $stmt->fetch();
-            
-            if ($result) {
-                error_log("Paciente encontrado com CPF exato: " . $cpf);
-                return $result;
-            }
-            
-            // 2. Se não encontrou, tentar com LIKE (caso tenha formatação diferente)
-            $sql = "SELECT * FROM {$this->table} WHERE cpf LIKE ?";
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->execute(["%$cpf%"]);
-            $result = $stmt->fetch();
-            
-            if ($result) {
-                error_log("Paciente encontrado com LIKE: " . $cpf);
-                return $result;
-            }
-            
-            // 3. Verificar se existem registros na tabela
-            $count = $this->pdo->query("SELECT COUNT(*) FROM {$this->table}")->fetchColumn();
-            error_log("Total de registros na tabela: " . $count);
-            
-            // 4. Verificar os primeiros 5 CPFs da tabela para ver o formato
-            $sql = "SELECT cpf FROM {$this->table} LIMIT 5";
-            $stmt = $this->pdo->query($sql);
-            $sampleCpfs = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            
-            if (!empty($sampleCpfs)) {
-                error_log("Amostra de CPFs na tabela: " . implode(", ", $sampleCpfs));
-            } else {
-                error_log("Nenhum CPF encontrado na tabela");
-            }
-            
-            return null;
-            
-        } catch (PDOException $e) {
-            error_log("Erro ao buscar por CPF: " . $e->getMessage());
+    try {
+        // Remove formatação do CPF informado
+        $cpfBusca = preg_replace('/\D+/', '', $cpf);
+        
+        if (empty($cpfBusca)) {
+            error_log("CPF vazio ou inválido fornecido: " . $cpf);
             return null;
         }
+        
+        // Primeiro tenta encontrar pelo CPF exato (com ou sem formatação)
+        $sql = "SELECT * FROM Atendido WHERE 
+                cpf = ? OR 
+                cpf = ? OR 
+                cpf = ? OR
+                cpf = ? OR
+                REPLACE(REPLACE(cpf, '.', ''), '-', '') = ?";
+        
+        $cpfFormatado1 = substr($cpfBusca, 0, 3) . '.' . 
+                        substr($cpfBusca, 3, 3) . '.' . 
+                        substr($cpfBusca, 6, 3) . '-' . 
+                        substr($cpfBusca, 9);
+                        
+        $cpfFormatado2 = substr($cpfBusca, 0, 3) . '.' . 
+                        substr($cpfBusca, 3, 3) . '.' . 
+                        substr($cpfBusca, 6, 3) . '/' . 
+                        substr($cpfBusca, 9);
+                        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            $cpfBusca, 
+            $cpfFormatado1,
+            $cpfFormatado2,
+            str_pad($cpfBusca, 14, '0', STR_PAD_LEFT),
+            $cpfBusca
+        ]);
+        
+        $atendido = $stmt->fetch();
+        
+        if ($atendido) {
+            return $atendido;
+        }
+        
+        // Se não encontrou, tenta buscar por similaridade
+        $sql = "SELECT * FROM Atendido WHERE 
+                REPLACE(REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), '/', ''), ' ', '') LIKE ? 
+                LIMIT 1";
+                
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['%' . $cpfBusca . '%']);
+        
+        return $stmt->fetch();
+        
+    } catch (Exception $e) {
+        error_log("Erro ao buscar por CPF: " . $e->getMessage());
+        return null;
     }
+}
     
     /**
      * Busca avançada

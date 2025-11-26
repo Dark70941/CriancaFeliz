@@ -114,13 +114,21 @@
                                 <?php endif; ?>
                             </td>
                             
-                            <td style="padding:16px; text-align:center;">
-                                <a href="psychology.php?action=patient&cpf=<?php echo urlencode($patient['cpf']); ?>" 
-                                   class="btn-action" 
-                                   style="background:#17a2b8; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px; display:inline-flex; align-items:center; gap:4px;"
-                                   title="Ver Prontuário Psicológico">
-                                    🧠 Abrir
-                                </a>
+                            <td style="padding:16px; text-align:center; white-space:nowrap;">
+                                <div style="display:flex; gap:8px; justify-content:center;">
+                                    <a href="psychology.php?action=patient&cpf=<?php echo urlencode($patient['cpf']); ?>" 
+                                       class="btn-action" 
+                                       style="background:#6c757d; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px; display:inline-flex; align-items:center; gap:4px;"
+                                       title="Ver Informações do Paciente">
+                                        👤 Ver
+                                    </a>
+                                    <a href="psychology.php?action=patient&cpf=<?php echo urlencode($patient['cpf']); ?>#new-note" 
+                                       class="btn-action" 
+                                       style="background:#17a2b8; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:12px; display:inline-flex; align-items:center; gap:4px;"
+                                       title="Iniciar Atendimento">
+                                        🧠 Atender
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
