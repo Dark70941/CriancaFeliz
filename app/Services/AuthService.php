@@ -146,6 +146,8 @@ class AuthService {
                 'psychological_notes',
                 'view_psychological_area',
                 'edit_psychological_notes',
+                'add_psychological_note',
+                'delete_psychological_note',
                 // Removendo permissões de frequência e desligamento
                 // 'view_attendance',
                 // 'view_attendance_alerts',

@@ -385,6 +385,25 @@ class SocioeconomicoDB extends BaseModelDB {
     /**
      * Busca avançada
      */
+
+    public function searchByName($nome)
+    {
+        $sql = "
+            SELECT *
+            FROM ficha_socioeconomico
+            WHERE nome_completo LIKE :nome
+            ORDER BY nome_completo ASC
+            LIMIT 30
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->bindValue(':nome', '%' . $nome . '%');
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
     public function searchAdvanced($query) {
         $stmt = $this->query("
             SELECT 

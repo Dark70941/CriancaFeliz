@@ -104,8 +104,10 @@ class SocioeconomicoService {
     /**
      * Busca avançada
      */
+
+    
     public function searchFichas($query, $filters = []) {
-        $results = $this->socioeconomicoModel->searchAdvanced($query);
+    $results = $this->socioeconomicoModel->searchByName($query);
         
         // Aplicar filtros adicionais
         if (!empty($filters)) {

@@ -50,20 +50,53 @@ abstract class BaseModelDB {
     /**
      * Criar novo registro
      */
-    public function create($data) {
-        $fields = array_keys($data);
-        $placeholders = array_fill(0, count($fields), '?');
-        
-        $sql = "INSERT INTO {$this->table} (" . implode(', ', $fields) . ") 
-                VALUES (" . implode(', ', $placeholders) . ")";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute(array_values($data));
-        
-        $id = $this->pdo->lastInsertId();
-        return $this->findById($id);
+   // dentro de class BaseModelDB { ... }
+
+private function getTableColumns()
+{
+    // Retorna array com nomes das colunas da tabela (cache simples por instância)
+    static $cache = [];
+    $key = $this->table;
+    if (isset($cache[$key])) return $cache[$key];
+
+    $stmt = $this->pdo->prepare("SHOW COLUMNS FROM {$this->table}");
+    $stmt->execute();
+    $cols = array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+    $cache[$key] = $cols;
+    return $cols;
+}
+
+public function create($data)
+{
+    // 1) manter apenas colunas existentes na tabela
+    $columns = $this->getTableColumns();
+    $data = array_intersect_key($data, array_flip($columns));
+
+    if (empty($data)) {
+        throw new Exception("Nenhum dado válido para inserir em {$this->table}");
     }
-    
+
+    // 2) converter strings vazias para NULL para não quebrar colunas DATE/DATETIME/ENUM
+    foreach ($data as $k => $v) {
+        if ($v === '') $data[$k] = null;
+    }
+
+    // 3) montar SQL
+    $fields = array_keys($data);
+    $placeholders = array_fill(0, count($fields), '?');
+
+    $sql = "INSERT INTO {$this->table} (" . implode(', ', $fields) . ") VALUES (" . implode(', ', $placeholders) . ")";
+    $stmt = $this->pdo->prepare($sql);
+
+    $ok = $stmt->execute(array_values($data));
+    if (!$ok) {
+        $err = $stmt->errorInfo();
+        throw new Exception("Erro ao inserir em {$this->table}: " . ($err[2] ?? json_encode($err)));
+    }
+
+    $id = $this->pdo->lastInsertId();
+    return $this->findById($id);
+}    
     /**
      * Atualizar registro
      */

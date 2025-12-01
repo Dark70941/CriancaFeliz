@@ -106,6 +106,17 @@
     }
 </style>
 
+<?php
+session_start();
+require_once 'conexao.php';
+// quaisquer outros includes...
+
+if ($_SESSION['user_role'] != 1) { 
+    echo "<h2 style='text-align:center;margin-top:40px;color:red;'>Acesso negado</h2>";
+    exit;
+}
+?>
+
 <!-- Estatísticas -->
 <div class="stats-row">
     <div class="stat-card">

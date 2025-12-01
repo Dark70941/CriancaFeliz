@@ -1,189 +1,234 @@
+<?php
+// Função de segurança para datas
+function safeDate($date) {
+    if (empty($date) || $date === '0000-00-00' || $date === '0000-00-00 00:00:00') return '-';
+    $ts = strtotime(str_replace('/', '-', $date));
+    return ($ts && $ts > 0) ? date('d/m/Y', $ts) : '-';
+}
+
+// Garantir variáveis obrigatórias
+$patient = $patient ?? [];
+$notes = $notes ?? [];
+
+// Campos seguros
+$nome = htmlspecialchars((string)($patient['nome_completo'] ?? $patient['nome'] ?? 'Não informado'));
+$cpf = htmlspecialchars((string)($patient['cpf'] ?? 'Não informado'));
+$idade = isset($patient['idade']) ? (int)$patient['idade'] : 0;
+$responsavel = htmlspecialchars((string)($patient['responsavel'] ?? 'Não informado'));
+$contato = htmlspecialchars((string)($patient['contato'] ?? 'Não informado'));
+$dataAcolh = safeDate($patient['data_acolhimento'] ?? null);
+$queixa = htmlspecialchars((string)($patient['queixa_principal'] ?? ''));
+
+// Avatar inicial
+$avatar = strtoupper(mb_substr($nome, 0, 1, 'UTF-8'));
+?>
+
 <div class="actions" style="display:flex; gap:10px; justify-content:space-between; align-items:center; margin-bottom:20px;">
     <a href="psychology.php?action=patients" class="btn secondary" style="background:#6c757d; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">
         ← Voltar aos Pacientes
     </a>
-    
+
     <button onclick="openNewNoteModal()" class="btn" style="background:#17a2b8; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:8px;">
         📝 Nova Anotação
     </button>
 </div>
 
-<!-- Informações do Paciente -->
+<!-- Cabeçalho do Paciente -->
 <div class="patient-header" style="background: linear-gradient(135deg, #17a2b8, #20c997); border-radius: 16px; padding: 24px; margin-bottom: 24px; color: white;">
     <div style="display: flex; align-items: center; gap: 20px;">
+
         <div class="patient-avatar" style="width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 32px; border: 3px solid rgba(255,255,255,0.3);">
-            <?php echo strtoupper(substr($patient['nome_completo'], 0, 1)); ?>
+            <?= $avatar ?>
         </div>
-        
+
         <div style="flex: 1;">
             <h1 style="margin: 0 0 8px 0; font-size: 28px; font-weight: 700;">
-                <?php echo htmlspecialchars($patient['nome_completo']); ?>
+                <?= $nome ?>
             </h1>
-            
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 16px; font-size: 14px;">
-                <div>
-                    <div style="opacity: 0.8; margin-bottom: 4px;">📅 Idade</div>
-                    <div style="font-weight: 600; font-size: 16px;"><?php echo $patient['idade']; ?> anos</div>
-                </div>
-                
-                <div>
-                    <div style="opacity: 0.8; margin-bottom: 4px;">👤 Responsável</div>
-                    <div style="font-weight: 600; font-size: 16px;"><?php echo htmlspecialchars($patient['responsavel']); ?></div>
-                </div>
-                
-                <div>
-                    <div style="opacity: 0.8; margin-bottom: 4px;">📞 Contato</div>
-                    <div style="font-weight: 600; font-size: 16px;"><?php echo htmlspecialchars($patient['contato']); ?></div>
-                </div>
-                
-                <div>
-                    <div style="opacity: 0.8; margin-bottom: 4px;">🏠 Acolhimento</div>
-                    <div style="font-weight: 600; font-size: 16px;"><?php echo date('d/m/Y', strtotime(str_replace('/', '-', $patient['data_acolhimento']))); ?></div>
-                </div>
+
+            <div style="font-weight: 600; font-size: 16px;">
+                <?= $idade ?> anos
+            </div>
+
+            <div style="font-weight: 600; font-size: 16px;">
+                <?= $responsavel ?>
+            </div>
+
+            <div style="font-weight: 600; font-size: 16px;">
+                <?= $contato ?>
+            </div>
+
+            <div style="font-weight: 600; font-size: 16px;">
+                <?= $dataAcolh ?>
             </div>
         </div>
     </div>
-    
+
     <?php if (!empty($patient['queixa_principal'])): ?>
         <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin-top: 20px;">
             <div style="font-weight: 600; margin-bottom: 8px; opacity: 0.9;">🎯 Queixa Principal</div>
             <div style="line-height: 1.5; opacity: 0.9;">
-                <?php echo htmlspecialchars($patient['queixa_principal']); ?>
+                <?= $queixa ?>
             </div>
         </div>
     <?php endif; ?>
 </div>
 
-<!-- Anotações Psicológicas -->
+<!-- Anotações -->
 <div class="psychology-notes" style="background:#fff; border-radius:12px; padding:24px; margin-bottom:24px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
     <h3 style="margin:0 0 20px 0; color:#495057; display:flex; align-items:center; gap:8px; justify-content:space-between;">
         <span>🧠 Anotações Psicológicas</span>
         <span style="font-size:14px; font-weight:400; color:#6c757d;">
-            <?php echo count($notes); ?> anotação(ões)
+            <?= count($notes) ?> anotação(ões)
         </span>
     </h3>
-    
+
     <?php if (empty($notes)): ?>
         <div class="empty-notes" style="text-align:center; padding:40px; color:#6c757d;">
             <div style="font-size:48px; margin-bottom:16px;">📝</div>
             <div style="font-size:18px; font-weight:600; margin-bottom:8px;">Nenhuma anotação ainda</div>
             <div style="margin-bottom:20px;">Comece criando a primeira anotação psicológica para este paciente</div>
+
             <button onclick="openNewNoteModal()" class="btn" style="background:#17a2b8; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer;">
                 📝 Criar Primeira Anotação
             </button>
         </div>
     <?php else: ?>
+
         <div class="notes-timeline">
-            <?php foreach ($notes as $index => $note): ?>
-                <div class="note-item" style="position:relative; padding-left:40px; margin-bottom:24px; <?php echo $index === count($notes) - 1 ? '' : 'border-left:2px solid #e9ecef;'; ?>">
-                    <!-- Timeline dot -->
+            <?php foreach ($notes as $index => $note): 
+
+                $type = htmlspecialchars((string)($note['note_type'] ?? 'observacao'));
+                $title = htmlspecialchars((string)($note['title'] ?? ''));
+                $content = nl2br(htmlspecialchars((string)($note['content'] ?? '')));
+                $psychologist = htmlspecialchars((string)($note['psychologist_name'] ?? 'Psicólogo'));
+
+                $created = !empty($note['created_at']) ? date('d/m/Y H:i', strtotime($note['created_at'])) : '-';
+
+                $behavior = nl2br(htmlspecialchars((string)($note['behavior_notes'] ?? '')));
+                $recommend = nl2br(htmlspecialchars((string)($note['recommendations'] ?? '')));
+                $nextSession = !empty($note['next_session']) ? date('d/m/Y H:i', strtotime($note['next_session'])) : null;
+
+                $mood = (int)($note['mood_assessment'] ?? 0);
+
+                $icons = [
+                    'consulta' => '💬',
+                    'avaliacao' => '📋',
+                    'evolucao' => '📈',
+                    'observacao' => '👁️'
+                ];
+
+                $icon = $icons[$type] ?? '📝';
+
+            ?>
+                <div class="note-item"
+                    style="position:relative; padding-left:40px; margin-bottom:24px; <?= $index === count($notes) - 1 ? '' : 'border-left:2px solid #e9ecef;' ?>">
+
                     <div style="position:absolute; left:-8px; top:8px; width:16px; height:16px; border-radius:50%; background:#17a2b8; border:3px solid #fff; box-shadow:0 0 0 2px #e9ecef;"></div>
-                    
-                    <div class="note-card psychology-note-card" style="border-radius:12px; padding:20px; border-left:4px solid #17a2b8;">
+
+                    <div class="note-card psychology-note-card"
+                        style="border-radius:12px; padding:20px; border-left:4px solid #17a2b8;">
+
                         <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:12px;">
                             <div>
                                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                                    <span style="font-size:20px;">
-                                        <?php
-                                        $icons = [
-                                            'consulta' => '💬',
-                                            'avaliacao' => '📋',
-                                            'evolucao' => '📈',
-                                            'observacao' => '👁️'
-                                        ];
-                                        echo $icons[$note['note_type']] ?? '📝';
-                                        ?>
-                                    </span>
+                                    <span style="font-size:20px;"><?= $icon ?></span>
                                     <span class="note-type-text" style="font-weight:600; color:#17a2b8; text-transform:capitalize;">
-                                        <?php echo htmlspecialchars($note['note_type']); ?>
+                                        <?= $type ?>
                                     </span>
                                 </div>
-                                
-                                <?php if (!empty($note['title'])): ?>
+
+                                <?php if ($title): ?>
                                     <div class="note-title" style="font-weight:600; color:#212529; margin-bottom:8px;">
-                                        <?php echo htmlspecialchars($note['title']); ?>
+                                        <?= $title ?>
                                     </div>
                                 <?php endif; ?>
                             </div>
-                            
-                            <div class="note-meta" style="text-align:right; font-size:12px; color:#6c757d;">
-                                <div><?php echo date('d/m/Y H:i', strtotime($note['created_at'])); ?></div>
-                                <div style="margin-top:2px;">
-                                    Por: <?php echo htmlspecialchars($note['psychologist_name']); ?>
-                                </div>
+
+                            <div class="note-meta"
+                                style="text-align:right; font-size:12px; color:#6c757d;">
+                                <div><?= $created ?></div>
+                                <div style="margin-top:2px;">Por: <?= $psychologist ?></div>
                             </div>
                         </div>
-                        
+
                         <div class="note-content" style="color:#495057; line-height:1.6; margin-bottom:16px;">
-                            <?php echo nl2br(htmlspecialchars($note['content'])); ?>
+                            <?= $content ?>
                         </div>
-                        
-                        <?php if (!empty($note['mood_assessment'])): ?>
+
+                        <?php if ($mood > 0): ?>
                             <div class="mood-assessment-section" style="background:#fff; border-radius:8px; padding:12px; margin-bottom:12px;">
                                 <div class="mood-label" style="font-size:12px; color:#6c757d; margin-bottom:4px;">😊 Avaliação de Humor</div>
+
                                 <div style="display:flex; align-items:center; gap:8px;">
-                                    <?php
-                                    $moodColors = [1 => '#dc3545', 2 => '#fd7e14', 3 => '#ffc107', 4 => '#20c997', 5 => '#28a745'];
-                                    $moodLabels = [1 => 'Muito Triste', 2 => 'Triste', 3 => 'Neutro', 4 => 'Alegre', 5 => 'Muito Alegre'];
-                                    $mood = intval($note['mood_assessment']);
-                                    ?>
-                                    <div style="display:flex; gap:2px;">
-                                        <?php for ($i = 1; $i <= 5; $i++): ?>
-                                            <div style="width:12px; height:12px; border-radius:50%; background:<?php echo $i <= $mood ? ($moodColors[$mood] ?? '#6c757d') : '#e9ecef'; ?>;"></div>
+                                    <div style="display:flex; gap:3px;">
+                                        <?php
+                                            $colors = [1=>'#dc3545',2=>'#fd7e14',3=>'#ffc107',4=>'#20c997',5=>'#28a745'];
+                                            for ($i=1; $i<=5; $i++):
+                                        ?>
+                                            <div style="width:12px; height:12px; border-radius:50%; background:<?= $i <= $mood ? $colors[$mood] : '#e9ecef' ?>;"></div>
                                         <?php endfor; ?>
                                     </div>
-                                    <span style="font-weight:500; color:<?php echo $moodColors[$mood] ?? '#6c757d'; ?>;">
-                                        <?php echo $moodLabels[$mood] ?? 'Não avaliado'; ?>
+
+                                    <span style="color:<?= $colors[$mood] ?? '#6c757d' ?>">
+                                        <?= ['','Muito Triste','Triste','Neutro','Alegre','Muito Alegre'][$mood] ?>
                                     </span>
                                 </div>
                             </div>
                         <?php endif; ?>
-                        
-                        <?php if (!empty($note['behavior_notes'])): ?>
+
+                        <?php if (!empty($behavior)): ?>
                             <div class="behavior-section" style="background:#fff; border-radius:8px; padding:12px; margin-bottom:12px;">
-                                <div class="behavior-label" style="font-size:12px; color:#6c757d; margin-bottom:4px;">👀 Observações Comportamentais</div>
-                                <div style="color:#495057; font-size:14px;">
-                                    <?php echo nl2br(htmlspecialchars($note['behavior_notes'])); ?>
+                                <div class="behavior-label" style="font-size:12px; color:#6c757d; margin-bottom:4px;">
+                                    👀 Observações Comportamentais
                                 </div>
+                                <div><?= $behavior ?></div>
                             </div>
                         <?php endif; ?>
-                        
-                        <?php if (!empty($note['recommendations'])): ?>
+
+                        <?php if (!empty($recommend)): ?>
                             <div class="recommendations-section" style="background:#fff; border-radius:8px; padding:12px; margin-bottom:12px;">
-                                <div class="recommendations-label" style="font-size:12px; color:#6c757d; margin-bottom:4px;">💡 Recomendações</div>
-                                <div style="color:#495057; font-size:14px;">
-                                    <?php echo nl2br(htmlspecialchars($note['recommendations'])); ?>
+                                <div class="recommendations-label" style="font-size:12px; color:#6c757d; margin-bottom:4px;">
+                                    💡 Recomendações
                                 </div>
+                                <div><?= $recommend ?></div>
                             </div>
                         <?php endif; ?>
-                        
-                        <?php if (!empty($note['next_session'])): ?>
+
+                        <?php if ($nextSession): ?>
                             <div class="next-session-section" style="background:#e3f2fd; border-radius:8px; padding:12px; border-left:4px solid #2196f3;">
-                                <div class="next-session-label" style="font-size:12px; color:#1976d2; margin-bottom:4px;">📅 Próxima Sessão</div>
+                                <div class="next-session-label" style="font-size:12px; color:#1976d2; margin-bottom:4px;">
+                                    📅 Próxima Sessão
+                                </div>
                                 <div style="color:#1976d2; font-weight:500;">
-                                    <?php echo date('d/m/Y H:i', strtotime($note['next_session'])); ?>
+                                    <?= $nextSession ?>
                                 </div>
                             </div>
                         <?php endif; ?>
-                        
+
                         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
-                            <button onclick="editNote('<?php echo $note['id']; ?>')" 
-                                    class="btn-sm" 
-                                    style="background:#f0a36b; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+                            <button onclick="editNote('<?= $note['id'] ?>')" class="btn-sm"
+                                style="background:#f0a36b; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
                                 ✏️ Editar
                             </button>
-                            <button onclick="deleteNote('<?php echo $note['id']; ?>')" 
-                                    class="btn-sm" 
-                                    style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
+
+                            <button onclick="deleteNote('<?= $note['id'] ?>')" class="btn-sm"
+                                style="background:#dc3545; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px;">
                                 🗑️ Excluir
                             </button>
                         </div>
+
+
                     </div>
                 </div>
+
             <?php endforeach; ?>
         </div>
+
     <?php endif; ?>
+
 </div>
+
 
 <!-- Seção de Nova Anotação (para âncora) -->
 <div id="new-note"></div>
@@ -314,14 +359,11 @@ function editNote(noteId) {
     console.log('Editando anotação ID:', noteId);
     
     // Buscar dados da anotação
-    fetch(`psychology.php?action=get_note&id=${noteId}`)
-    .then(response => {
-        console.log('Response status:', response.status);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-    })
+        fetch(`edit_annotation.php?id=${noteId}`)
+            .then(res => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return res.json();
+            })
     .then(data => {
         console.log('Dados recebidos:', data);
         
@@ -398,9 +440,10 @@ document.getElementById('noteForm').addEventListener('submit', function(e) {
     const formData = new FormData(this);
     
     fetch('psychology.php?action=save_note', {
-        method: 'POST',
-        body: formData
-    })
+    method: 'POST',
+    headers: { "X-Requested-With": "XMLHttpRequest" },
+    body: formData
+})
     .then(response => response.json())
     .then(data => {
         if (data.success) {

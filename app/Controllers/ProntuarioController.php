@@ -100,4 +100,17 @@ class ProntuarioController extends BaseController {
             $this->handleException($e);
         }
     }
+
+    public function buscar(){
+    $query = $_GET['q'] ?? '';
+
+    $model = new ProntuarioModel();
+    $resultados = $model->buscarPorNomeOuCpf($query);
+
+    $this->renderWithLayout('main', 'prontuarios/index', [
+        'resultados' => $resultados,
+        'query' => $query
+    ]);
+}
+
 }

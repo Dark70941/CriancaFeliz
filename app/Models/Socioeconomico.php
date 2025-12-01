@@ -103,6 +103,12 @@ class Socioeconomico extends BaseModel {
     /**
      * Busca avançada
      */
+
+public function searchByName($nome)
+{
+    return $this->db->searchByName($nome);
+}
+
     public function searchAdvanced($query) {
         $searchFields = [
             'nome_entrevistado',

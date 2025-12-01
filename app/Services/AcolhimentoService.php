@@ -105,22 +105,21 @@ class AcolhimentoService {
     /**
      * Busca avançada
      */
-    public function searchFichas($query, $filters = []) {
-        $results = $this->acolhimentoModel->searchAdvanced($query);
-        
-        // Aplicar filtros adicionais
-        if (!empty($filters)) {
-            $results = $this->applyFilters($results, $filters);
-        }
-        
-        // Adicionar dados calculados
-        foreach ($results as &$ficha) {
-            $ficha['idade'] = $this->acolhimentoModel->calculateAge($ficha['data_nascimento'] ?? '');
-            $ficha['categoria'] = $this->acolhimentoModel->categorizeByAge($ficha['idade']);
-        }
-        
-        return $results;
+   public function searchFichas($query) {
+    // supondo que $this->acolhimentoModel exista e tenha searchAdvanced/searchByName
+    if (method_exists($this->acolhimentoModel, 'searchByName')) {
+        return $this->acolhimentoModel->searchByName($query);
     }
+    if (method_exists($this->acolhimentoModel, 'searchAdvanced')) {
+        return $this->acolhimentoModel->searchAdvanced($query);
+    }
+    // fallback: pegar todos e filtrar em memória (lentidão aceitável para poucos registros)
+    $all = $this->acolhimentoModel->findAll();
+    return array_filter($all, function($r) use ($query) {
+        return stripos($r['nome_completo'] ?? $r['nome'] ?? '', $query) !== false;
+    });
+}
+
     
     /**
      * Aplica filtros aos resultados

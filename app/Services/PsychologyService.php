@@ -1,445 +1,334 @@
 <?php
 
-/**
- * Service para área psicológica
- */
-class PsychologyService {
-    private $psychologyModel;
+class PsychologyService
+{
+    private $noteModel;
     private $acolhimentoModel;
-    
-    public function __construct() {
-        $this->psychologyModel = new PsychologyNote();
+
+    public function __construct()
+    {
+        $this->noteModel = new PsychologyNote();
         $this->acolhimentoModel = new Acolhimento();
     }
-    
-    /**
-     * Obtém estatísticas da área psicológica
-     */
-    public function getStatistics() {
-        $notes = $this->psychologyModel->getAll();
-        $patients = $this->getAllPatients();
-        
-        $stats = [
-            'total_patients' => count($patients),
-            'total_notes' => count($notes),
-            'notes_this_month' => 0,
-            'active_treatments' => 0,
-            'by_age_group' => [
-                'crianca' => 0,      // 0-11 anos
-                'adolescente' => 0,  // 12-17 anos
-                'adulto' => 0        // 18+ anos
-            ],
-            'by_note_type' => [
-                'consulta' => 0,
-                'avaliacao' => 0,
-                'evolucao' => 0,
-                'observacao' => 0
-            ]
+
+    /* ================= MAPAS ================= */
+
+    private function mapTipoToDb($tipo)
+    {
+        $map = [
+            'consulta' => 'Consulta',
+            'avaliacao' => 'Avaliação',
+            'evolucao' => 'Evolução',
+            'observacao' => 'Observação'
         ];
-        
-        // Contar anotações do mês atual
-        $currentMonth = date('Y-m');
-        foreach ($notes as $note) {
-            if (strpos($note['created_at'], $currentMonth) === 0) {
-                $stats['notes_this_month']++;
-            }
-            
-            // Contar por tipo
-            if (isset($stats['by_note_type'][$note['note_type']])) {
-                $stats['by_note_type'][$note['note_type']]++;
-            }
+
+        $key = strtolower(
+            str_replace(
+                ['á','à','ã','â','é','ê','í','ó','ô','õ','ú','ç'],
+                ['a','a','a','a','e','e','i','o','o','o','u','c'],
+                $tipo
+            )
+        );
+
+        return $map[$key] ?? 'Consulta';
+    }
+
+    private function mapTipoToInternal($tipo)
+    {
+        $map = [
+            'Consulta' => 'consulta',
+            'Avaliação' => 'avaliacao',
+            'Evolução' => 'evolucao',
+            'Observação' => 'observacao'
+        ];
+
+        return $map[$tipo] ?? strtolower($tipo);
+    }
+
+    /* ================= PACIENTES ================= */
+
+    public function getAllPatients()
+    {
+        $fichas = $this->acolhimentoModel->getAll();
+        $patients = [];
+
+        foreach ($fichas as $ficha) {
+
+            $cpf = $ficha['cpf'] ?? null;
+            if (!$cpf) continue;
+
+            $nome = $ficha['nome'] ?? $ficha['nome_completo'] ?? 'Não informado';
+
+            $data_nasc = $ficha['data_nascimento'] ?? null;
+
+            $patients[] = [
+                'cpf' => $cpf,
+                'nome_completo' => $nome,
+                'idade' => $data_nasc ? $this->calculateAgeSafe($data_nasc) : null,
+                'responsavel' => $ficha['nome_responsavel'] ?? 'Não informado',
+                'data_acolhimento' => $ficha['data_cadastro'] ?? null,
+                'last_note' => null
+            ];
         }
-        
-        // Contar por faixa etária
-        foreach ($patients as $patient) {
-            $age = $this->calculateAge($patient['data_nascimento']);
-            if ($age < 12) {
-                $stats['by_age_group']['crianca']++;
-            } elseif ($age < 18) {
-                $stats['by_age_group']['adolescente']++;
-            } else {
-                $stats['by_age_group']['adulto']++;
+
+        usort($patients, fn($a,$b)=>strcmp($a['nome_completo'],$b['nome_completo']));
+        return $patients;
+    }
+
+    public function getPatient($cpf)
+    {
+        $at = $this->acolhimentoModel->findByCpf($cpf);
+        if (!$at) return null;
+
+        return [
+            'cpf' => $at['cpf'],
+            'nome_completo' => $at['nome'] ?? $at['nome_completo'],
+            'data_nascimento' => $at['data_nascimento'],
+            'idade' => $this->calculateAgeSafe($at['data_nascimento']),
+            'responsavel' => $at['nome_responsavel'] ?? 'Não informado',
+            'contato' => $at['contato_1'] ?? null,
+            'endereco' => $this->formatAddress($at),
+            'data_acolhimento' => $at['data_cadastro'] ?? null,
+            '_raw' => $at
+        ];
+    }
+
+    /* ================= ANOTAÇÕES ================= */
+
+    public function getPatientNotes($cpf)
+    {
+        $rows = $this->noteModel->findByCpf($cpf);
+
+        foreach ($rows as &$row) {
+            $row['id'] = $row['id_anotacao'];
+            $row['note_type'] = $this->mapTipoToInternal($row['tipo']);
+            $row['title'] = $row['titulo'];
+            $row['content'] = $row['conteudo'];
+            $row['psychologist_id'] = $row['id_psicologo'];
+            $row['created_at'] = $row['data_anotacao'];
+        }
+
+        return $rows;
+    }
+
+    public function saveNote($data)
+    {
+        try {
+            $cpf = $data['patient_cpf'] ?? null;
+
+            $at = $this->acolhimentoModel->findByCpf($cpf);
+            if (!$at) {
+                return ['success'=>false,'message'=>'Paciente não encontrado'];
             }
-            
-            // Verificar se tem acompanhamento ativo (anotação nos últimos 30 dias)
-            $hasRecentNote = false;
-            $thirtyDaysAgo = date('Y-m-d', strtotime('-30 days'));
-            foreach ($notes as $note) {
-                if ($note['patient_cpf'] === $patient['cpf'] && $note['created_at'] >= $thirtyDaysAgo) {
-                    $hasRecentNote = true;
-                    break;
+
+            $id_atendido = $at['idatendido'];
+
+            if (empty(trim($data['content'] ?? ''))) {
+                return ['success'=>false,'message'=>'Conteúdo é obrigatório'];
+            }
+
+            $tipo = $data['note_type'] ?? 'consulta';
+
+            $next = $data['next_session'] ?? null;
+            if (!empty($next)) {
+                if (str_contains($next, 'T')) {
+                    $next = explode('T', $next)[0];
                 }
+                $ts = strtotime($next);
+                $next = $ts ? date('Y-m-d', $ts) : null;
             }
-            if ($hasRecentNote) {
-                $stats['active_treatments']++;
-            }
+
+            $noteData = [
+                'id_atendido' => $id_atendido,
+                'id_psicologo' => $_SESSION['user_id'],
+                'tipo' => $this->mapTipoToDb($tipo),
+                'titulo' => $data['title'] ?? 'Sem título',
+                'conteudo' => $data['content'],
+                'data_anotacao' => date('Y-m-d H:i:s'),
+                'humor' => $data['mood_assessment'] ?? null,
+                'observacoes_comportamentais' => $data['behavior_notes'] ?? null,
+                'recomendacoes' => $data['recommendations'] ?? null,
+                'proxima_sessao' => $next
+            ];
+
+            $created = $this->noteModel->create($noteData);
+
+            return [
+                'success'=>true,
+                'message'=>'Anotação salva com sucesso',
+                'id'=>$created['id_anotacao'] ?? $created
+            ];
+
+        } catch (Exception $e) {
+            error_log("saveNote error: ".$e->getMessage());
+            return ['success'=>false,'message'=>$e->getMessage()];
         }
-        
+    }
+
+    /* ================= UTIL ================= */
+
+    private function formatAddress($a)
+    {
+        $parts = [];
+
+        if (!empty($a['endereco'])) $parts[] = $a['endereco'];
+        if (!empty($a['numero'])) $parts[] = "nº ".$a['numero'];
+        if (!empty($a['bairro'])) $parts[] = $a['bairro'];
+        if (!empty($a['cidade'])) $parts[] = $a['cidade'];
+
+        return implode(', ', $parts);
+    }
+
+    private function calculateAgeSafe($date)
+    {
+        if (!$date || $date=="0000-00-00") return null;
+
+        try {
+            $d = new DateTime($date);
+            return (new DateTime())->diff($d)->y;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /* ================= DASHBOARD - ESTATÍSTICAS ================= */
+
+    public function getStatistics()
+    {
+        $db = Database::getConnection();
+
+        $stats = [];
+
+        /* ---- TOTAL DE PACIENTES ---- */
+        $stats['total_patients'] = $db->query("
+            SELECT COUNT(*) AS total
+            FROM atendido
+        ")->fetch()['total'];
+
+        /* ---- TOTAL DE ANOTAÇÕES ---- */
+        $stats['total_notes'] = $db->query("
+            SELECT COUNT(*) AS total
+            FROM anotacao_psicologica
+        ")->fetch()['total'];
+
+        /* ---- ANOTAÇÕES DO MÊS ---- */
+        $stats['notes_this_month'] = $db->query("
+            SELECT COUNT(*) AS total
+            FROM anotacao_psicologica
+            WHERE MONTH(data_anotacao) = MONTH(CURRENT_DATE())
+              AND YEAR(data_anotacao) = YEAR(CURRENT_DATE())
+        ")->fetch()['total'];
+
+        /* ---- ANOTAÇÕES POR TIPO ---- */
+        $stats['by_note_type'] = [
+            'consulta' => $this->countByType('Consulta'),
+            'avaliacao' => $this->countByType('Avaliação'),
+            'evolucao' => $this->countByType('Evolução'),
+            'observacao' => $this->countByType('Observação')
+        ];
+
+        /* ---- FAIXA ETÁRIA ---- */
+        $stats['by_age_group'] = $db->query("
+            SELECT
+                SUM(CASE WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 6 AND 11 THEN 1 ELSE 0 END) AS crianca,
+                SUM(CASE WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 12 AND 14 THEN 1 ELSE 0 END) AS preadolescente,
+                SUM(CASE WHEN TIMESTAMPDIFF(YEAR, data_nascimento, CURDATE()) BETWEEN 15 AND 18 THEN 1 ELSE 0 END) AS adolescente
+            FROM atendido
+        ")->fetch();
+
         return $stats;
     }
-    
-    /**
-     * Obtém todos os pacientes (crianças com fichas de acolhimento)
-     */
-    public function getAllPatients() {
-        try {
-            // Obter todas as fichas de acolhimento
-            $fichas = $this->acolhimentoModel->getAll();
-            
-            error_log("Número total de fichas encontradas: " . count($fichas));
-            
-            $patients = [];
-            
-            foreach ($fichas as $ficha) {
-                // Verificar se o registro tem um ID de atendido (indicando que está ativo)
-                if (isset($ficha['idatendido']) && $ficha['idatendido']) {
-                    $patients[] = [
-                        'cpf' => $ficha['cpf'] ?? 'Não informado',
-                        'nome_completo' => $ficha['nome'] ?? 'Não informado',
-                        'data_nascimento' => $ficha['data_nascimento'] ?? '',
-                        'idade' => isset($ficha['data_nascimento']) ? $this->calculateAge($ficha['data_nascimento']) : 0,
-                        'responsavel' => $ficha['nome_responsavel'] ?? 'Não informado',
-                        'data_acolhimento' => $ficha['data_cadastro'] ?? '',
-                        'last_note' => $this->getLastNoteDate($ficha['cpf'] ?? '')
-                    ];
-                }
-            }
-            
-            error_log("Número de pacientes processados: " . count($patients));
-            
-            // Ordenar por nome
-            usort($patients, function($a, $b) {
-                return strcmp($a['nome_completo'], $b['nome_completo']);
-            });
-            
-            return $patients;
-            
-        } catch (Exception $e) {
-            error_log("Erro ao buscar pacientes: " . $e->getMessage());
-            return [];
-        }
+
+    private function countByType($tipoDb)
+    {
+        $db = Database::getConnection();
+
+        return $db->query("
+            SELECT COUNT(*) AS total
+            FROM anotacao_psicologica
+            WHERE tipo = '$tipoDb'
+        ")->fetch()['total'];
     }
-    
-    /**
-     * Obtém paciente específico
-     */
-   public function getPatient($cpf) {
-    try {
-        error_log("Buscando paciente com CPF: " . $cpf);
-        
-        // Busca o atendido pelo CPF
-        $atendido = $this->acolhimentoModel->findByCpf($cpf);
-        
-        if (!$atendido) {
-            error_log("Paciente não encontrado com CPF: " . $cpf);
-            
-            // Tenta buscar qualquer paciente para depuração
-            $sql = "SELECT * FROM Atendido WHERE cpf IS NOT NULL LIMIT 1";
-            $stmt = $this->acolhimentoModel->query($sql);
-            $teste = $stmt->fetch();
-            error_log("Teste de busca: " . ($teste ? "Encontrado" : "Nenhum registro"));
-            
-            return null;
+
+    /* ================= DASHBOARD - ÚLTIMAS ANOTAÇÕES ================= */
+
+    public function getRecentNotes()
+    {
+        $db = Database::getConnection();
+
+        $rows = $db->query("
+            SELECT a.*, at.cpf, at.nome AS paciente_nome
+            FROM anotacao_psicologica a
+            LEFT JOIN atendido at ON at.idatendido = a.id_atendido
+            ORDER BY a.data_anotacao DESC
+            LIMIT 5
+        ")->fetchAll();
+
+        foreach ($rows as &$row) {
+            $row['id'] = $row['id_anotacao'];
+            $row['note_type'] = $this->mapTipoToInternal($row['tipo']);
+            $row['title'] = $row['titulo'];
+            $row['content'] = $row['conteudo'];
+            $row['patient_cpf'] = $row['cpf'];
+            $row['created_at'] = $row['data_anotacao'];
         }
-        
-        // Formata os dados para retorno
-        return [
-            'cpf' => $atendido['cpf'] ?? 'Não informado',
-            'nome_completo' => $atendido['nome'] ?? 'Não informado',
-            'data_nascimento' => $atendido['data_nascimento'] ?? '',
-            'idade' => isset($atendido['data_nascimento']) ? $this->calculateAge($atendido['data_nascimento']) : 0,
-            'responsavel' => $atendido['nome_responsavel'] ?? 'Não informado',
-            'contato' => $atendido['contato_1'] ?? 'Não informado',
-            'endereco' => $this->formatAddress($atendido),
-            'data_acolhimento' => $atendido['data_cadastro'] ?? '',
-            'queixa_principal' => $atendido['queixa_principal'] ?? 'Não informado',
-            'encaminhado_por' => $atendido['encaminha_por'] ?? 'Não informado'
+
+        return $rows;
+    }
+
+    public function updateNote($id, $data)
+    {
+        $update = [
+            'titulo' => $data['title'] ?? 'Sem título',
+            'conteudo' => $data['content'] ?? '',
+            'tipo' => $this->mapTipoToDb($data['note_type'] ?? 'consulta'),
+            'humor' => $data['mood_assessment'] ?? null,
+            'observacoes_comportamentais' => $data['behavior_notes'] ?? null,
+            'recomendacoes' => $data['recommendations'] ?? null,
+            'proxima_sessao' => $data['next_session'] ?? null,
+            'updated_at' => date('Y-m-d H:i:s'),
         ];
-        
-    } catch (Exception $e) {
-        error_log("Erro ao buscar paciente: " . $e->getMessage());
-        return null;
+
+        $ok = $this->noteModel->updateNote($id, $update);
+
+        return [
+            'success' => $ok,
+            'message' => $ok ? 'Anotação atualizada com sucesso!' : 'Erro ao atualizar'
+        ];
     }
+
+    public function deleteNote($id)
+    {
+        $ok = $this->noteModel->deleteNote($id);
+
+        return [
+            'success' => $ok,
+            'message' => $ok ? 'Anotação excluída com sucesso!' : 'Erro ao excluir'
+        ];
+    }
+
+    public function deleteAnnotation($id_anotacao)
+{
+    $sql = "DELETE FROM anotacoes_psicologicas WHERE id_anotacao = ?";
+    $stmt = $this->db->prepare($sql);
+    return $stmt->execute([$id_anotacao]);
 }
-    
-    /**
-     * Obtém anotações de um paciente
-     */
-    public function getPatientNotes($cpf) {
-        return $this->psychologyModel->findByPatient($cpf);
-    }
-    
-    /**
-     * Obtém avaliações de um paciente
-     */
-    public function getPatientAssessments($cpf) {
-        // Por enquanto, retorna as anotações do tipo 'avaliacao'
-        $notes = $this->psychologyModel->findByPatient($cpf);
-        $assessments = [];
-        
-        foreach ($notes as $note) {
-            if ($note['note_type'] === 'avaliacao') {
-                $assessments[] = $note;
-            }
-        }
-        
-        return $assessments;
-    }
-    
-    /**
-     * Obtém uma anotação específica
-     */
-    public function getNote($id) {
-        $notes = $this->psychologyModel->getAll();
-        
-        foreach ($notes as $note) {
-            if ($note['id'] === $id) {
-                return $note;
-            }
-        }
-        
-        return null;
-    }
-    
-    /**
-     * Atualiza uma anotação
-     */
-    public function updateNote($id, $data) {
-        // Preparar dados
-        $noteData = [
-            'patient_cpf' => sanitizeInput($data['patient_cpf']),
-            'psychologist_id' => $_SESSION['user_id'],
-            'psychologist_name' => $_SESSION['user_name'],
-            'note_type' => sanitizeInput($data['note_type']),
-            'title' => sanitizeInput($data['title'] ?? ''),
-            'content' => sanitizeInput($data['content']),
-            'mood_assessment' => $data['mood_assessment'] ?? '',
-            'behavior_notes' => sanitizeInput($data['behavior_notes'] ?? ''),
-            'recommendations' => sanitizeInput($data['recommendations'] ?? ''),
-            'next_session' => $data['next_session'] ?? '',
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-        
-        $this->psychologyModel->update($id, $noteData);
-        
-        return $id;
-    }
-    
-    /**
-     * Obtém anotações recentes
-     */
-    public function getRecentNotes($limit = 10) {
-        $notes = $this->psychologyModel->getAll();
-        
-        // Ordenar por data decrescente
-        usort($notes, function($a, $b) {
-            return strtotime($b['created_at']) - strtotime($a['created_at']);
-        });
-        
-        return array_slice($notes, 0, $limit);
-    }
-    
-    /**
-     * Salva anotação psicológica
-     */
- public function saveNote($data) {
-    try {
-        // Log inicial detalhado
-        error_log("=== INÍCIO DO SAVE NOTE ===");
-        error_log("Dados recebidos: " . print_r($data, true));
-        
-        // Garante que o id_psicologo está presente
-        if (empty($_SESSION['user_id'])) {
-            $errorMsg = "Usuário não autenticado";
-            error_log($errorMsg);
-            return ['success' => false, 'message' => $errorMsg];
-        }
 
-        // Validação dos dados obrigatórios
-        $required = ['id_atendido', 'tipo', 'conteudo'];
-        foreach ($required as $field) {
-            if (empty($data[$field])) {
-                $errorMsg = "Campo obrigatório faltando: " . $field;
-                error_log($errorMsg);
-                return ['success' => false, 'message' => $errorMsg];
-            }
-        }
-
-        // Prepara os dados para inserção
-        $noteData = [
-            'id_atendido' => (int)$data['id_atendido'],
-            'id_psicologo' => (int)$_SESSION['user_id'], // Usa o ID do usuário logado
-            'tipo' => $data['tipo'],
-            'conteudo' => $data['conteudo'],
-            'data_anotacao' => $data['data_anotacao'] ?? date('Y-m-d H:i:s'),
-            'titulo' => $data['titulo'] ?? 'Sem título',
-            'humor' => isset($data['humor']) ? (int)$data['humor'] : null,
-            'observacoes_comportamentais' => $data['observacoes_comportamentais'] ?? null,
-            'recomendacoes' => $data['recomendacoes'] ?? null,
-            'proxima_sessao' => !empty($data['proxima_sessao']) ? $data['proxima_sessao'] : null
-        ];
-
-        error_log("Dados preparados para inserção: " . print_r($noteData, true));
-
-        // Tenta inserir
-        $result = $this->acolhimentoModel->insert('anotacao_psicologica', $noteData);
-        
-        if (!$result) {
-            $error = "Falha ao inserir no banco de dados";
-            error_log($error);
-            $errorInfo = $this->acolhimentoModel->getLastError();
-            error_log("Erro do banco: " . print_r($errorInfo, true));
-            return ['success' => false, 'message' => $error . ': ' . print_r($errorInfo, true)];
-        }
-
-        error_log("Anotação salva com sucesso! ID: " . $result);
-        return ['success' => true, 'message' => 'Anotação salva com sucesso!', 'id' => $result];
-
-    } catch (Exception $e) {
-        $errorMsg = "Erro ao salvar anotação: " . $e->getMessage() . "\n" . $e->getTraceAsString();
-        error_log($errorMsg);
-        return ['success' => false, 'message' => 'Erro ao salvar anotação: ' . $e->getMessage()];
-    }
+public function getAnnotationById($id_anotacao)
+{
+    $sql = "SELECT * FROM anotacoes_psicologicas WHERE id_anotacao = ?";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$id_anotacao]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
 }
-    /**
-     * Exclui anotação
-     */
-    public function deleteNote($id) {
-        return $this->psychologyModel->delete($id);
-    }
-    
-    /**
-     * Busca pacientes
-     */
-    public function searchPatients($query) {
-        if (empty($query)) {
-            return [];
-        }
-        
-        $patients = $this->getAllPatients();
-        $results = [];
-        
-        $query = strtolower($query);
-        
-        foreach ($patients as $patient) {
-            if (strpos(strtolower($patient['nome_completo']), $query) !== false ||
-                strpos($patient['cpf'], $query) !== false) {
-                $results[] = $patient;
-            }
-        }
-        
-        return $results;
-    }
-    
-    /**
-     * Calcula idade
-     */
-    private function calculateAge($birthDate) {
-        if (empty($birthDate)) {
-            return 0;
-        }
-        
-        // Tentar diferentes formatos de data
-        $formats = ['d/m/Y', 'Y-m-d', 'd-m-Y'];
-        $birth = null;
-        
-        foreach ($formats as $format) {
-            $birth = DateTime::createFromFormat($format, $birthDate);
-            if ($birth !== false) {
-                break;
-            }
-        }
-        
-        if (!$birth) {
-            return 0;
-        }
-        
-        $today = new DateTime();
-        return $today->diff($birth)->y;
-    }
-    
-    /**
-     * Formata endereço
-     */
-    private function formatAddress($ficha) {
-        $parts = [];
-        
-        if (!empty($ficha['endereco'])) {
-            $parts[] = $ficha['endereco'];
-        }
-        if (!empty($ficha['numero'])) {
-            $parts[] = 'nº ' . $ficha['numero'];
-        }
-        if (!empty($ficha['bairro'])) {
-            $parts[] = $ficha['bairro'];
-        }
-        if (!empty($ficha['cidade'])) {
-            $parts[] = $ficha['cidade'];
-        }
-        
-        return !empty($parts) ? implode(', ', $parts) : 'Não informado';
-    }
-    
-    /**
-     * Obtém data da última anotação
-     */
-    private function getLastNoteDate($cpf) {
-        if (empty($cpf)) {
-            return null;
-        }
-        
-        $notes = $this->psychologyModel->findByPatient($cpf);
-        
-        if (empty($notes)) {
-            return null;
-        }
-        
-        // Ordenar por data decrescente
-        usort($notes, function($a, $b) {
-            return strtotime($b['created_at']) - strtotime($a['created_at']);
-        });
-        
-        return $notes[0]['created_at'];
-    }
-    
-    /**
-     * Obtém tipos de anotação disponíveis
-     */
-    public function getNoteTypes() {
-        return [
-            'consulta' => [
-                'name' => 'Consulta',
-                'description' => 'Sessão de atendimento psicológico',
-                'icon' => '💬'
-            ],
-            'avaliacao' => [
-                'name' => 'Avaliação',
-                'description' => 'Avaliação psicológica inicial ou periódica',
-                'icon' => '📋'
-            ],
-            'evolucao' => [
-                'name' => 'Evolução',
-                'description' => 'Acompanhamento da evolução do paciente',
-                'icon' => '📈'
-            ],
-            'observacao' => [
-                'name' => 'Observação',
-                'description' => 'Observações comportamentais e clínicas',
-                'icon' => '👁️'
-            ]
-        ];
-    }
-    
-    /**
-     * Obtém escalas de humor
-     */
-    public function getMoodScales() {
-        return [
-            1 => ['label' => 'Muito Triste', 'color' => '#dc3545'],
-            2 => ['label' => 'Triste', 'color' => '#fd7e14'],
-            3 => ['label' => 'Neutro', 'color' => '#ffc107'],
-            4 => ['label' => 'Alegre', 'color' => '#20c997'],
-            5 => ['label' => 'Muito Alegre', 'color' => '#28a745']
-        ];
-    }
+
+public function updateAnnotation($id_anotacao, $titulo, $conteudo)
+{
+    $sql = "UPDATE anotacoes_psicologicas 
+            SET titulo = ?, conteudo = ?, updated_at = NOW()
+            WHERE id_anotacao = ?";
+    $stmt = $this->db->prepare($sql);
+    return $stmt->execute([$titulo, $conteudo, $id_anotacao]);
+}
+
 }

@@ -1,3 +1,25 @@
+<?php
+$stats = $stats ?? [];
+
+$stats['total_patients'] = $stats['total_patients'] ?? 0;
+$stats['total_notes'] = $stats['total_notes'] ?? 0;
+$stats['notes_this_month'] = $stats['notes_this_month'] ?? 0;
+$stats['active_treatments'] = $stats['active_treatments'] ?? 0;
+
+// Faixas etárias com as regras solicitadas
+$stats['by_age_group'] = $stats['by_age_group'] ?? [
+    'crianca' => 0,         // 6 a 12 anos
+    'preadolescente' => 0,  // 12 a 15 anos
+    'adolescente' => 0,     // 15 a 18 anos
+];
+
+$stats['by_note_type'] = $stats['by_note_type'] ?? [
+    'consulta' => 0,
+    'avaliacao' => 0,
+    'evolucao' => 0,
+    'observacao' => 0,
+];
+?>
 <div class="psychology-header" style="background: linear-gradient(135deg, #17a2b8, #20c997); border-radius: 16px; padding: 24px; margin-bottom: 24px; color: white;">
     <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
         <div style="font-size: 48px;">🧠</div>
@@ -8,7 +30,7 @@
     </div>
     
     <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 16px;">
-        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">🔒 Área Confidencial e Exclusiva</div>
+        <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">Área Confidencial e Exclusiva</div>
         <div style="font-size: 13px; line-height: 1.4; opacity: 0.8;">
             Esta área é privada e exclusiva para psicólogos. Todas as informações aqui são confidenciais e protegidas pelo sigilo profissional.
         </div>
@@ -18,9 +40,6 @@
 <div class="actions" style="display:flex; gap:12px; justify-content:flex-end; margin-bottom:24px;">
     <a href="psychology.php?action=patients" class="btn" style="background:#17a2b8; color:#fff; border:none; padding:12px 16px; border-radius:8px; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:8px;">
         👥 Ver Pacientes
-    </a>
-    <a href="psychology.php?action=report" class="btn" style="background:#6f42c1; color:#fff; border:none; padding:12px 16px; border-radius:8px; cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:8px;">
-        📊 Relatórios
     </a>
 </div>
 
@@ -55,16 +74,6 @@
             </div>
         </div>
     </div>
-    
-    <div class="stat-card" style="background:#fff; border-radius:12px; padding:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08); border-left:4px solid #dc3545;">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <div style="font-size:32px;">🎯</div>
-            <div>
-                <div style="font-size:24px; font-weight:700; color:#dc3545;"><?php echo $stats['active_treatments']; ?></div>
-                <div style="color:#6c757d; font-size:14px;">Acompanhamentos Ativos</div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Distribuição por Faixa Etária -->
@@ -74,31 +83,32 @@
             👶 Distribuição por Faixa Etária
         </h3>
         
-        <div class="age-groups">
-            <div class="age-group" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:12px; height:12px; border-radius:50%; background:#17a2b8;"></div>
-                    <span>Crianças (0-11 anos)</span>
-                </div>
-                <span style="font-weight:600; color:#17a2b8;"><?php echo $stats['by_age_group']['crianca']; ?></span>
+    <div class="age-groups">
+        <div class="age-group" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:12px; height:12px; border-radius:50%; background:#17a2b8;"></div>
+                <span>Crianças (6 a 12 anos)</span>
             </div>
-            
-            <div class="age-group" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:12px; height:12px; border-radius:50%; background:#28a745;"></div>
-                    <span>Adolescentes (12-17 anos)</span>
-                </div>
-                <span style="font-weight:600; color:#28a745;"><?php echo $stats['by_age_group']['adolescente']; ?></span>
-            </div>
-            
-            <div class="age-group" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0;">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <div style="width:12px; height:12px; border-radius:50%; background:#ffc107;"></div>
-                    <span>Adultos (18+ anos)</span>
-                </div>
-                <span style="font-weight:600; color:#ffc107;"><?php echo $stats['by_age_group']['adulto']; ?></span>
-            </div>
+            <span style="font-weight:600; color:#17a2b8;"><?php echo $stats['by_age_group']['crianca']; ?></span>
         </div>
+        
+        <div class="age-group" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f0f0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:12px; height:12px; border-radius:50%; background:#28a745;"></div>
+                <span>Pré-Adolescentes (12 a 15 anos)</span>
+            </div>
+            <span style="font-weight:600; color:#28a745;"><?php echo $stats['by_age_group']['preadolescente']; ?></span>
+        </div>
+        
+        <div class="age-group" style="display:flex; justify-content:space-between; align-items:center; padding:12px 0;">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:12px; height:12px; border-radius:50%; background:#ffc107;"></div>
+                <span>Adolescentes (15 a 18 anos)</span>
+            </div>
+            <span style="font-weight:600; color:#ffc107;"><?php echo $stats['by_age_group']['adolescente']; ?></span>
+        </div>
+    </div>
+
     </div>
     
     <div class="chart-card" style="background:#fff; border-radius:12px; padding:24px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
