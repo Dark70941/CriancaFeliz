@@ -32,13 +32,13 @@ class App {
         }
     }
     
-    // Obter Model de Socioeconômico (MySQL ou JSON)
+    // Obter Model de Socioeconômico (somente MySQL)
     public static function getSocioeconomicoModel() {
-        if (self::isDatabaseAvailable()) {
-            return new SocioeconomicoDB();
-        } else {
-            return new Socioeconomico();
+        // Forçar uso de MySQL; se indisponível, lançar exceção
+        if (!self::isDatabaseAvailable()) {
+            throw new Exception('Banco de dados indisponível. O módulo socioeconômico requer MySQL.');
         }
+        return new SocioeconomicoDB();
     }
     
     // Obter Model de Usuário (MySQL ou JSON)

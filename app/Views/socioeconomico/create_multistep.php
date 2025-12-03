@@ -280,7 +280,8 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
 <form method="post" id="socioeconomicoForm" enctype="multipart/form-data" novalidate>
     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
     <input type="hidden" name="step" value="<?php echo $step; ?>">
-    <input type="hidden" name="familia_json" id="familia_json" value="">
+    <!-- Container oculto para inputs de família gerados via JS -->
+    <div id="familia_fields" style="display:none"></div>
     <?php if ($editId): ?>
         <input type="hidden" name="id" id="edit_id" value="<?php echo htmlspecialchars($editId); ?>">
     <?php endif; ?>
@@ -289,33 +290,29 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
         <!-- ETAPA 1: Dados Iniciais -->
         <div class="form-section">
             <h3 style="margin-bottom: 20px; color: #2c3e50;">Dados Iniciais</h3>
-            
-            <div class="form-grid">
-                <div class="form-field">
-                    <label>Nome do Entrevistado <span style="color:#e74c3c;">*</span></label>
-                    <input type="text" name="nome_entrevistado" placeholder="Digite o nome completo" style="border: 2px solid #4a7c8f;" value="<?php echo htmlspecialchars($ficha['nome_entrevistado'] ?? ''); ?>">
+            <?php if (!empty($atendidos)): ?>
+                <div class="form-field" style="margin-bottom:16px;">
+                    <label>Selecionar Atendido <span style="color:#e74c3c;">*</span></label>
+                    <select name="id_atendido" id="id_atendido" required>
+                        <option value="">— Escolha a criança/atendido —</option>
+                        <?php foreach ($atendidos as $a): ?>
+                            <option value="<?php echo htmlspecialchars($a['id']); ?>"
+                                <?php echo isset($ficha['id_atendido']) && $ficha['id_atendido'] == $a['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($a['nome'] ?? $a['nome_completo'] ?? 'Sem nome'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
-                
-                <div class="form-field">
-                    <label>RG <span style="color:#e74c3c;">*</span></label>
-                    <input type="text" name="rg" id="rg" placeholder="00.000.000-0" style="border: 2px solid #4a7c8f;" value="<?php echo htmlspecialchars($ficha['rg'] ?? ''); ?>">
-                </div>
-                
-                <div class="form-field">
-                    <label>CPF <span style="color:#e74c3c;">*</span></label>
-                    <input type="text" name="cpf" id="cpf" placeholder="000.000.000-00" style="border: 2px solid #4a7c8f;" value="<?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?>">
-                </div>
-                
-                <div class="form-field">
-                    <label>Nome do Menor <span style="color:#e74c3c;">*</span></label>
-                    <input type="text" name="nome_menor" placeholder="Digite o nome completo" style="border: 2px solid #4a7c8f;" value="<?php echo htmlspecialchars($ficha['nome_menor'] ?? ''); ?>">
-                </div>
-                
+            <?php else: ?>
+                <p style="color:#e74c3c; font-weight:600;">Nenhum atendido cadastrado. Cadastre pelo módulo de Atendidos antes de continuar.</p>
+            <?php endif; ?>
+
+            <div class="form-grid two-cols">
                 <div class="form-field">
                     <label>Data de Acolhimento</label>
                     <input type="text" name="data_acolhimento" id="data_acolhimento" placeholder="dd/mm/aaaa" value="<?php echo htmlspecialchars($ficha['data_acolhimento'] ?? ''); ?>">
                 </div>
-                
+
                 <div class="form-field">
                     <label>Assistente Social Responsável</label>
                     <input type="text" name="assistente_social" value="<?php echo htmlspecialchars($ficha['assistente_social'] ?? ''); ?>">
@@ -329,13 +326,6 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
             </a>
             <button type="button" onclick="nextStep()" class="btn btn-primary">
                 Próximo <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-        
-        <!-- Debug: Botão para limpar dados salvos (remover em produção) -->
-        <div style="text-align: center; margin-top: 10px;">
-            <button type="button" onclick="sessionStorage.clear(); alert('Dados limpos! Recarregando...'); location.reload();" style="background: #e74c3c; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
-                <i class="fas fa-trash"></i> Limpar Dados Salvos (Debug)
             </button>
         </div>
         

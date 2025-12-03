@@ -26,21 +26,17 @@ class SocioeconomicoService {
      * Busca ficha por ID
      */
     public function getFicha($id) {
-        $ficha = $this->socioeconomicoModel->findById($id);
-        
+        if (method_exists($this->socioeconomicoModel, 'getFicha')) {
+            $ficha = $this->socioeconomicoModel->getFicha($id);
+        } else {
+            $ficha = $this->socioeconomicoModel->findById($id);
+        }
+
         if (!$ficha) {
             throw new Exception('Ficha não encontrada');
         }
-        
-        // Adicionar dados calculados
-        $ficha['idade'] = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
-        $ficha['renda_familiar'] = $this->socioeconomicoModel->calculateRendaFamiliar($ficha);
-        $ficha['situacao_economica'] = $this->socioeconomicoModel->categorizeSituacao(
-            $ficha['renda_familiar'], 
-            intval($ficha['numero_membros'] ?? 1)
-        );
-        
-        return $ficha;
+
+        return $this->enrichFicha($ficha);
     }
     
     /**
@@ -116,15 +112,30 @@ class SocioeconomicoService {
         
         // Adicionar dados calculados
         foreach ($results as &$ficha) {
-            $ficha['idade'] = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
-            $ficha['renda_familiar'] = $this->socioeconomicoModel->calculateRendaFamiliar($ficha);
-            $ficha['situacao_economica'] = $this->socioeconomicoModel->categorizeSituacao(
-                $ficha['renda_familiar'], 
-                intval($ficha['numero_membros'] ?? 1)
-            );
+            $ficha = $this->enrichFicha($ficha);
         }
         
         return $results;
+    }
+
+    /**
+     * Lista atendidos para seleção (quando disponível no model DB)
+     */
+    public function listAtendidos($limit = 50) {
+        if (method_exists($this->socioeconomicoModel, 'listAtendidos')) {
+            return $this->socioeconomicoModel->listAtendidos($limit);
+        }
+        return [];
+    }
+
+    /**
+     * Busca atendidos (autocomplete) quando suportado pelo model DB
+     */
+    public function searchAtendidos($term, $limit = 20) {
+        if (method_exists($this->socioeconomicoModel, 'searchAtendidos')) {
+            return $this->socioeconomicoModel->searchAtendidos($term, $limit);
+        }
+        return [];
     }
     
     /**
@@ -248,6 +259,8 @@ class SocioeconomicoService {
             $fichas = $this->applyFilters($fichas, $filters);
         }
         
+        $fichas = array_map(fn($ficha) => $this->enrichFicha($ficha), $fichas);
+        
         $report = [
             'total_fichas' => count($fichas),
             'situacoes' => [
@@ -270,18 +283,19 @@ class SocioeconomicoService {
         $membrosTotal = 0;
         $contadorRenda = 0;
         
-        foreach ($fichas as $ficha) {
+        foreach ($fichas as $fichaRaw) {
+            $ficha = $this->enrichFicha($fichaRaw);
             // Situação econômica
-            $rendaFamiliar = $this->socioeconomicoModel->calculateRendaFamiliar($ficha);
-            $numeroMembros = intval($ficha['numero_membros'] ?? 1);
-            $situacao = $this->socioeconomicoModel->categorizeSituacao($rendaFamiliar, $numeroMembros);
+            $rendaFamiliar = floatval($ficha['renda_familiar'] ?? 0);
+            $numeroMembros = intval($ficha['numero_membros'] ?? $ficha['qtd_pessoas'] ?? 1);
+            $situacao = $this->categorizeSituacao($rendaFamiliar, $numeroMembros);
             
             if (isset($report['situacoes'][$situacao])) {
                 $report['situacoes'][$situacao]++;
             }
             
             // Faixa etária
-            $idade = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
+            $idade = $this->calculateAge($ficha['data_nascimento'] ?? '');
             if ($idade !== null) {
                 if ($idade < 12) {
                     $report['faixa_etaria']['Criança (0-11)']++;
@@ -325,11 +339,11 @@ class SocioeconomicoService {
         $csv = "Nome,CPF,RG,Data Nascimento,Idade,Renda Familiar,Situação Econômica,Membros Família,Status\n";
         
         foreach ($fichas as $ficha) {
-            $idade = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
-            $rendaFamiliar = $this->socioeconomicoModel->calculateRendaFamiliar($ficha);
-            $situacao = $this->socioeconomicoModel->categorizeSituacao(
+            $idade = $this->calculateAge($ficha['data_nascimento'] ?? '');
+            $rendaFamiliar = floatval($ficha['renda_familiar'] ?? 0);
+            $situacao = $this->categorizeSituacao(
                 $rendaFamiliar, 
-                intval($ficha['numero_membros'] ?? 1)
+                intval($ficha['numero_membros'] ?? $ficha['qtd_pessoas'] ?? 1)
             );
             
             $csv .= sprintf(
@@ -348,51 +362,148 @@ class SocioeconomicoService {
         
         return $csv;
     }
+
+    /**
+     * Adiciona campos derivados a uma ficha
+     */
+    private function enrichFicha($ficha) {
+        if (!$ficha) {
+            return $ficha;
+        }
+
+        $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
+
+        if (!isset($ficha['renda_familiar']) || $ficha['renda_familiar'] === null) {
+            $ficha['renda_familiar'] = $this->calculateRendaFamiliar($ficha);
+        }
+
+        $numeroMembros = intval($ficha['numero_membros'] ?? $ficha['qtd_pessoas'] ?? 1);
+        $ficha['situacao_economica'] = $this->categorizeSituacao(
+            floatval($ficha['renda_familiar'] ?? 0),
+            $numeroMembros
+        );
+
+        return $ficha;
+    }
+
+    private function calculateAge($dataNascimento) {
+        if (empty($dataNascimento)) {
+            return null;
+        }
+
+        if (strpos($dataNascimento, '-') !== false) {
+            $date = DateTime::createFromFormat('Y-m-d', $dataNascimento);
+        } else {
+            $date = DateTime::createFromFormat('d/m/Y', $dataNascimento);
+        }
+
+        if (!$date) {
+            return null;
+        }
+
+        $now = new DateTime();
+        return $now->diff($date)->y;
+    }
+
+    private function calculateRendaFamiliar($ficha) {
+        if (!empty($ficha['renda_familiar'])) {
+            return floatval($ficha['renda_familiar']);
+        }
+
+        $total = 0;
+
+        if (!empty($ficha['familia_json'])) {
+            $familia = json_decode($ficha['familia_json'], true);
+            if (is_array($familia)) {
+                foreach ($familia as $membro) {
+                    if (!empty($membro['renda'])) {
+                        $total += floatval(str_replace(['.', ','], ['', '.'], $membro['renda']));
+                    }
+                }
+            }
+        }
+
+        if ($total > 0) {
+            return $total;
+        }
+
+        for ($i = 1; $i <= 10; $i++) {
+            $campo = "renda_membro_$i";
+            if (!empty($ficha[$campo])) {
+                $total += floatval(str_replace(['.', ','], ['', '.'], $ficha[$campo]));
+            }
+        }
+
+        return $total;
+    }
+
+    private function categorizeSituacao($rendaFamiliar, $numeroMembros = 1) {
+        $rendaPerCapita = $numeroMembros > 0 ? ($rendaFamiliar / $numeroMembros) : $rendaFamiliar;
+        $salarioMinimo = 1320;
+
+        if ($rendaPerCapita < $salarioMinimo * 0.5) {
+            return 'Extrema Pobreza';
+        }
+
+        if ($rendaPerCapita < $salarioMinimo) {
+            return 'Pobreza';
+        }
+
+        if ($rendaPerCapita < $salarioMinimo * 2) {
+            return 'Baixa Renda';
+        }
+
+        if ($rendaPerCapita < $salarioMinimo * 5) {
+            return 'Média Renda';
+        }
+
+        return 'Alta Renda';
+    }
     
     /**
-     * Log de ações
+     * Log de ações (MySQL)
      */
     private function logAction($action, $fichaId, $description) {
-        $logFile = DATA_PATH . '/socioeconomico_log.json';
-        
-        if (!file_exists($logFile)) {
-            file_put_contents($logFile, json_encode([]));
+        try {
+            $usuarioId = $_SESSION['user_id'] ?? null;
+            $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+            $ua = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            
+            Database::query(
+                "INSERT INTO Log_Sistema (nivel, acao, descricao, tabela_afetada, registro_id, usuario_id, ip_address, user_agent, dados_novos)
+                 VALUES ('INFO', ?, ?, 'Ficha_Socioeconomico', ?, ?, ?, ?, ?)",
+                [
+                    strtoupper($action),
+                    $description,
+                    $fichaId,
+                    $usuarioId,
+                    $ip,
+                    $ua,
+                    json_encode(['ficha_id' => $fichaId], JSON_UNESCAPED_UNICODE)
+                ]
+            );
+        } catch (Exception $e) {
+            error_log('Erro ao gravar log no MySQL: ' . $e->getMessage());
         }
-        
-        $logs = json_decode(file_get_contents($logFile), true) ?: [];
-        
-        $logs[] = [
-            'id' => uniqid(),
-            'action' => $action,
-            'ficha_id' => $fichaId,
-            'description' => $description,
-            'user_id' => $_SESSION['user_id'] ?? null,
-            'user_name' => $_SESSION['user_name'] ?? 'Sistema',
-            'timestamp' => date('Y-m-d H:i:s'),
-            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-        ];
-        
-        // Manter apenas os últimos 1000 logs
-        if (count($logs) > 1000) {
-            $logs = array_slice($logs, -1000);
-        }
-        
-        file_put_contents($logFile, json_encode($logs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
     
     /**
      * Obtém logs de ações
      */
     public function getLogs($limit = 50) {
-        $logFile = DATA_PATH . '/socioeconomico_log.json';
-        
-        if (!file_exists($logFile)) {
+        try {
+            $stmt = Database::query(
+                "SELECT data_hora, nivel, acao, descricao, registro_id, usuario_id, ip_address
+                 FROM Log_Sistema
+                 WHERE tabela_afetada = 'Ficha_Socioeconomico'
+                 ORDER BY data_hora DESC
+                 LIMIT ?",
+                [(int)$limit]
+            );
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            error_log('Erro ao ler logs no MySQL: ' . $e->getMessage());
             return [];
         }
-        
-        $logs = json_decode(file_get_contents($logFile), true) ?: [];
-        
-        // Retornar os mais recentes
-        return array_slice(array_reverse($logs), 0, $limit);
     }
 }

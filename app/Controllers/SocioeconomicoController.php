@@ -21,7 +21,25 @@ class SocioeconomicoController extends BaseController {
             $page = intval($this->getParam('page', 1));
             $perPage = 10;
             
-            $result = $this->socioeconomicoService->listFichas($page, $perPage);
+            $query = trim($this->getParam('q', ''));
+            $cpf = trim($this->getParam('cpf', ''));
+            
+            if ($query !== '' || $cpf !== '') {
+                // Busca sem paginação estrita (limite interno no Model)
+                $filters = [];
+                if ($cpf !== '') { $filters['cpf'] = preg_replace('/\D+/', '', $cpf); }
+                $items = $this->socioeconomicoService->searchFichas($query !== '' ? $query : ($filters['cpf'] ?? ''), $filters);
+                $result = [
+                    'data' => $items,
+                    'total' => count($items),
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => count($items)
+                ];
+            } else {
+                // Listagem padrão paginada
+                $result = $this->socioeconomicoService->listFichas($page, $perPage);
+            }
             
             // Adicionar dados calculados
             foreach ($result['data'] as &$ficha) {
@@ -75,11 +93,15 @@ class SocioeconomicoController extends BaseController {
             }
         }
         
+        // Lista de atendidos para seleção (quando disponível via DB)
+        $atendidos = $this->socioeconomicoService->listAtendidos(100);
+        
         $data = [
             'title' => $ficha ? 'Editar Ficha Socioeconômica' : 'Cadastrar Ficha Socioeconômica',
             'csrf_token' => $this->generateCSRF(),
             'messages' => $this->getFlashMessages(),
-            'ficha' => $ficha
+            'ficha' => $ficha,
+            'atendidos' => $atendidos
         ];
         
         $this->renderWithLayout('main', 'socioeconomico/create_multistep', $data);

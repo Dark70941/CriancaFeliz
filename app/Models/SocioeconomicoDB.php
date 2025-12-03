@@ -96,25 +96,23 @@ class SocioeconomicoDB extends BaseModelDB {
             // Normalizar dados
             $data = $this->normalizeData($data);
             
-            // 1. Criar Atendido (se não existir)
-            $atendidoData = [
-                'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
-                'cpf' => $data['cpf'] ?? '',
-                'rg' => $data['rg'] ?? '',
-                'data_nascimento' => $this->convertDate($data['data_nascimento'] ?? ''),
-                'data_cadastro' => date('Y-m-d'),
-                'endereco' => $data['endereco'] ?? null,
-                'numero' => $data['numero'] ?? null,
-                'complemento' => $data['complemento'] ?? null,
-                'bairro' => $data['bairro'] ?? null,
-                'cidade' => $data['cidade'] ?? null,
-                'cep' => $data['cep'] ?? null,
-                'status' => 'Ativo',
-                'faixa_etaria' => $this->calculateAge($data['data_nascimento'] ?? '')
-            ];
-            
-            $atendido = $this->create($atendidoData);
-            $atendidoId = $atendido['idatendido'];
+            if (empty($data['id_atendido'])) {
+                throw new Exception('Selecione a criança/atendido antes de continuar.');
+            }
+
+            $atendidoId = (int)$data['id_atendido'];
+
+            // Verificar se o atendido existe
+            $atendido = $this->query('SELECT idatendido FROM Atendido WHERE idatendido = ?', [$atendidoId])->fetch();
+            if (!$atendido) {
+                throw new Exception('Atendido selecionado não encontrado');
+            }
+
+            // Impedir duplicidade de ficha para a mesma criança
+            $fichaExistente = $this->query('SELECT idficha FROM Ficha_Socioeconomico WHERE id_atendido = ?', [$atendidoId])->fetch();
+            if ($fichaExistente) {
+                throw new Exception('Esta criança já possui uma ficha socioeconômica cadastrada.');
+            }
             
             // 2. Criar Ficha Socioeconômica
             // Converter renda_familiar para número (remover R$, pontos e converter vírgula)
@@ -151,36 +149,33 @@ class SocioeconomicoDB extends BaseModelDB {
             
             $fichaId = Database::lastInsertId();
             
-            // 3. Salvar Família (se houver)
-            if (!empty($data['familia_json'])) {
-                $familia = json_decode($data['familia_json'], true);
-                if (is_array($familia)) {
-                    foreach ($familia as $membro) {
-                        $this->query(
-                            "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
-                            [
-                                $fichaId,
-                                $membro['nome'] ?? '',
-                                $membro['parentesco'] ?? '',
-                                $this->convertDate($membro['dataNasc'] ?? ''),
-                                $membro['formacao'] ?? '',
-                                $membro['renda'] ?? 0
-                            ]
-                        );
-                    }
+            // 3. Salvar Família (se houver) - via arrays do POST
+            if (!empty($data['familia']) && is_array($data['familia'])) {
+                foreach ($data['familia'] as $membro) {
+                    $this->query(
+                        "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                        [
+                            $fichaId,
+                            $membro['nome'] ?? '',
+                            $membro['parentesco'] ?? '',
+                            $this->convertDate($membro['data_nasc'] ?? ''),
+                            $membro['formacao'] ?? '',
+                            isset($membro['renda']) ? floatval($membro['renda']) : 0
+                        ]
+                    );
                 }
             }
             
-            // 4. Salvar Despesas (se houver)
-            if (!empty($data['despesas'])) {
+            // 4. Salvar Despesas (se houver) - via arrays do POST
+            if (!empty($data['despesas']) && is_array($data['despesas'])) {
                 foreach ($data['despesas'] as $despesa) {
                     $this->query(
                         "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
                         [
                             $fichaId,
-                            $despesa['valor'] ?? 0,
+                            isset($despesa['valor']) ? floatval($despesa['valor']) : 0,
                             $despesa['tipo'] ?? '',
-                            $despesa['renda'] ?? 0
+                            isset($despesa['renda']) ? floatval($despesa['renda']) : 0
                         ]
                     );
                 }
@@ -310,17 +305,13 @@ class SocioeconomicoDB extends BaseModelDB {
             // Normalizar dados
             $data = $this->normalizeData($data);
             
-            // 1. Atualizar Atendido
-            $atendidoData = [
-                'nome' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
-                'cpf' => $data['cpf'] ?? '',
-                'rg' => $data['rg'] ?? '',
-                'data_nascimento' => $this->convertDate($data['data_nascimento'] ?? '')
-            ];
+            // Verificar existência da ficha para o atendido informado
+            $ficha = $this->query('SELECT idficha FROM Ficha_Socioeconomico WHERE id_atendido = ?', [$id])->fetch();
+            if (!$ficha) {
+                throw new Exception('Ficha socioeconômica não encontrada para o atendido informado.');
+            }
             
-            $this->update($id, $atendidoData);
-            
-            // 2. Atualizar Ficha Socioeconômica
+            // Atualizar Ficha Socioeconômica
             // Converter renda_familiar para número (remover R$, pontos e converter vírgula)
             $rendaFamiliar = 0;
             if (!empty($data['renda_familiar'])) {
@@ -350,6 +341,44 @@ class SocioeconomicoDB extends BaseModelDB {
                     $id
                 ]
             );
+            
+            $fichaId = $ficha['idficha'];
+            
+            // Sincronizar Família (se enviada)
+            if (isset($data['familia']) && is_array($data['familia'])) {
+                // Apagar antigos
+                $this->query("DELETE FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                // Inserir novos
+                foreach ($data['familia'] as $membro) {
+                    $this->query(
+                        "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                        [
+                            $fichaId,
+                            $membro['nome'] ?? '',
+                            $membro['parentesco'] ?? '',
+                            $this->convertDate($membro['data_nasc'] ?? ''),
+                            $membro['formacao'] ?? '',
+                            isset($membro['renda']) ? floatval($membro['renda']) : 0
+                        ]
+                    );
+                }
+            }
+            
+            // Sincronizar Despesas (se enviada)
+            if (isset($data['despesas']) && is_array($data['despesas'])) {
+                $this->query("DELETE FROM Despesas WHERE id_ficha = ?", [$fichaId]);
+                foreach ($data['despesas'] as $despesa) {
+                    $this->query(
+                        "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                        [
+                            $fichaId,
+                            isset($despesa['valor']) ? floatval($despesa['valor']) : 0,
+                            $despesa['tipo'] ?? '',
+                            isset($despesa['renda']) ? floatval($despesa['renda']) : 0
+                        ]
+                    );
+                }
+            }
             
             Database::commit();
             
@@ -389,10 +418,18 @@ class SocioeconomicoDB extends BaseModelDB {
     public function searchByName($nome)
     {
         $sql = "
-            SELECT *
-            FROM ficha_socioeconomico
-            WHERE nome_completo LIKE :nome
-            ORDER BY nome_completo ASC
+            SELECT 
+                a.idatendido AS id,
+                a.nome AS nome_completo,
+                a.cpf,
+                a.rg,
+                a.data_nascimento,
+                f.renda_familiar,
+                f.qtd_pessoas
+            FROM Atendido a
+            LEFT JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+            WHERE a.nome LIKE :nome
+            ORDER BY a.nome ASC
             LIMIT 30
         ";
 
@@ -400,6 +437,31 @@ class SocioeconomicoDB extends BaseModelDB {
         $stmt->bindValue(':nome', '%' . $nome . '%');
         $stmt->execute();
 
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Lista atendidos (para popular seletores)
+     */
+    public function listAtendidos($limit = 50)
+    {
+        $stmt = $this->pdo->prepare("SELECT idatendido AS id, nome, cpf FROM Atendido ORDER BY data_cadastro DESC LIMIT ?");
+        $stmt->bindValue(1, (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Busca atendidos por nome/CPF (autocomplete)
+     */
+    public function searchAtendidos($term, $limit = 20)
+    {
+        $sql = "SELECT idatendido AS id, nome, cpf FROM Atendido WHERE nome LIKE :t OR cpf LIKE :t ORDER BY nome ASC LIMIT :lim";
+        $stmt = $this->pdo->prepare($sql);
+        $like = '%' . $term . '%';
+        $stmt->bindValue(':t', $like, PDO::PARAM_STR);
+        $stmt->bindValue(':lim', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 

@@ -172,6 +172,17 @@
             </div>
         </a>
 
+        <!-- Acessar Prontuário Socioeconômico por Criança -->
+        <a href="socioeconomico_select.php" class="action-card" style="display:flex; align-items:center; gap:12px; padding:16px; border:2px solid #ffe0b2; border-radius:12px; text-decoration:none; color:#495057;">
+            <div style="width:40px; height:40px; background:#ffb74d; border-radius:10px; display:grid; place-items:center; color:#fff; font-size:20px;">
+                <i class="fas fa-child"></i>
+            </div>
+            <div>
+                <div style="font-weight:600;">Prontuário Socioeconômico</div>
+                <div style="font-size:12px; color:#6c757d;">Selecionar criança e editar/visualizar ficha</div>
+            </div>
+        </a>
+
     </div>
 </div>
 
