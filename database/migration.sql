@@ -151,10 +151,10 @@ CREATE TABLE IF NOT EXISTS Documento (
 -- =====================================================
 CREATE TABLE IF NOT EXISTS Ficha_Socioeconomico (
   idficha INT AUTO_INCREMENT PRIMARY KEY,
-  agua BOOLEAN,
-  esgoto BOOLEAN,
+  agua VARCHAR(50) DEFAULT NULL,
+  esgoto VARCHAR(50) DEFAULT NULL,
   renda_familiar DECIMAL(10,2),
-  energia BOOLEAN,
+  energia VARCHAR(50) DEFAULT NULL,
   qtd_pessoas INT,
   cond_residencia VARCHAR(100),
   moradia VARCHAR(100),

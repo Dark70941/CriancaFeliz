@@ -8,8 +8,25 @@ function nextStep() {
     if (!form) return;
     const currentStep = parseInt((new URLSearchParams(window.location.search)).get('step') || '1');
     if (!validateCurrentStep(currentStep)) return;
+    
+    // Preservar ID se existir
+    const idInput = form.querySelector('#edit_id');
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    
     const stepInput = form.querySelector('input[name="step"]');
     if (stepInput) stepInput.value = String(currentStep + 1);
+    
+    // Adicionar campo hidden com ID se existir e não houver input hidden ainda
+    if (id && !idInput) {
+        const hiddenId = document.createElement('input');
+        hiddenId.type = 'hidden';
+        hiddenId.name = 'id';
+        hiddenId.id = 'edit_id';
+        hiddenId.value = id;
+        form.appendChild(hiddenId);
+    }
+    
     form.action = 'socioeconomico_form.php';
     form.method = 'post';
     form.submit();
@@ -19,8 +36,25 @@ function prevStep() {
     const form = document.getElementById('socioeconomicoForm');
     if (!form) return;
     const currentStep = parseInt((new URLSearchParams(window.location.search)).get('step') || '1');
+    
+    // Preservar ID se existir
+    const idInput = form.querySelector('#edit_id');
+    const urlParams = new URLSearchParams(window.location.search);
+    const id = urlParams.get('id');
+    
     const stepInput = form.querySelector('input[name="step"]');
     if (stepInput) stepInput.value = String(Math.max(1, currentStep - 1));
+    
+    // Adicionar campo hidden com ID se existir e não houver input hidden ainda
+    if (id && !idInput) {
+        const hiddenId = document.createElement('input');
+        hiddenId.type = 'hidden';
+        hiddenId.name = 'id';
+        hiddenId.id = 'edit_id';
+        hiddenId.value = id;
+        form.appendChild(hiddenId);
+    }
+    
     form.action = 'socioeconomico_form.php';
     form.method = 'post';
     form.submit();
@@ -259,6 +293,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const urlParams = new URLSearchParams(window.location.search);
     const currentStep = parseInt(urlParams.get('step') || '1');
+    const editId = document.getElementById('edit_id')?.value || urlParams.get('id');
+    
+    // Se for edição, carregar dados existentes
+    if (editId) {
+        loadExistingData(editId, currentStep);
+    }
     
     // Adicionar listeners para cálculo de total
     const despesaInputs = document.querySelectorAll('.despesa-input, .renda-input');
@@ -286,5 +326,68 @@ document.addEventListener('DOMContentLoaded', function() {
             atendidoSelect.required = true;
         }
     }
+    
+    // Carregar família se estiver na etapa 3
+    if (currentStep === 3) {
+        loadFamilyFromPHP();
+    }
 });
+
+/**
+ * Carregar dados existentes da ficha PHP
+ */
+function loadExistingData(editId, step) {
+    // Os dados já vêm do PHP, apenas precisamos carregar a família na etapa 3
+    if (step === 3) {
+        loadFamilyFromPHP();
+    }
+}
+
+/**
+ * Carregar família do PHP (dados passados via variável)
+ */
+function loadFamilyFromPHP() {
+    // Verificar se há dados de família passados do PHP
+    const familiaData = window.familiaData || null;
+    
+    if (familiaData) {
+        try {
+            const familia = typeof familiaData === 'string' ? JSON.parse(familiaData) : familiaData;
+            
+            if (Array.isArray(familia) && familia.length > 0) {
+                familia.forEach((membro, index) => {
+                    const member = {
+                        id: Date.now() + index,
+                        nome: membro.nome || '',
+                        parentesco: membro.parentesco || '',
+                        dataNasc: membro.data_nasc || membro.data_nascimento || '',
+                        formacao: membro.formacao || '',
+                        renda: parseFloat(membro.renda) || 0
+                    };
+                    
+                    familyMembers.push(member);
+                    
+                    // Gerar inputs hidden para submit
+                    const container = document.getElementById('familia_fields');
+                    if (container) {
+                        const wrapper = document.createElement('div');
+                        wrapper.id = `familia_group_${member.id}`;
+                        wrapper.innerHTML = `
+                            <input type="hidden" name="familia[${index}][nome]" value="${member.nome}">
+                            <input type="hidden" name="familia[${index}][parentesco]" value="${member.parentesco}">
+                            <input type="hidden" name="familia[${index}][data_nasc]" value="${member.dataNasc}">
+                            <input type="hidden" name="familia[${index}][formacao]" value="${member.formacao}">
+                            <input type="hidden" name="familia[${index}][renda]" value="${member.renda}">
+                        `;
+                        container.appendChild(wrapper);
+                    }
+                });
+                
+                updateFamilyList();
+            }
+        } catch (e) {
+            console.error('Erro ao carregar família:', e);
+        }
+    }
+}
 

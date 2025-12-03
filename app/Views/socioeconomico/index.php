@@ -105,14 +105,6 @@
                                 echo 'title="Editar" ';
                                 echo 'style="background:#ffc107; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
                                 echo '<i class="fas fa-edit"></i></a>';
-                                
-                                // Botão Excluir
-                                echo '<a href="socioeconomico_list.php?delete=' . urlencode($id) . '" ';
-                                echo 'class="btn-icon" ';
-                                echo 'title="Excluir" ';
-                                echo 'onclick="return confirm(\'Tem certeza que deseja excluir esta ficha?\')" ';
-                                echo 'style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
-                                echo '<i class="fas fa-trash"></i></a>';
                             else: 
                                 echo '<span style="color: #999; font-size: 12px;">ID inválido</span>';
                             endif; 
@@ -250,14 +242,6 @@
     if (urlParams.get('saved') === '1') {
         if (window.notificationSystem) {
             window.notificationSystem.save('Ficha socioeconômica cadastrada com sucesso!');
-        }
-        // Limpar URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-    
-    if (urlParams.get('deleted') === '1') {
-        if (window.notificationSystem) {
-            window.notificationSystem.delete('Ficha socioeconômica excluída com sucesso!');
         }
         // Limpar URL
         window.history.replaceState({}, document.title, window.location.pathname);

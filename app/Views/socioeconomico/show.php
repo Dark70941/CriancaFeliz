@@ -68,8 +68,13 @@
     
     <?php 
     $familia = [];
+    // Tentar usar familia_json primeiro
     if (!empty($ficha['familia_json'])) {
-        $familia = json_decode($ficha['familia_json'], true);
+        $familia = is_string($ficha['familia_json']) ? json_decode($ficha['familia_json'], true) : $ficha['familia_json'];
+    }
+    // Se não houver, usar array familia diretamente
+    if (empty($familia) && !empty($ficha['familia']) && is_array($ficha['familia'])) {
+        $familia = $ficha['familia'];
     }
     
     if (!empty($familia) && is_array($familia)): ?>
@@ -88,7 +93,7 @@
                     <tr style="border-bottom:1px solid #dee2e6;">
                         <td style="padding:12px;"><?php echo htmlspecialchars($membro['nome'] ?? ''); ?></td>
                         <td style="padding:12px;"><?php echo htmlspecialchars($membro['parentesco'] ?? ''); ?></td>
-                        <td style="padding:12px;"><?php echo htmlspecialchars($membro['data_nascimento'] ?? ''); ?></td>
+                        <td style="padding:12px;"><?php echo htmlspecialchars($membro['data_nasc'] ?? $membro['data_nascimento'] ?? ''); ?></td>
                         <td style="padding:12px;"><?php echo htmlspecialchars($membro['formacao'] ?? ''); ?></td>
                         <td style="padding:12px; text-align:right;">
                             <?php 

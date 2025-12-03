@@ -282,8 +282,11 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
     <input type="hidden" name="step" value="<?php echo $step; ?>">
     <!-- Container oculto para inputs de família gerados via JS -->
     <div id="familia_fields" style="display:none"></div>
-    <?php if ($editId): ?>
-        <input type="hidden" name="id" id="edit_id" value="<?php echo htmlspecialchars($editId); ?>">
+    <?php 
+    // Garantir que o ID seja preservado
+    $idToPreserve = $editId ?? ($ficha['id'] ?? ($_GET['id'] ?? null));
+    if ($idToPreserve): ?>
+        <input type="hidden" name="id" id="edit_id" value="<?php echo htmlspecialchars($idToPreserve); ?>">
     <?php endif; ?>
     
     <?php if ($step == 1): ?>
@@ -339,34 +342,39 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                 <label style="font-size: 14px; font-weight: 600; color: #2c3e50; display: block; margin-bottom: 12px;">Residência</label>
                 <div style="display: flex; gap: 16px; flex-wrap: wrap;">
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="residencia" value="Própria"> Própria
+                        <input type="radio" name="residencia" value="Própria" <?php echo (($ficha['residencia'] ?? '') === 'Própria') ? 'checked' : ''; ?>> Própria
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="residencia" value="Alugada"> Alugada
+                        <input type="radio" name="residencia" value="Alugada" <?php echo (($ficha['residencia'] ?? '') === 'Alugada') ? 'checked' : ''; ?>> Alugada
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="residencia" value="Cedida"> Cedida
+                        <input type="radio" name="residencia" value="Cedida" <?php echo (($ficha['residencia'] ?? '') === 'Cedida') ? 'checked' : ''; ?>> Cedida
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="residencia" value="Financiada"> Financiada
+                        <input type="radio" name="residencia" value="Financiada" <?php echo (($ficha['residencia'] ?? '') === 'Financiada') ? 'checked' : ''; ?>> Financiada
                     </label>
                 </div>
             </div>
             
             <div class="form-grid">
                 <div class="form-field">
+                    <label>Quantidade de Pessoas na Casa</label>
+                    <input type="number" name="qtd_pessoas" min="1" value="<?php echo htmlspecialchars($ficha['qtd_pessoas'] ?? $ficha['pessoas_casa'] ?? ''); ?>">
+                </div>
+                
+                <div class="form-field">
                     <label>Número de Cômodos</label>
-                    <input type="number" name="num_comodos" min="1">
+                    <input type="number" name="num_comodos" min="1" value="<?php echo htmlspecialchars($ficha['num_comodos'] ?? $ficha['numero_comodos'] ?? $ficha['nr_comodos'] ?? ''); ?>">
                 </div>
                 
                 <div class="form-field">
                     <label>Quartos</label>
-                    <input type="number" name="quartos" min="0">
+                    <input type="number" name="quartos" min="0" value="<?php echo htmlspecialchars($ficha['quartos'] ?? ''); ?>">
                 </div>
                 
                 <div class="form-field">
                     <label>Banheiro</label>
-                    <input type="number" name="banheiro" min="0" placeholder="Quantidade de banheiros">
+                    <input type="number" name="banheiro" min="0" placeholder="Quantidade de banheiros" value="<?php echo htmlspecialchars($ficha['banheiro'] ?? ''); ?>">
                 </div>
             </div>
             
@@ -375,10 +383,10 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                 <label style="font-size: 14px; font-weight: 600; color: #2c3e50; display: block; margin-bottom: 12px;">Construção</label>
                 <div style="display: flex; gap: 16px; flex-wrap: wrap;">
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="construcao" value="Alvenaria"> Alvenaria
+                        <input type="radio" name="construcao" value="Alvenaria" <?php echo (($ficha['construcao'] ?? '') === 'Alvenaria') ? 'checked' : ''; ?>> Alvenaria
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="construcao" value="Madeira"> Madeira
+                        <input type="radio" name="construcao" value="Madeira" <?php echo (($ficha['construcao'] ?? '') === 'Madeira') ? 'checked' : ''; ?>> Madeira
                     </label>
                 </div>
             </div>
@@ -388,9 +396,9 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                     <label>Água</label>
                     <select name="agua">
                         <option value="">Selecionar</option>
-                        <option value="Rede Pública">Rede Pública</option>
-                        <option value="Poço">Poço</option>
-                        <option value="Fossa">Fossa</option>
+                        <option value="Rede Pública" <?php echo (($ficha['agua'] ?? '') === 'Rede Pública') ? 'selected' : ''; ?>>Rede Pública</option>
+                        <option value="Poço" <?php echo (($ficha['agua'] ?? '') === 'Poço') ? 'selected' : ''; ?>>Poço</option>
+                        <option value="Fossa" <?php echo (($ficha['agua'] ?? '') === 'Fossa') ? 'selected' : ''; ?>>Fossa</option>
                     </select>
                 </div>
                 
@@ -398,8 +406,8 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                     <label>Esgoto</label>
                     <select name="esgoto">
                         <option value="">Selecionar</option>
-                        <option value="Rede Pública">Rede Pública</option>
-                        <option value="Fossa">Fossa</option>
+                        <option value="Rede Pública" <?php echo (($ficha['esgoto'] ?? '') === 'Rede Pública') ? 'selected' : ''; ?>>Rede Pública</option>
+                        <option value="Fossa" <?php echo (($ficha['esgoto'] ?? '') === 'Fossa') ? 'selected' : ''; ?>>Fossa</option>
                     </select>
                 </div>
                 
@@ -407,8 +415,8 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                     <label>Energia Elétrica</label>
                     <select name="energia">
                         <option value="">Selecionar</option>
-                        <option value="Relógio Próprio">Relógio Próprio</option>
-                        <option value="Relógio Comunitário">Relógio Comunitário</option>
+                        <option value="Relógio Próprio" <?php echo (($ficha['energia'] ?? '') === 'Relógio Próprio') ? 'selected' : ''; ?>>Relógio Próprio</option>
+                        <option value="Relógio Comunitário" <?php echo (($ficha['energia'] ?? '') === 'Relógio Comunitário') ? 'selected' : ''; ?>>Relógio Comunitário</option>
                     </select>
                 </div>
             </div>
@@ -572,15 +580,15 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                 <label>Alguém na família trabalha registrado / CLT?</label>
                 <div style="display: flex; gap: 16px; margin-top: 8px; align-items: center;">
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="trabalho_clt" value="Sim" onchange="toggleCltField(true)"> Sim
+                        <input type="radio" name="trabalho_clt" value="Sim" onchange="toggleCltField(true)" <?php echo (($ficha['trabalho_clt'] ?? '') === 'Sim') ? 'checked' : ''; ?>> Sim
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="trabalho_clt" value="Não" onchange="toggleCltField(false)"> Não
+                        <input type="radio" name="trabalho_clt" value="Não" onchange="toggleCltField(false)" <?php echo (($ficha['trabalho_clt'] ?? '') === 'Não') ? 'checked' : ''; ?>> Não
                     </label>
                 </div>
-                <div id="clt_field" style="display: none; margin-top: 12px;">
+                <div id="clt_field" style="display: <?php echo (($ficha['trabalho_clt'] ?? '') === 'Sim') ? 'block' : 'none'; ?>; margin-top: 12px;">
                     <label style="font-size: 14px; color: #6c757d; margin-bottom: 6px; display: block;">Se sim, com o quê?</label>
-                    <input type="text" name="trabalho_clt_qual" placeholder="Especifique a ocupação" style="width: 100%; padding: 12px; border: 2px solid #4a7c8f; border-radius: 8px; font-family: 'Poppins', sans-serif;">
+                    <input type="text" name="trabalho_clt_qual" placeholder="Especifique a ocupação" value="<?php echo htmlspecialchars($ficha['trabalho_clt_qual'] ?? ''); ?>" style="width: 100%; padding: 12px; border: 2px solid #4a7c8f; border-radius: 8px; font-family: 'Poppins', sans-serif;">
                 </div>
             </div>
             
@@ -588,10 +596,10 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                 <label>Possui convênio médico?</label>
                 <div style="display: flex; gap: 16px; margin-top: 8px;">
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="convenio_medico" value="Sim"> Sim
+                        <input type="radio" name="convenio_medico" value="Sim" <?php echo (($ficha['convenio_medico'] ?? '') === 'Sim') ? 'checked' : ''; ?>> Sim
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="convenio_medico" value="Não"> Não
+                        <input type="radio" name="convenio_medico" value="Não" <?php echo (($ficha['convenio_medico'] ?? '') === 'Não') ? 'checked' : ''; ?>> Não
                     </label>
                 </div>
             </div>
@@ -600,12 +608,17 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
                 <label>Tem Cadastro Único (CadÚnico)?</label>
                 <div style="display: flex; gap: 16px; margin-top: 8px;">
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="cadunico" value="Sim"> Sim
+                        <input type="radio" name="cadunico" value="Sim" <?php echo (($ficha['cadunico'] ?? '') === 'Sim') ? 'checked' : ''; ?>> Sim
                     </label>
                     <label style="display: flex; align-items: center; gap: 6px;">
-                        <input type="radio" name="cadunico" value="Não"> Não
+                        <input type="radio" name="cadunico" value="Não" <?php echo (($ficha['cadunico'] ?? '') === 'Não') ? 'checked' : ''; ?>> Não
                     </label>
                 </div>
+            </div>
+            
+            <div class="form-field" style="margin-top: 20px;">
+                <label>Observações</label>
+                <textarea name="observacoes" rows="4" placeholder="Observações adicionais..." style="width: 100%; padding: 12px; border: 2px solid #4a7c8f; border-radius: 8px; font-family: 'Poppins', sans-serif; resize: vertical;"><?php echo htmlspecialchars($ficha['observacoes'] ?? ''); ?></textarea>
             </div>
         </div>
         
@@ -613,6 +626,7 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
             <button type="button" onclick="prevStep()" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Anterior
             </button>
+            <input type="hidden" name="finalizar" value="1">
             <button type="submit" class="btn btn-success">
                 <?php if ($editId): ?>
                     <i class="fas fa-save"></i> Salvar Edição
@@ -686,4 +700,31 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
     </div>
 </div>
 
+<script>
+    // Passar dados da família do PHP para JavaScript
+    <?php if (!empty($ficha['familia']) || !empty($ficha['familia_json'])): ?>
+        window.familiaData = <?php 
+            if (!empty($ficha['familia_json'])) {
+                echo is_string($ficha['familia_json']) ? $ficha['familia_json'] : json_encode($ficha['familia_json']);
+            } elseif (!empty($ficha['familia']) && is_array($ficha['familia'])) {
+                // Converter formato do banco para formato esperado
+                $familiaFormatted = [];
+                foreach ($ficha['familia'] as $membro) {
+                    $familiaFormatted[] = [
+                        'nome' => $membro['nome'] ?? '',
+                        'parentesco' => $membro['parentesco'] ?? '',
+                        'data_nasc' => !empty($membro['data_nasc']) ? date('d/m/Y', strtotime($membro['data_nasc'])) : '',
+                        'formacao' => $membro['formacao'] ?? '',
+                        'renda' => floatval($membro['renda'] ?? 0)
+                    ];
+                }
+                echo json_encode($familiaFormatted, JSON_UNESCAPED_UNICODE);
+            } else {
+                echo '[]';
+            }
+        ?>;
+    <?php else: ?>
+        window.familiaData = null;
+    <?php endif; ?>
+</script>
 <script src="js/socioeconomico-multistep.js"></script>

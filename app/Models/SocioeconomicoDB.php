@@ -131,9 +131,9 @@ class SocioeconomicoDB extends BaseModelDB {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     $atendidoId,
-                    isset($data['agua']) ? 1 : 0,
-                    isset($data['esgoto']) ? 1 : 0,
-                    isset($data['energia']) ? 1 : 0,
+                    !empty($data['agua']) ? $data['agua'] : null,
+                    !empty($data['esgoto']) ? $data['esgoto'] : null,
+                    !empty($data['energia']) ? $data['energia'] : null,
                     $rendaFamiliar,
                     $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
                     $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
@@ -188,7 +188,15 @@ class SocioeconomicoDB extends BaseModelDB {
         } catch (Exception $e) {
             Database::rollback();
             error_log('Erro ao criar ficha socioeconômica: ' . $e->getMessage());
-            throw $e;
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            
+            // Mensagens mais claras para erros comuns
+            $message = $e->getMessage();
+            if (strpos($message, 'Data truncated') !== false || strpos($message, 'Incorrect string value') !== false) {
+                $message = 'Erro: Os campos água, esgoto ou energia precisam ser alterados no banco de dados. Execute o script: database/alter_socioeconomico_agua_esgoto_energia.sql';
+            }
+            
+            throw new Exception($message);
         }
     }
     
@@ -207,21 +215,70 @@ class SocioeconomicoDB extends BaseModelDB {
         
         $ficha = $stmt->fetch();
         
-        if ($ficha) {
-            // Mapear campos
-            $ficha['id'] = $ficha['idatendido'];
-            $ficha['nome_entrevistado'] = $ficha['nome'];
+        if (!$ficha) {
+            return null;
+        }
+        
+        // Mapear campos
+        $ficha['id'] = $ficha['idatendido'];
+        $ficha['id_atendido'] = $ficha['idatendido'];
+        $ficha['nome_entrevistado'] = $ficha['nome'];
+        $ficha['nome_completo'] = $ficha['nome'];
+        $ficha['nome_menor'] = $ficha['nome'];
+        
+        // Formatar data de nascimento
+        if (!empty($ficha['data_nascimento'])) {
             $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
-            $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
-            $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
-            
+        }
+        
+        // Calcular idade
+        $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
+        $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
+        
+        // Mapear campos da ficha socioeconômica
+        if (!empty($ficha['idficha'])) {
             // Buscar família
             $stmt = $this->query("SELECT * FROM Familia WHERE id_ficha = ?", [$ficha['idficha']]);
-            $ficha['familia'] = $stmt->fetchAll();
+            $familia = $stmt->fetchAll();
+            $ficha['familia'] = $familia;
+            
+            // Converter família para formato JSON esperado
+            $familiaJson = [];
+            foreach ($familia as $membro) {
+                $familiaJson[] = [
+                    'nome' => $membro['nome'] ?? '',
+                    'parentesco' => $membro['parentesco'] ?? '',
+                    'data_nasc' => $this->formatDate($membro['data_nasc'] ?? ''),
+                    'formacao' => $membro['formacao'] ?? '',
+                    'renda' => floatval($membro['renda'] ?? 0)
+                ];
+            }
+            $ficha['familia_json'] = json_encode($familiaJson);
             
             // Buscar despesas
             $stmt = $this->query("SELECT * FROM Despesas WHERE id_ficha = ?", [$ficha['idficha']]);
-            $ficha['despesas'] = $stmt->fetchAll();
+            $despesas = $stmt->fetchAll();
+            $ficha['despesas'] = $despesas;
+            
+            // Mapear campos de habitação
+            $ficha['residencia'] = $ficha['residencia'] ?? null;
+            $ficha['numero_comodos'] = $ficha['nr_comodos'] ?? null;
+            $ficha['num_comodos'] = $ficha['nr_comodos'] ?? null;
+            $ficha['construcao'] = $ficha['construcao'] ?? null;
+            $ficha['agua'] = $ficha['agua'] ?? null;
+            $ficha['esgoto'] = $ficha['esgoto'] ?? null;
+            $ficha['energia'] = $ficha['energia'] ?? null;
+            $ficha['tipo_moradia'] = $ficha['moradia'] ?? null;
+            $ficha['situacao_moradia'] = $ficha['cond_residencia'] ?? null;
+            $ficha['qtd_pessoas'] = $ficha['qtd_pessoas'] ?? 0;
+            $ficha['pessoas_casa'] = $ficha['qtd_pessoas'] ?? 0;
+            $ficha['renda_familiar'] = floatval($ficha['renda_familiar'] ?? 0);
+            $ficha['observacoes'] = $ficha['observacoes'] ?? null;
+        } else {
+            // Se não tem ficha ainda, inicializar arrays vazios
+            $ficha['familia'] = [];
+            $ficha['familia_json'] = '[]';
+            $ficha['despesas'] = [];
         }
         
         return $ficha;
@@ -324,18 +381,21 @@ class SocioeconomicoDB extends BaseModelDB {
                 "UPDATE Ficha_Socioeconomico SET 
                     agua = ?, esgoto = ?, energia = ?, renda_familiar = ?,
                     qtd_pessoas = ?, cond_residencia = ?, moradia = ?,
-                    nr_veiculos = ?, observacoes = ?, nr_comodos = ?, construcao = ?
+                    nr_veiculos = ?, observacoes = ?, entrevistado = ?, 
+                    residencia = ?, nr_comodos = ?, construcao = ?
                 WHERE id_atendido = ?",
                 [
-                    isset($data['agua']) ? 1 : 0,
-                    isset($data['esgoto']) ? 1 : 0,
-                    isset($data['energia']) ? 1 : 0,
+                    !empty($data['agua']) ? $data['agua'] : null,
+                    !empty($data['esgoto']) ? $data['esgoto'] : null,
+                    !empty($data['energia']) ? $data['energia'] : null,
                     $rendaFamiliar,
                     $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
                     $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
                     $data['tipo_moradia'] ?? $data['moradia'] ?? null,
                     $data['nr_veiculos'] ?? 0,
                     $data['observacoes'] ?? null,
+                    $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
+                    $data['residencia'] ?? null,
                     $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
                     $data['construcao'] ?? null,
                     $id
@@ -344,39 +404,49 @@ class SocioeconomicoDB extends BaseModelDB {
             
             $fichaId = $ficha['idficha'];
             
-            // Sincronizar Família (se enviada)
-            if (isset($data['familia']) && is_array($data['familia'])) {
-                // Apagar antigos
-                $this->query("DELETE FROM Familia WHERE id_ficha = ?", [$fichaId]);
-                // Inserir novos
+            // Sincronizar Família - sempre sincronizar para manter dados atualizados
+            // Apagar todos os antigos primeiro
+            $this->query("DELETE FROM Familia WHERE id_ficha = ?", [$fichaId]);
+            
+            // Inserir novos se houver
+            if (!empty($data['familia']) && is_array($data['familia'])) {
                 foreach ($data['familia'] as $membro) {
-                    $this->query(
-                        "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
-                        [
-                            $fichaId,
-                            $membro['nome'] ?? '',
-                            $membro['parentesco'] ?? '',
-                            $this->convertDate($membro['data_nasc'] ?? ''),
-                            $membro['formacao'] ?? '',
-                            isset($membro['renda']) ? floatval($membro['renda']) : 0
-                        ]
-                    );
+                    // Validar que o membro tem pelo menos nome ou parentesco
+                    if (!empty($membro['nome']) || !empty($membro['parentesco'])) {
+                        $this->query(
+                            "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                            [
+                                $fichaId,
+                                $membro['nome'] ?? '',
+                                $membro['parentesco'] ?? '',
+                                $this->convertDate($membro['data_nasc'] ?? ''),
+                                $membro['formacao'] ?? '',
+                                isset($membro['renda']) ? floatval($membro['renda']) : 0
+                            ]
+                        );
+                    }
                 }
             }
             
-            // Sincronizar Despesas (se enviada)
-            if (isset($data['despesas']) && is_array($data['despesas'])) {
-                $this->query("DELETE FROM Despesas WHERE id_ficha = ?", [$fichaId]);
+            // Sincronizar Despesas - sempre sincronizar para manter dados atualizados
+            // Apagar todas as antigas primeiro
+            $this->query("DELETE FROM Despesas WHERE id_ficha = ?", [$fichaId]);
+            
+            // Inserir novas se houver
+            if (!empty($data['despesas']) && is_array($data['despesas'])) {
                 foreach ($data['despesas'] as $despesa) {
-                    $this->query(
-                        "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
-                        [
-                            $fichaId,
-                            isset($despesa['valor']) ? floatval($despesa['valor']) : 0,
-                            $despesa['tipo'] ?? '',
-                            isset($despesa['renda']) ? floatval($despesa['renda']) : 0
-                        ]
-                    );
+                    // Validar que a despesa tem pelo menos tipo ou valor
+                    if (!empty($despesa['tipo']) || !empty($despesa['valor'])) {
+                        $this->query(
+                            "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                            [
+                                $fichaId,
+                                isset($despesa['valor']) ? floatval($despesa['valor']) : 0,
+                                $despesa['tipo'] ?? '',
+                                isset($despesa['renda']) ? floatval($despesa['renda']) : 0
+                            ]
+                        );
+                    }
                 }
             }
             
@@ -387,7 +457,15 @@ class SocioeconomicoDB extends BaseModelDB {
         } catch (Exception $e) {
             Database::rollback();
             error_log('Erro ao atualizar ficha: ' . $e->getMessage());
-            throw $e;
+            error_log('Stack trace: ' . $e->getTraceAsString());
+            
+            // Mensagens mais claras para erros comuns
+            $message = $e->getMessage();
+            if (strpos($message, 'Data truncated') !== false || strpos($message, 'Incorrect string value') !== false) {
+                $message = 'Erro: Os campos água, esgoto ou energia precisam ser alterados no banco de dados. Execute o script: database/alter_socioeconomico_agua_esgoto_energia.sql';
+            }
+            
+            throw new Exception($message);
         }
     }
     

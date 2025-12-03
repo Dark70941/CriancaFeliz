@@ -1,0 +1,57 @@
+================================================================================
+INSTRUÇÕES PARA CORRIGIR O PROBLEMA DE SALVAMENTO - FICHA SOCIOECONÔMICA
+================================================================================
+
+SIM, VOCÊ PRECISA ALTERAR O BANCO DE DADOS!
+
+O problema é que os campos "água", "esgoto" e "energia" estão como BOOLEAN 
+(que só aceita 0 ou 1), mas o formulário está tentando salvar textos como 
+"Rede Pública", "Poço", etc.
+
+================================================================================
+PASSO A PASSO:
+================================================================================
+
+1. Abra o phpMyAdmin:
+   http://localhost/phpmyadmin
+
+2. Selecione o banco de dados: criancafeliz
+
+3. Vá na aba "SQL"
+
+4. Execute este comando SQL (copie e cole):
+
+   ALTER TABLE Ficha_Socioeconomico MODIFY COLUMN agua VARCHAR(50) DEFAULT NULL;
+   ALTER TABLE Ficha_Socioeconomico MODIFY COLUMN esgoto VARCHAR(50) DEFAULT NULL;
+   ALTER TABLE Ficha_Socioeconomico MODIFY COLUMN energia VARCHAR(50) DEFAULT NULL;
+
+5. Clique em "Executar" (ou pressione F5)
+
+================================================================================
+OU EXECUTE O ARQUIVO COMPLETO:
+================================================================================
+
+Abra o arquivo: database/fix_socioeconomico_tables.sql
+Copie todo o conteúdo e cole no phpMyAdmin na aba SQL
+
+================================================================================
+VERIFICAR SE FUNCIONOU:
+================================================================================
+
+1. No phpMyAdmin, vá em "Estrutura" da tabela Ficha_Socioeconomico
+2. Verifique que os campos agua, esgoto e energia estão como "varchar(50)"
+
+================================================================================
+SE AINDA NÃO SALVAR:
+================================================================================
+
+1. Verifique se você selecionou uma criança/atendido no formulário
+2. Veja se aparece alguma mensagem de erro na tela
+3. Verifique os logs do PHP (se houver erro, será mostrado)
+
+================================================================================
+DÚVIDAS?
+================================================================================
+
+Se ainda não funcionar, me avise qual erro aparece na tela ou no log.
+

@@ -80,16 +80,52 @@ class SocioeconomicoController extends BaseController {
         $this->requireAuth();
         $this->requirePermission('create_records');
         
-        // Verificar se é edição
+        // Verificar se é edição (GET ou POST)
         $id = $this->getParam('id');
+        $step = intval($this->getParam('step') ?? 1);
         $ficha = null;
         
+        // Se há dados POST de navegação entre etapas (não é finalização), preservar em sessão
+        if ($this->isPost() && !empty($_POST['step']) && empty($_POST['finalizar'])) {
+            $step = intval($_POST['step']);
+            $id = $id ?? ($_POST['id'] ?? null);
+            
+            // Salvar dados do POST em sessão temporária para preservar entre etapas
+            if (!isset($_SESSION['socioeconomico_temp'])) {
+                $_SESSION['socioeconomico_temp'] = [];
+            }
+            // Mesclar dados do POST com dados já salvos (preservar ID)
+            $tempData = $_POST;
+            if ($id) {
+                $tempData['id'] = $id;
+            }
+            $_SESSION['socioeconomico_temp'] = array_merge($_SESSION['socioeconomico_temp'], $tempData);
+        }
+        
+        // Se há ID, carregar dados existentes
         if ($id) {
             try {
                 $ficha = $this->socioeconomicoService->getFicha($id);
+                if (!$ficha) {
+                    throw new Exception('Ficha não encontrada');
+                }
+                // Mesclar com dados temporários se houver
+                if (isset($_SESSION['socioeconomico_temp'])) {
+                    $ficha = array_merge($ficha, $_SESSION['socioeconomico_temp']);
+                    $ficha['id'] = $id; // Garantir que o ID não seja sobrescrito
+                }
             } catch (Exception $e) {
+                // Limpar sessão temporária em caso de erro
+                if (isset($_SESSION['socioeconomico_temp'])) {
+                    unset($_SESSION['socioeconomico_temp']);
+                }
                 $this->redirectWithError('socioeconomico_list.php', 'Ficha não encontrada');
                 return;
+            }
+        } else {
+            // Se não há ID mas há dados temporários, usar eles
+            if (isset($_SESSION['socioeconomico_temp'])) {
+                $ficha = $_SESSION['socioeconomico_temp'];
             }
         }
         
@@ -97,7 +133,7 @@ class SocioeconomicoController extends BaseController {
         $atendidos = $this->socioeconomicoService->listAtendidos(100);
         
         $data = [
-            'title' => $ficha ? 'Editar Ficha Socioeconômica' : 'Cadastrar Ficha Socioeconômica',
+            'title' => ($id && $ficha) ? 'Editar Ficha Socioeconômica' : 'Cadastrar Ficha Socioeconômica',
             'csrf_token' => $this->generateCSRF(),
             'messages' => $this->getFlashMessages(),
             'ficha' => $ficha,
@@ -118,15 +154,50 @@ class SocioeconomicoController extends BaseController {
             redirect('socioeconomico_form.php');
         }
         
+        // Se é apenas navegação entre etapas, salvar dados na sessão e redirecionar para create()
+        if (!empty($_POST['step']) && empty($_POST['finalizar'])) {
+            $id = $_POST['id'] ?? null;
+            $step = $_POST['step'];
+            
+            // Salvar dados do POST em sessão temporária para preservar entre etapas
+            if (!isset($_SESSION['socioeconomico_temp'])) {
+                $_SESSION['socioeconomico_temp'] = [];
+            }
+            // Mesclar dados do POST com dados já salvos (preservar ID)
+            $tempData = $this->getPostData();
+            if ($id) {
+                $tempData['id'] = $id;
+            }
+            $_SESSION['socioeconomico_temp'] = array_merge($_SESSION['socioeconomico_temp'], $tempData);
+            
+            $url = 'socioeconomico_form.php?step=' . $step;
+            if ($id) {
+                $url .= '&id=' . urlencode($id);
+            }
+            redirect($url);
+            return;
+        }
+        
         try {
             $this->validateCSRF();
             
+            // Combinar dados do POST com dados da sessão temporária
             $data = $this->getPostData();
+            if (isset($_SESSION['socioeconomico_temp'])) {
+                // Mesclar: dados da sessão primeiro, depois dados do POST (POST sobrescreve)
+                $sessionData = $_SESSION['socioeconomico_temp'];
+                $data = array_merge($sessionData, $data);
+            }
             
             // Debug: Log dos dados recebidos
-            error_log('=== SOCIOECONOMICO STORE ===');
+            error_log('=== SOCIOECONOMICO STORE (FINALIZAR) ===');
             error_log('ID recebido: ' . ($data['id'] ?? 'NENHUM'));
             error_log('Dados: ' . print_r($data, true));
+            
+            // Limpar sessão temporária após usar
+            if (isset($_SESSION['socioeconomico_temp'])) {
+                unset($_SESSION['socioeconomico_temp']);
+            }
             
             // Verificar se é edição ou criação
             if (!empty($data['id'])) {
@@ -136,18 +207,24 @@ class SocioeconomicoController extends BaseController {
                 error_log('EDITANDO ficha ID: ' . $id);
                 $ficha = $this->socioeconomicoService->updateFicha($id, $data);
                 $this->redirectWithSuccess('socioeconomico_list.php', 'Ficha socioeconômica atualizada com sucesso!');
-                return; // IMPORTANTE: Parar execução aqui
+                return;
             } else {
                 // Criação
                 error_log('CRIANDO nova ficha');
                 $ficha = $this->socioeconomicoService->createFicha($data);
                 $this->redirectWithSuccess('socioeconomico_list.php', 'Ficha socioeconômica cadastrada com sucesso!');
-                return; // IMPORTANTE: Parar execução aqui
+                return;
             }
             
         } catch (Exception $e) {
             error_log('ERRO: ' . $e->getMessage());
-            $this->redirectWithError('socioeconomico_form.php', $e->getMessage());
+            // Preservar sessão temporária em caso de erro
+            $id = $_POST['id'] ?? null;
+            $url = 'socioeconomico_form.php';
+            if ($id) {
+                $url .= '?id=' . urlencode($id);
+            }
+            $this->redirectWithError($url, $e->getMessage());
         }
     }
     
