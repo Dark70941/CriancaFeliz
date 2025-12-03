@@ -67,15 +67,18 @@ class AuthService {
      * Cria sessão do usuário
      */
     private function createSession($user) {
-        $_SESSION['user_id'] = $user['id'];
-        $_SESSION['user_email'] = $user['email'];
-        $_SESSION['user_name'] = $user['name'];
-        $_SESSION['user_role'] = $user['role'];
-        $_SESSION['login_time'] = time();
-        
-        // Regenerar ID da sessão por segurança
-        session_regenerate_id(true);
-    }
+    $_SESSION['user_id'] = $user['idusuario'];
+    $_SESSION['user_email'] = $user['email'];
+    $_SESSION['user_name'] = $user['nome'];
+
+    // Usa 'nivel' do banco como role
+    $_SESSION['user_role'] = $user['nivel'] ?? 'funcionario';
+
+    $_SESSION['login_time'] = time();
+    session_regenerate_id(true);
+}
+
+
     
     /**
      * Realiza logout do usuário

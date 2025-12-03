@@ -107,11 +107,7 @@
 </style>
 
 <?php
-session_start();
-require_once 'conexao.php';
-// quaisquer outros includes...
-
-if ($_SESSION['user_role'] != 1) { 
+if ($_SESSION['user_role'] !== 'admin') { 
     echo "<h2 style='text-align:center;margin-top:40px;color:red;'>Acesso negado</h2>";
     exit;
 }
