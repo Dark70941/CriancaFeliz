@@ -1,6 +1,13 @@
+<?php 
+// Verificar permissões de admin
+$isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
+?>
+
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="prontuarios.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
+    <?php if ($isAdmin): ?>
     <a href="acolhimento_form.php" class="btn" style="background:#ff7a00; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">+ Cadastrar</a>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -11,6 +18,7 @@
   const initialTbodyHTML = tbody ? tbody.innerHTML : '';
    const pagination = document.querySelector('.pagination');
    const csrfToken = '<?php echo htmlspecialchars($csrf_token ?? ""); ?>';
+   const isAdmin = <?php echo ((isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin') ? 'true' : 'false'); ?>;
 
    function formatStatus(status) {
      const isAtivo = (status || 'Ativo') === 'Ativo';
@@ -38,14 +46,19 @@
        const categoria = formatCategoria(it.categoria);
        const responsavel = it.responsavel || '';
        const status = formatStatus(it.status);
-       const btns = id ? (
-         `<a href="acolhimento_view.php?id=${id}" class="btn-icon" title="Visualizar" style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;"><i class=\"fas fa-eye\"></i></a>
-          <a href="acolhimento_form.php?id=${id}" class="btn-icon" title="Editar" style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;"><i class=\"fas fa-edit\"></i></a>
+       
+       // Botões de ação (somente admin pode editar/deletar)
+       let btns = `<a href="acolhimento_view.php?id=${id}" class="btn-icon" title="Visualizar" style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;"><i class="fas fa-eye"></i></a>`;
+       
+       if (isAdmin) {
+         btns += `
+          <a href="acolhimento_form.php?id=${id}" class="btn-icon" title="Editar" style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;"><i class="fas fa-edit"></i></a>
           <form method="POST" action="acolhimento_list.php?delete=${id}" style="display:inline; margin:0 4px;" onsubmit="return confirm('Tem certeza que deseja excluir esta ficha?')">
             <input type="hidden" name="csrf_token" value="${csrfToken}">
-            <button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px;"><i class=\"fas fa-trash\"></i></button>
-          </form>`
-       ) : '<span style="color:#999; font-size:12px;">ID inválido</span>';
+            <button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px;"><i class="fas fa-trash"></i></button>
+          </form>`;
+       }
+       
        return `<tr style="border-bottom:1px solid #dee2e6;">
                  <td style="padding:12px; color:#212529;">${nome}</td>
                  <td style="padding:12px; color:#212529;">${cpf}</td>
@@ -53,7 +66,7 @@
                  <td style="padding:12px; color:#212529;">${categoria}</td>
                  <td style="padding:12px; color:#212529;">${responsavel}</td>
                  <td style="padding:12px; color:#212529;">${status}</td>
-                 <td style="padding:12px; text-align:center;">${btns}</td>
+                 <td style="padding:12px; text-align:center;">${id ? btns : '<span style="color:#999; font-size:12px;">ID inválido</span>'}</td>
                </tr>`;
      }).join('');
    }
@@ -154,26 +167,33 @@
                             <?php if (isset($ficha['id']) && !empty($ficha['id'])): ?>
                                 <?php 
                                 $id = $ficha['id'];
-                                // Botão Visualizar
+                                // Determinar se pode editar/deletar (apenas admin)
+                                $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
+                                
+                                // Botão Visualizar (todos veem)
                                 echo '<a href="acolhimento_view.php?id=' . $id . '" ';
                                 echo 'class="btn-icon" ';
                                 echo 'title="Visualizar" ';
                                 echo 'style="background:#17a2b8; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
                                 echo '<i class="fas fa-eye"></i></a> ';
                                 
-                                // Botão Editar
-                                echo '<a href="acolhimento_form.php?id=' . $id . '" ';
-                                echo 'class="btn-icon" ';
-                                echo 'title="Editar" ';
-                                echo 'style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
-                                echo '<i class="fas fa-edit"></i></a> ';
+                                // Botão Editar (somente admin)
+                                if ($isAdmin) {
+                                    echo '<a href="acolhimento_form.php?id=' . $id . '" ';
+                                    echo 'class="btn-icon" ';
+                                    echo 'title="Editar" ';
+                                    echo 'style="background:#ffc107; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; text-decoration:none; font-size:14px; margin:0 4px; display:inline-block;">';
+                                    echo '<i class="fas fa-edit"></i></a> ';
+                                }
                                 
-                                // Botão Excluir (formulário POST com CSRF)
-                                echo '<form method="POST" action="acolhimento_list.php?delete=' . $id . '" style="display:inline; margin:0 4px;" onsubmit="return confirm(\'Tem certeza que deseja excluir esta ficha?\')">';
-                                echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrf_token ?? '') . '">';
-                                echo '<button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px;">';
-                                echo '<i class="fas fa-trash"></i></button>';
-                                echo '</form>';
+                                // Botão Excluir (somente admin - formulário POST com CSRF)
+                                if ($isAdmin) {
+                                    echo '<form method="POST" action="acolhimento_list.php?delete=' . $id . '" style="display:inline; margin:0 4px;" onsubmit="return confirm(\'Tem certeza que deseja excluir esta ficha?\')">';
+                                    echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($csrf_token ?? '') . '">';
+                                    echo '<button type="submit" class="btn-icon" title="Excluir" style="background:#e74c3c; color:#fff; border:none; padding:8px 10px; border-radius:6px; cursor:pointer; font-size:14px;">';
+                                    echo '<i class="fas fa-trash"></i></button>';
+                                    echo '</form>';
+                                }
                                 ?>
                             <?php else: ?>
                                 <span style="color: #999; font-size: 12px;">ID inválido</span>

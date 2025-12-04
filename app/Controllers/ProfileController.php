@@ -168,12 +168,10 @@ class ProfileController extends BaseController {
                 'Senha' => password_hash($newPassword, PASSWORD_DEFAULT)
             ]);
             
-            $this->setFlashMessage('success', 'Senha alterada com sucesso!');
-            $this->redirect('profile.php');
+            $this->redirectWithSuccess('profile.php', 'Senha alterada com sucesso!');
             
         } catch (Exception $e) {
-            $this->setFlashMessage('error', $e->getMessage());
-            $this->redirect('profile.php');
+            $this->redirectWithError('profile.php', $e->getMessage());
         }
     }
 }

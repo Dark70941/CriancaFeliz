@@ -1,6 +1,13 @@
+<?php 
+// Verificar permissões de admin
+$isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
+?>
+
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="prontuarios.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
+    <?php if ($isAdmin): ?>
     <a href="socioeconomico_form.php" class="btn" style="background:#ff7a00; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">+ Cadastrar</a>
+    <?php endif; ?>
 </div>
 
 <!-- Filtros de busca -->
@@ -90,32 +97,38 @@
                             <?php 
                             // Tentar obter ID de diferentes fontes
                             $id = $ficha['id'] ?? $ficha['idatendido'] ?? null;
+                            // Determinar se pode editar/deletar (apenas admin)
+                            $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
                             
-                            if (!empty($id)): 
-                                // Botão Visualizar
+                            if (!empty($id)) { 
+                                // Botão Visualizar (todos veem)
                                 echo '<a href="socioeconomico_view.php?id=' . urlencode($id) . '" ';
                                 echo 'class="btn-icon" ';
                                 echo 'title="Visualizar" ';
                                 echo 'style="background:#17a2b8; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
                                 echo '<i class="fas fa-eye"></i></a>';
                                 
-                                // Botão Editar
-                                echo '<a href="socioeconomico_form.php?id=' . urlencode($id) . '" ';
-                                echo 'class="btn-icon" ';
-                                echo 'title="Editar" ';
-                                echo 'style="background:#ffc107; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
-                                echo '<i class="fas fa-edit"></i></a>';
+                                // Botão Editar (somente admin)
+                                if ($isAdmin) {
+                                    echo '<a href="socioeconomico_form.php?id=' . urlencode($id) . '" ';
+                                    echo 'class="btn-icon" ';
+                                    echo 'title="Editar" ';
+                                    echo 'style="background:#ffc107; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
+                                    echo '<i class="fas fa-edit"></i></a>';
+                                }
                                 
-                                // Botão Excluir
-                                echo '<a href="socioeconomico_list.php?delete=' . urlencode($id) . '" ';
-                                echo 'class="btn-icon" ';
-                                echo 'title="Excluir" ';
-                                echo 'onclick="return confirm(\'Tem certeza que deseja excluir esta ficha?\')" ';
-                                echo 'style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
-                                echo '<i class="fas fa-trash"></i></a>';
-                            else: 
+                                // Botão Excluir (somente admin)
+                                if ($isAdmin) {
+                                    echo '<a href="socioeconomico_list.php?delete=' . urlencode($id) . '" ';
+                                    echo 'class="btn-icon" ';
+                                    echo 'title="Excluir" ';
+                                    echo 'onclick="return confirm(\'Tem certeza que deseja excluir esta ficha?\')" ';
+                                    echo 'style="background:#e74c3c; color:#fff; border:none; padding:6px 8px; border-radius:4px; cursor:pointer; text-decoration:none; font-size:13px; margin:0 2px; display:inline-block;">';
+                                    echo '<i class="fas fa-trash"></i></a>';
+                                }
+                            } else {
                                 echo '<span style="color: #999; font-size: 12px;">ID inválido</span>';
-                            endif; 
+                            } 
                             ?>
                         </td>
                     </tr>

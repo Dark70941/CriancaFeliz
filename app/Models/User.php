@@ -19,7 +19,7 @@ class User extends BaseModelDB {
             if ($count == 0) {
                 $this->query(
                     "INSERT INTO Usuario (nome, email, Senha, nivel, status) VALUES (?, ?, ?, ?, ?)",
-                    ['Administrador', 'admin@criancafeliz.org', password_hash('admin123', PASSWORD_DEFAULT), 'Administrador', 'Ativo']
+                    ['Administrador', 'admin@criancafeliz.org', password_hash('admin123', PASSWORD_DEFAULT), 'admin', 'Ativo']
                 );
             }
         } catch (Exception $e) {

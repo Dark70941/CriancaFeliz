@@ -190,7 +190,7 @@ class AcolhimentoDB extends BaseModelDB {
             $ficha['id'] = $ficha['idatendido'];
             $ficha['nome_completo'] = $ficha['nome'];
             $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
-            $ficha['data_acolhimento'] = $this->formatDate($ficha['data_acolhimento']);
+            $ficha['data_acolhimento'] = $this->formatDate($ficha['data_cadastro'] ?? '');
             $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
             $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
         }

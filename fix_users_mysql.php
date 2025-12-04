@@ -30,7 +30,7 @@ try {
         [
             'nome' => 'Administrador',
             'email' => 'admin@criancafeliz.org',
-            'nivel' => 'Administrador',
+            'nivel' => 'admin',
             'status' => 'Ativo'
         ],
         [

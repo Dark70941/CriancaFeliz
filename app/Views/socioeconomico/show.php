@@ -1,6 +1,12 @@
+<?php 
+$isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['role'] === 'admin');
+?>
+
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="socioeconomico_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
+    <?php if ($isAdmin): ?>
     <a href="socioeconomico_form.php?id=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;"><i class="fas fa-edit"></i> Editar</a>
+    <?php endif; ?>
 </div>
 
 <!-- Dados Pessoais -->

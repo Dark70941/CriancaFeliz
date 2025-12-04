@@ -23,6 +23,21 @@ class PsychologyNote extends BaseModelDB
         $stmt->execute([$cpf]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    /**
+     * Busca uma anotação por ID
+     */
+    public function findById($id)
+    {
+        $sql = "SELECT a.*, u.nome AS psicologo_nome
+                FROM anotacao_psicologica a
+                LEFT JOIN usuario u ON a.id_psicologo = u.idusuario
+                WHERE a.id_anotacao = ?";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
     public function updateNote($id, $data)
     {
         $fields = [];

@@ -358,78 +358,107 @@ function closeNoteModal() {
 function editNote(noteId) {
     console.log('Editando anotação ID:', noteId);
     
+    if (!noteId) {
+        console.error('ID da anotação não foi fornecido!');
+        alert('Erro: ID da anotação inválido');
+        return;
+    }
+    
     // Buscar dados da anotação
-        fetch(`edit_annotation.php?id=${noteId}`)
-            .then(res => {
+    fetch(`edit_annotation.php?id=${noteId}`)
+        .then(res => {
+            console.log('Status da resposta:', res.status);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             return res.json();
-            })
-    .then(data => {
-        console.log('Dados recebidos:', data);
-        
-        if (data.success) {
-            const note = data.note;
+        })
+        .then(data => {
+            console.log('Dados recebidos:', data);
             
-            // Preencher o formulário com os dados existentes
-            document.querySelector('select[name="note_type"]').value = note.note_type || '';
-            document.querySelector('input[name="title"]').value = note.title || '';
-            document.querySelector('textarea[name="content"]').value = note.content || '';
-            document.querySelector('select[name="mood_assessment"]').value = note.mood_assessment || '';
-            document.querySelector('input[name="next_session"]').value = note.next_session ? note.next_session.replace(' ', 'T') : '';
-            document.querySelector('textarea[name="behavior_notes"]').value = note.behavior_notes || '';
-            document.querySelector('textarea[name="recommendations"]').value = note.recommendations || '';
-            
-            // Adicionar campo hidden com o ID da anotação
-            let hiddenId = document.querySelector('input[name="note_id"]');
-            if (!hiddenId) {
-                hiddenId = document.createElement('input');
-                hiddenId.type = 'hidden';
-                hiddenId.name = 'note_id';
-                document.getElementById('noteForm').appendChild(hiddenId);
+            if (data.success) {
+                const note = data.note;
+                
+                // Preencher o formulário com os dados existentes
+                document.querySelector('select[name="note_type"]').value = note.note_type || '';
+                document.querySelector('input[name="title"]').value = note.title || '';
+                document.querySelector('textarea[name="content"]').value = note.content || '';
+                document.querySelector('select[name="mood_assessment"]').value = note.mood_assessment || '';
+                document.querySelector('input[name="next_session"]').value = note.next_session ? note.next_session.replace(' ', 'T') : '';
+                document.querySelector('textarea[name="behavior_notes"]').value = note.behavior_notes || '';
+                document.querySelector('textarea[name="recommendations"]').value = note.recommendations || '';
+                
+                // Adicionar campo hidden com o ID da anotação
+                let hiddenId = document.querySelector('input[name="note_id"]');
+                if (!hiddenId) {
+                    hiddenId = document.createElement('input');
+                    hiddenId.type = 'hidden';
+                    hiddenId.name = 'note_id';
+                    document.getElementById('noteForm').appendChild(hiddenId);
+                }
+                hiddenId.value = noteId;
+                
+                // Alterar título do modal
+                document.querySelector('.modal-header h3').innerHTML = '✏️ Editar Anotação Psicológica';
+                
+                // Alterar texto do botão
+                document.querySelector('button[type="submit"]').innerHTML = '💾 Atualizar Anotação';
+                
+                console.log('Modal sendo aberto...');
+                // Abrir modal
+                openNewNoteModal();
+            } else {
+                console.error('Erro do servidor:', data.error);
+                alert('Erro: ' + (data.error || 'Erro desconhecido'));
             }
-            hiddenId.value = noteId;
-            
-            // Alterar título do modal
-            document.querySelector('.modal-header h3').innerHTML = '✏️ Editar Anotação Psicológica';
-            
-            // Alterar texto do botão
-            document.querySelector('button[type="submit"]').innerHTML = '💾 Atualizar Anotação';
-            
-            // Abrir modal
-            openNewNoteModal();
-        } else {
-            console.error('Erro do servidor:', data.error);
-            alert('Erro: ' + (data.error || 'Erro desconhecido'));
-        }
-    })
-    .catch(error => {
-        console.error('Erro completo:', error);
-        alert('Erro ao carregar anotação: ' + error.message);
-    });
+        })
+        .catch(error => {
+            console.error('Erro completo:', error);
+            alert('Erro ao carregar anotação: ' + error.message);
+        });
 }
 
 function deleteNote(noteId) {
+    console.log('Deletando anotação ID:', noteId);
+    
+    if (!noteId) {
+        console.error('ID da anotação não foi fornecido!');
+        alert('Erro: ID da anotação inválido');
+        return;
+    }
+    
     if (!confirm('Tem certeza que deseja excluir esta anotação?\n\nEsta ação não pode ser desfeita.')) {
         return;
     }
+    
+    // Obter CSRF token do formulário
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    console.log('CSRF Token obtido:', csrfToken ? 'Sim' : 'Não');
     
     fetch(`psychology.php?action=delete_note&id=${noteId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        }
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            csrf_token: csrfToken
+        })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Status da resposta:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Dados recebidos:', data);
         if (data.success) {
+            alert('Anotação excluída com sucesso!');
             location.reload();
         } else {
-            alert('Erro: ' + data.error);
+            alert('Erro: ' + (data.error || data.message || 'Erro desconhecido'));
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao excluir anotação');
+        console.error('Erro completo:', error);
+        alert('Erro ao excluir anotação: ' + error.message);
     });
 }
 
@@ -438,23 +467,29 @@ document.getElementById('noteForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
+    const noteId = formData.get('note_id');
     
-    fetch('psychology.php?action=save_note', {
-    method: 'POST',
-    headers: { "X-Requested-With": "XMLHttpRequest" },
-    body: formData
-})
+    // Determinar se é edição ou nova anotação
+    const action = noteId ? 'update_note' : 'save_note';
+    const url = `psychology.php?action=${action}`;
+    
+    fetch(url, {
+        method: 'POST',
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        body: formData
+    })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            alert(data.message || (noteId ? 'Anotação atualizada com sucesso!' : 'Anotação salva com sucesso!'));
             location.reload();
         } else {
-            alert('Erro: ' + data.error);
+            alert('Erro: ' + (data.error || data.message || 'Erro desconhecido'));
         }
     })
     .catch(error => {
         console.error('Erro:', error);
-        alert('Erro ao salvar anotação');
+        alert('Erro ao salvar anotação: ' + error.message);
     });
 });
 

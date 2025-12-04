@@ -138,6 +138,10 @@ class PsychologyService
                 $next = $ts ? date('Y-m-d', $ts) : null;
             }
 
+            // Tratar humor - converter valores vazios para NULL
+            $humor = $data['mood_assessment'] ?? null;
+            $humor = empty($humor) || $humor === '' ? null : (int)$humor;
+
             $noteData = [
                 'id_atendido' => $id_atendido,
                 'id_psicologo' => $_SESSION['user_id'],
@@ -145,9 +149,9 @@ class PsychologyService
                 'titulo' => $data['title'] ?? 'Sem título',
                 'conteudo' => $data['content'],
                 'data_anotacao' => date('Y-m-d H:i:s'),
-                'humor' => $data['mood_assessment'] ?? null,
-                'observacoes_comportamentais' => $data['behavior_notes'] ?? null,
-                'recomendacoes' => $data['recommendations'] ?? null,
+                'humor' => $humor,
+                'observacoes_comportamentais' => !empty($data['behavior_notes']) ? $data['behavior_notes'] : null,
+                'recomendacoes' => !empty($data['recommendations']) ? $data['recommendations'] : null,
                 'proxima_sessao' => $next
             ];
 
@@ -278,14 +282,18 @@ class PsychologyService
 
     public function updateNote($id, $data)
     {
+        // Tratar valores vazios de humor
+        $humor = $data['mood_assessment'] ?? null;
+        $humor = empty($humor) || $humor === '' ? null : (int)$humor;
+
         $update = [
             'titulo' => $data['title'] ?? 'Sem título',
             'conteudo' => $data['content'] ?? '',
             'tipo' => $this->mapTipoToDb($data['note_type'] ?? 'consulta'),
-            'humor' => $data['mood_assessment'] ?? null,
-            'observacoes_comportamentais' => $data['behavior_notes'] ?? null,
-            'recomendacoes' => $data['recommendations'] ?? null,
-            'proxima_sessao' => $data['next_session'] ?? null,
+            'humor' => $humor,
+            'observacoes_comportamentais' => !empty($data['behavior_notes']) ? $data['behavior_notes'] : null,
+            'recomendacoes' => !empty($data['recommendations']) ? $data['recommendations'] : null,
+            'proxima_sessao' => !empty($data['next_session']) ? $data['next_session'] : null,
             'updated_at' => date('Y-m-d H:i:s'),
         ];
 
@@ -307,28 +315,27 @@ class PsychologyService
         ];
     }
 
-    public function deleteAnnotation($id_anotacao)
-{
-    $sql = "DELETE FROM anotacoes_psicologicas WHERE id_anotacao = ?";
-    $stmt = $this->db->prepare($sql);
-    return $stmt->execute([$id_anotacao]);
-}
+    public function getAnnotationById($id)
+    {
+        $note = $this->noteModel->findById($id);
+        
+        if (!$note) {
+            return null;
+        }
 
-public function getAnnotationById($id_anotacao)
-{
-    $sql = "SELECT * FROM anotacoes_psicologicas WHERE id_anotacao = ?";
-    $stmt = $this->db->prepare($sql);
-    $stmt->execute([$id_anotacao]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
-}
+        // Mapear campos do banco para o padrão interno
+        $note['id'] = $note['id_anotacao'] ?? $note['id'] ?? $id;
+        $note['note_type'] = $this->mapTipoToInternal($note['tipo'] ?? 'Consulta');
+        $note['title'] = $note['titulo'] ?? '';
+        $note['content'] = $note['conteudo'] ?? '';
+        $note['psychologist_id'] = $note['id_psicologo'] ?? null;
+        $note['mood_assessment'] = $note['humor'] ?? null;
+        $note['behavior_notes'] = $note['observacoes_comportamentais'] ?? null;
+        $note['recommendations'] = $note['recomendacoes'] ?? null;
+        $note['next_session'] = $note['proxima_sessao'] ?? null;
+        $note['created_at'] = $note['data_anotacao'] ?? null;
 
-public function updateAnnotation($id_anotacao, $titulo, $conteudo)
-{
-    $sql = "UPDATE anotacoes_psicologicas 
-            SET titulo = ?, conteudo = ?, updated_at = NOW()
-            WHERE id_anotacao = ?";
-    $stmt = $this->db->prepare($sql);
-    return $stmt->execute([$titulo, $conteudo, $id_anotacao]);
-}
+        return $note;
+    }
 
 }
