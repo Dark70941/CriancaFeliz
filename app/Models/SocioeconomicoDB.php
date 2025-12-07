@@ -216,17 +216,34 @@ class SocioeconomicoDB extends BaseModelDB {
             // Mapear campos
             $ficha['id'] = $ficha['idatendido'];
             $ficha['nome_entrevistado'] = $ficha['nome'];
+            $ficha['nome_completo'] = $ficha['nome'];
             $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
             $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
             $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
             
-            // Buscar família
-            $stmt = $this->query("SELECT * FROM Familia WHERE id_ficha = ?", [$ficha['idficha']]);
-            $ficha['familia'] = $stmt->fetchAll();
+            // Usar idficha corretamente (pode ser idficha ou id_ficha dependendo do schema)
+            $fichaId = $ficha['idficha'] ?? $ficha['id_ficha'] ?? null;
             
-            // Buscar despesas
-            $stmt = $this->query("SELECT * FROM Despesas WHERE id_ficha = ?", [$ficha['idficha']]);
-            $ficha['despesas'] = $stmt->fetchAll();
+            // Buscar família se ficha existe
+            if ($fichaId) {
+                $stmt = $this->query("SELECT * FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                $ficha['familia'] = $stmt->fetchAll();
+                
+                // Buscar despesas
+                $stmt = $this->query("SELECT * FROM Despesas WHERE id_ficha = ?", [$fichaId]);
+                $ficha['despesas'] = $stmt->fetchAll();
+            } else {
+                $ficha['familia'] = [];
+                $ficha['despesas'] = [];
+            }
+            
+            // Garantir campos numéricos
+            $ficha['renda_familiar'] = floatval($ficha['renda_familiar'] ?? 0);
+            $ficha['qtd_pessoas'] = intval($ficha['qtd_pessoas'] ?? 0);
+            $ficha['numero_membros'] = $ficha['qtd_pessoas'];
+            $ficha['nr_comodos'] = intval($ficha['nr_comodos'] ?? 0);
+            $ficha['numero_comodos'] = $ficha['nr_comodos'];
+            $ficha['nr_veiculos'] = intval($ficha['nr_veiculos'] ?? 0);
         }
         
         return $ficha;
@@ -383,43 +400,49 @@ class SocioeconomicoDB extends BaseModelDB {
     }
     
     /**
-     * Busca avançada
+     * Busca por nome (compatibilidade)
      */
-
-    public function searchByName($nome)
-    {
-        $sql = "
-            SELECT *
-            FROM ficha_socioeconomico
-            WHERE nome_completo LIKE :nome
-            ORDER BY nome_completo ASC
-            LIMIT 30
-        ";
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':nome', '%' . $nome . '%');
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    public function searchByName($nome) {
+        return $this->searchAdvanced($nome);
     }
 
-
+    /**
+     * Busca avançada
+     */
     public function searchAdvanced($query) {
         $stmt = $this->query("
             SELECT 
                 a.idatendido as id,
+                a.idatendido,
+                a.nome,
                 a.nome as nome_entrevistado,
+                a.nome as nome_completo,
                 a.cpf,
-                a.rg
+                a.rg,
+                a.data_nascimento,
+                a.status,
+                f.renda_familiar,
+                f.qtd_pessoas as numero_membros
             FROM Atendido a
             INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
             WHERE 
                 a.nome LIKE ? OR
                 a.cpf LIKE ? OR
                 a.rg LIKE ?
+            ORDER BY a.data_cadastro DESC
+            LIMIT 100
         ", ["%$query%", "%$query%", "%$query%"]);
         
-        return $stmt->fetchAll();
+        $results = $stmt->fetchAll();
+        
+        // Formatar datas e adicionar dados calculados
+        foreach ($results as &$result) {
+            $result['data_nascimento'] = $this->formatDate($result['data_nascimento']);
+            $result['idade'] = $this->calculateAge($result['data_nascimento']);
+            $result['categoria'] = $this->categorizeByAge($result['idade']);
+        }
+        
+        return $results;
     }
     
     /**

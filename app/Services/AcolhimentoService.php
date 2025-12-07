@@ -105,20 +105,30 @@ class AcolhimentoService {
     /**
      * Busca avançada
      */
-   public function searchFichas($query) {
-    // supondo que $this->acolhimentoModel exista e tenha searchAdvanced/searchByName
-    if (method_exists($this->acolhimentoModel, 'searchByName')) {
-        return $this->acolhimentoModel->searchByName($query);
+    public function searchFichas($query, $filters = []) {
+        // Usar searchAdvanced que aceita filtros
+        if (method_exists($this->acolhimentoModel, 'searchAdvanced')) {
+            return $this->acolhimentoModel->searchAdvanced($query, $filters);
+        }
+        
+        // Fallback: busca simples
+        if (method_exists($this->acolhimentoModel, 'searchByName')) {
+            $results = $this->acolhimentoModel->searchByName($query);
+        } else {
+            // Último fallback: filtrar em memória
+            $all = $this->acolhimentoModel->findAll();
+            $results = array_filter($all, function($r) use ($query) {
+                return stripos($r['nome_completo'] ?? $r['nome'] ?? '', $query) !== false;
+            });
+        }
+        
+        // Aplicar filtros adicionais se houver
+        if (!empty($filters)) {
+            $results = $this->applyFilters($results, $filters);
+        }
+        
+        return $results;
     }
-    if (method_exists($this->acolhimentoModel, 'searchAdvanced')) {
-        return $this->acolhimentoModel->searchAdvanced($query);
-    }
-    // fallback: pegar todos e filtrar em memória (lentidão aceitável para poucos registros)
-    $all = $this->acolhimentoModel->findAll();
-    return array_filter($all, function($r) use ($query) {
-        return stripos($r['nome_completo'] ?? $r['nome'] ?? '', $query) !== false;
-    });
-}
 
     
     /**

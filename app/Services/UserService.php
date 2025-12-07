@@ -14,7 +14,18 @@ class UserService {
      * Obtém todos os usuários
      */
     public function getAllUsers() {
-        return $this->userModel->getAll();
+        $users = $this->userModel->findAllSafe();
+        
+        // Mapear campos para formato esperado
+        foreach ($users as &$user) {
+            $user['id'] = $user['id'] ?? $user['idusuario'] ?? null;
+            $user['name'] = $user['name'] ?? $user['nome'] ?? '';
+            $user['email'] = $user['email'] ?? '';
+            $user['role'] = $user['role'] ?? $user['nivel'] ?? 'funcionario';
+            $user['status'] = $user['status'] ?? 'Ativo';
+        }
+        
+        return $users;
     }
     
     /**
@@ -41,19 +52,16 @@ class UserService {
             throw new Exception('Email já está em uso');
         }
         
-        // Preparar dados
+        // Preparar dados (sem created_at/updated_at pois não existem na tabela)
         $userData = [
-            'id' => uniqid('user_'),
             'name' => sanitizeInput($data['name']),
             'email' => sanitizeInput($data['email']),
             'password' => $data['password'], // Será hasheado no model
             'role' => $data['role'],
-            'status' => 'active',
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
+            'status' => 'Ativo' // Usar status em português conforme banco
         ];
         
-        return $this->userModel->create($userData);
+        return $this->userModel->createUser($userData);
     }
     
     /**
@@ -66,17 +74,23 @@ class UserService {
         }
         
         // Verificar se email já existe (exceto para o próprio usuário)
+        // Mapear ID para comparação (pode ser idusuario ou id)
+        $userId = $user['idusuario'] ?? $user['id'] ?? null;
+        $dataUserId = is_array($id) ? ($id['idusuario'] ?? $id['id']) : $id;
+        
         $existingUser = $this->userModel->findByEmail($data['email']);
-        if ($existingUser && $existingUser['id'] !== $id) {
-            throw new Exception('Email já está em uso');
+        if ($existingUser) {
+            $existingUserId = $existingUser['idusuario'] ?? $existingUser['id'] ?? null;
+            if ($existingUserId && $existingUserId != $dataUserId) {
+                throw new Exception('Email já está em uso');
+            }
         }
         
-        // Preparar dados
+        // Preparar dados (sem updated_at pois não existe na tabela)
         $userData = [
             'name' => sanitizeInput($data['name']),
             'email' => sanitizeInput($data['email']),
-            'role' => $data['role'],
-            'updated_at' => date('Y-m-d H:i:s')
+            'role' => $data['role']
         ];
         
         // Adicionar senha se fornecida
@@ -84,7 +98,12 @@ class UserService {
             $userData['password'] = $data['password']; // Será hasheado no model
         }
         
-        return $this->userModel->update($id, $userData);
+        // Adicionar status se fornecido
+        if (isset($data['status'])) {
+            $userData['status'] = $data['status'];
+        }
+        
+        return $this->userModel->updateUser($id, $userData);
     }
     
     /**
@@ -108,11 +127,16 @@ class UserService {
             throw new Exception('Usuário não encontrado');
         }
         
-        $newStatus = $user['status'] === 'active' ? 'inactive' : 'active';
+        // Status no banco está em português: 'Ativo' ou 'Inativo'
+        $currentStatus = $user['status'] ?? 'Ativo';
+        $currentStatusLower = strtolower($currentStatus);
         
-        $this->userModel->update($id, [
-            'status' => $newStatus,
-            'updated_at' => date('Y-m-d H:i:s')
+        $newStatus = ($currentStatusLower === 'ativo' || $currentStatusLower === 'active') 
+            ? 'Inativo' 
+            : 'Ativo';
+        
+        $this->userModel->updateUser($id, [
+            'status' => $newStatus
         ]);
         
         return ['status' => $newStatus];
@@ -136,14 +160,16 @@ class UserService {
         ];
         
         foreach ($users as $user) {
-            if ($user['status'] === 'active') {
+            $status = strtolower($user['status'] ?? 'ativo');
+            if ($status === 'ativo' || $status === 'active') {
                 $stats['active']++;
             } else {
                 $stats['inactive']++;
             }
             
-            if (isset($stats['by_role'][$user['role']])) {
-                $stats['by_role'][$user['role']]++;
+            $role = $user['role'] ?? $user['nivel'] ?? 'funcionario';
+            if (isset($stats['by_role'][$role])) {
+                $stats['by_role'][$role]++;
             }
         }
         

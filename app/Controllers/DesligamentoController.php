@@ -103,17 +103,20 @@ class DesligamentoController extends BaseController {
         
         if (!$this->isPost()) {
             $this->json(['error' => 'Método não permitido'], 405);
+            return;
         }
         
         try {
             $this->validateCSRF();
             
-            $idAtendido = $this->getParam('id_atendido', '');
+            $postData = $this->getPostData();
+            $idAtendido = $postData['id_atendido'] ?? $this->getParam('id_atendido', '');
+            
             $data = [
-                'motivo' => $this->getParam('motivo', ''),
-                'tipo_motivo' => $this->getParam('tipo_motivo', 'outros'),
-                'observacao' => $this->getParam('observacao', ''),
-                'pode_retornar' => $this->getParam('pode_retornar', '1') === '1',
+                'motivo' => $postData['motivo'] ?? $this->getParam('motivo', ''),
+                'tipo_motivo' => $postData['tipo_motivo'] ?? $this->getParam('tipo_motivo', 'outros'),
+                'observacao' => $postData['observacao'] ?? $this->getParam('observacao', ''),
+                'pode_retornar' => ($postData['pode_retornar'] ?? $this->getParam('pode_retornar', '1')) === '1',
                 'automatico' => false
             ];
             
@@ -125,6 +128,11 @@ class DesligamentoController extends BaseController {
                 throw new Exception('Motivo do desligamento é obrigatório');
             }
             
+            // Verificar se já está desligado
+            if ($this->desligamentoDB->isDesligado($idAtendido)) {
+                throw new Exception('Atendido já está desligado');
+            }
+            
             $this->desligamentoDB->registrarDesligamento($idAtendido, $data);
             
             if ($this->isAjaxRequest()) {
@@ -134,6 +142,7 @@ class DesligamentoController extends BaseController {
             }
             
         } catch (Exception $e) {
+            error_log('Erro ao salvar desligamento: ' . $e->getMessage());
             if ($this->isAjaxRequest()) {
                 $this->json(['error' => $e->getMessage()], 400);
             } else {
@@ -151,17 +160,41 @@ class DesligamentoController extends BaseController {
         
         if (!$this->isPost()) {
             $this->json(['error' => 'Método não permitido'], 405);
+            return;
         }
         
         try {
             $this->validateCSRF();
             
+            // Obter ID do POST ou GET
             $idAtendido = $this->getParam('id_atendido', '');
+            if (empty($idAtendido)) {
+                // Tentar obter do POST
+                $postData = $this->getPostData();
+                $idAtendido = $postData['id_atendido'] ?? '';
+            }
             
             if (empty($idAtendido)) {
                 throw new Exception('ID do atendido é obrigatório');
             }
             
+            // Verificar se realmente está desligado
+            if (!$this->desligamentoDB->isDesligado($idAtendido)) {
+                throw new Exception('Atendido não está desligado');
+            }
+            
+            // Buscar dados do desligamento
+            $desligamento = $this->desligamentoDB->getByAtendido($idAtendido);
+            if (!$desligamento) {
+                throw new Exception('Registro de desligamento não encontrado');
+            }
+            
+            // Verificar se pode reativar
+            if (!$desligamento['pode_retornar']) {
+                throw new Exception('Este desligamento não permite reativação');
+            }
+            
+            // Reativar
             $this->desligamentoDB->cancelarDesligamento($idAtendido);
             
             if ($this->isAjaxRequest()) {
@@ -171,6 +204,7 @@ class DesligamentoController extends BaseController {
             }
             
         } catch (Exception $e) {
+            error_log('Erro ao reativar atendido: ' . $e->getMessage());
             if ($this->isAjaxRequest()) {
                 $this->json(['error' => $e->getMessage()], 400);
             } else {

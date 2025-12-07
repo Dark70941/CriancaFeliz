@@ -9,7 +9,7 @@
         margin: 0 auto;
     }
     .atendido-info {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #3E6475 0%, #5a8599 100%);
         color: #fff;
         padding: 20px;
         border-radius: 12px;

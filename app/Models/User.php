@@ -93,16 +93,26 @@ class User extends BaseModelDB {
             throw new Exception('Senha deve ter pelo menos 6 caracteres');
         }
         
-        // Mapear campos para banco
+        // Mapear campos para banco (sem created_at/updated_at)
         $dbData = [
             'nome' => $data['name'],
             'email' => $data['email'],
             'Senha' => password_hash($data['password'], PASSWORD_DEFAULT),
-            'nivel' => $data['role'] ?? 'user',
+            'nivel' => $data['role'] ?? 'funcionario',
             'status' => $data['status'] ?? 'Ativo'
         ];
         
-        return $this->create($dbData);
+        $result = $this->create($dbData);
+        
+        // Mapear resposta
+        if ($result) {
+            $result['id'] = $result['idusuario'] ?? $result['id'];
+            $result['name'] = $result['nome'];
+            $result['role'] = $result['nivel'];
+            unset($result['Senha']);
+        }
+        
+        return $result;
     }
     
     /**
@@ -114,7 +124,10 @@ class User extends BaseModelDB {
             throw new Exception('Usuário não encontrado');
         }
         
-        // Mapear campos para banco
+        // Obter ID correto para validação
+        $userId = $user['idusuario'] ?? $id;
+        
+        // Mapear campos para banco (sem updated_at)
         $dbData = [];
         
         if (isset($data['name'])) {
@@ -126,7 +139,8 @@ class User extends BaseModelDB {
                 throw new Exception('Email inválido');
             }
             
-            if ($this->emailExists($data['email'], $id)) {
+            // Verificar se email já existe para outro usuário
+            if ($this->emailExists($data['email'], $userId)) {
                 throw new Exception('Email já está em uso');
             }
             $dbData['email'] = $data['email'];
@@ -147,7 +161,21 @@ class User extends BaseModelDB {
             $dbData['status'] = $data['status'];
         }
         
-        return $this->update($id, $dbData);
+        if (empty($dbData)) {
+            return $user; // Nada para atualizar
+        }
+        
+        $result = $this->update($id, $dbData);
+        
+        // Mapear resposta
+        if ($result) {
+            $result['id'] = $result['idusuario'] ?? $result['id'];
+            $result['name'] = $result['nome'] ?? $result['name'];
+            $result['role'] = $result['nivel'] ?? $result['role'];
+            unset($result['Senha']);
+        }
+        
+        return $result;
     }
     
     /**

@@ -101,6 +101,15 @@ public function create($data)
      * Atualizar registro
      */
     public function update($id, $data) {
+        // Filtrar apenas colunas que existem na tabela
+        $columns = $this->getTableColumns();
+        $data = array_intersect_key($data, array_flip($columns));
+        
+        if (empty($data)) {
+            // Nada para atualizar, retornar registro atual
+            return $this->findById($id);
+        }
+        
         $fields = [];
         foreach (array_keys($data) as $field) {
             $fields[] = "$field = ?";

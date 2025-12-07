@@ -364,10 +364,65 @@ class AcolhimentoDB extends BaseModelDB {
     /**
      * Busca avançada
      */
-    public function searchAdvanced($query) {
-        $stmt = $this->query("\n            SELECT \n                a.idatendido as id,\n                a.nome as nome_completo,\n                a.cpf,\n                a.rg,\n                a.data_nascimento,\n                r.nome as nome_responsavel,\n                r.cpf as cpf_responsavel\n            FROM Atendido a\n            LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel\n            WHERE a.nome LIKE ?\n            ORDER BY a.data_cadastro DESC\n        ", ["%$query%"]);
+    public function searchAdvanced($query, $filters = []) {
+        $conditions = [];
+        $params = [];
         
-        return $stmt->fetchAll();
+        // Busca por nome ou CPF
+        if (!empty($query)) {
+            $conditions[] = "(a.nome LIKE ? OR a.cpf LIKE ?)";
+            $params[] = "%$query%";
+            $params[] = "%$query%";
+        }
+        
+        // Aplicar filtros adicionais
+        if (!empty($filters['cpf'])) {
+            $cpf = preg_replace('/\D+/', '', $filters['cpf']);
+            $conditions[] = "a.cpf LIKE ?";
+            $params[] = "%$cpf%";
+        }
+        
+        // Se não há condições, retornar vazio
+        if (empty($conditions)) {
+            return [];
+        }
+        
+        $whereClause = implode(' AND ', $conditions);
+        
+        $stmt = $this->query("
+            SELECT 
+                a.idatendido as id,
+                a.nome as nome_completo,
+                a.cpf,
+                a.rg,
+                a.data_nascimento,
+                a.status,
+                r.nome as nome_responsavel,
+                r.cpf as cpf_responsavel
+            FROM Atendido a
+            LEFT JOIN Responsavel r ON a.id_responsavel = r.idresponsavel
+            WHERE $whereClause
+            ORDER BY a.data_cadastro DESC
+            LIMIT 100
+        ", $params);
+        
+        $results = $stmt->fetchAll();
+        
+        // Formatar datas e calcular idade
+        foreach ($results as &$result) {
+            $result['data_nascimento'] = $this->formatDate($result['data_nascimento']);
+            $result['idade'] = $this->calculateAge($result['data_nascimento']);
+            $result['categoria'] = $this->categorizeByAge($result['idade']);
+        }
+        
+        return $results;
+    }
+    
+    /**
+     * Busca por nome (compatibilidade)
+     */
+    public function searchByName($query) {
+        return $this->searchAdvanced($query);
     }
     
     /**

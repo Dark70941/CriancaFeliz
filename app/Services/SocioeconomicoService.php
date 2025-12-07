@@ -26,21 +26,58 @@ class SocioeconomicoService {
      * Busca ficha por ID
      */
     public function getFicha($id) {
-        $ficha = $this->socioeconomicoModel->findById($id);
+        // Usar método getFicha do model que já faz JOIN
+        if (method_exists($this->socioeconomicoModel, 'getFicha')) {
+            $ficha = $this->socioeconomicoModel->getFicha($id);
+        } else {
+            $ficha = $this->socioeconomicoModel->findById($id);
+        }
         
         if (!$ficha) {
             throw new Exception('Ficha não encontrada');
         }
         
         // Adicionar dados calculados
-        $ficha['idade'] = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
-        $ficha['renda_familiar'] = $this->socioeconomicoModel->calculateRendaFamiliar($ficha);
-        $ficha['situacao_economica'] = $this->socioeconomicoModel->categorizeSituacao(
-            $ficha['renda_familiar'], 
-            intval($ficha['numero_membros'] ?? 1)
-        );
+        if (!isset($ficha['idade'])) {
+            $ficha['idade'] = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
+        }
+        
+        if (!isset($ficha['renda_familiar'])) {
+            $ficha['renda_familiar'] = floatval($ficha['renda_familiar'] ?? 0);
+        }
+        
+        if (!isset($ficha['numero_membros'])) {
+            $ficha['numero_membros'] = intval($ficha['qtd_pessoas'] ?? 1);
+        }
+        
+        if (!isset($ficha['situacao_economica'])) {
+            $ficha['situacao_economica'] = $this->categorizeSituacao(
+                $ficha['renda_familiar'], 
+                $ficha['numero_membros']
+            );
+        }
         
         return $ficha;
+    }
+    
+    /**
+     * Categoriza situação econômica
+     */
+    private function categorizeSituacao($rendaFamiliar, $numeroMembros = 1) {
+        $rendaPerCapita = $rendaFamiliar / max($numeroMembros, 1);
+        $salarioMinimo = 1320;
+        
+        if ($rendaPerCapita < $salarioMinimo * 0.5) {
+            return 'Extrema Pobreza';
+        } elseif ($rendaPerCapita < $salarioMinimo) {
+            return 'Pobreza';
+        } elseif ($rendaPerCapita < $salarioMinimo * 3) {
+            return 'Baixa Renda';
+        } elseif ($rendaPerCapita < $salarioMinimo * 6) {
+            return 'Média Renda';
+        } else {
+            return 'Alta Renda';
+        }
     }
     
     /**

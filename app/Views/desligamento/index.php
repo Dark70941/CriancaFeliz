@@ -219,12 +219,24 @@ if ($_SESSION['user_role'] !== 'admin') {
                         <td><?php echo date('d/m/Y', strtotime($desl['data_desligamento'])); ?></td>
                         <td><?php echo $desl['automatico'] ? 'Sim' : 'Não'; ?></td>
                         <td style="text-align: center;">
-                            <?php if ($desl['pode_retornar']): ?>
+                            <?php 
+                            // Verificar se o atendido ainda está desligado
+                            $isStillDisconnected = true;
+                            try {
+                                $desligamentoDB = new DesligamentoDB();
+                                $isStillDisconnected = $desligamentoDB->isDesligado($desl['id_atendido']);
+                            } catch (Exception $e) {
+                                // Em caso de erro, assumir que está desligado
+                            }
+                            
+                            if ($isStillDisconnected && $desl['pode_retornar']): ?>
                                 <button onclick="reativarAtendido(<?php echo $desl['id_atendido']; ?>)" class="btn-reativar">
                                     <i class="fas fa-undo"></i> Reativar
                                 </button>
                             <?php else: ?>
-                                <span style="color: #999; font-size: 13px;">Não permitido</span>
+                                <span style="color: #999; font-size: 13px;">
+                                    <?php echo $isStillDisconnected ? 'Não permitido' : 'Já reativado'; ?>
+                                </span>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -241,14 +253,19 @@ function reativarAtendido(idAtendido) {
     if (!confirm('Deseja realmente reativar este atendido?')) return;
     
     const formData = new FormData();
-    formData.append('_csrf_token', csrfToken);
+    formData.append('csrf_token', csrfToken);
     formData.append('id_atendido', idAtendido);
     
     fetch('desligamento.php?action=reativar', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro na requisição');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert(data.message);
@@ -259,7 +276,7 @@ function reativarAtendido(idAtendido) {
     })
     .catch(error => {
         console.error('Erro:', error);
-        alert('Erro ao processar requisição');
+        alert('Erro ao processar requisição. Tente recarregar a página.');
     });
 }
 
@@ -267,13 +284,18 @@ function processarDesligamentoAutomatico() {
     if (!confirm('Deseja processar desligamentos automáticos por excesso de faltas?')) return;
     
     const formData = new FormData();
-    formData.append('_csrf_token', csrfToken);
+    formData.append('csrf_token', csrfToken);
     
     fetch('desligamento.php?action=automatico', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro na requisição');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert(data.message);
@@ -284,7 +306,7 @@ function processarDesligamentoAutomatico() {
     })
     .catch(error => {
         console.error('Erro:', error);
-        alert('Erro ao processar requisição');
+        alert('Erro ao processar requisição. Tente recarregar a página.');
     });
 }
 </script>
