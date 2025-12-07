@@ -98,11 +98,21 @@ class DesligamentoController extends BaseController {
      * Salvar desligamento
      */
     public function salvar() {
-        $this->requireAuth();
-        $this->requirePermission('manage_users');
+        // Verificar autenticação e permissão ANTES de qualquer output
+        try {
+            $this->requireAuth();
+            $this->requirePermission('manage_users');
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => false, 'error' => $e->getMessage()], 401);
+            } else {
+                $this->redirectWithError('index.php', $e->getMessage());
+            }
+            return;
+        }
         
         if (!$this->isPost()) {
-            $this->json(['error' => 'Método não permitido'], 405);
+            $this->json(['success' => false, 'error' => 'Método não permitido'], 405);
             return;
         }
         
@@ -135,16 +145,25 @@ class DesligamentoController extends BaseController {
             
             $this->desligamentoDB->registrarDesligamento($idAtendido, $data);
             
+            // Retornar resposta adequada ANTES de qualquer output
             if ($this->isAjaxRequest()) {
+                // Limpar qualquer output buffer
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                // Retornar JSON imediatamente
                 $this->json(['success' => true, 'message' => 'Atendido desligado com sucesso']);
+                return; // IMPORTANTE: Parar execução
             } else {
                 $this->redirectWithSuccess('desligamento.php', 'Atendido desligado com sucesso!');
+                return; // IMPORTANTE: Parar execução
             }
             
         } catch (Exception $e) {
             error_log('Erro ao salvar desligamento: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
             if ($this->isAjaxRequest()) {
-                $this->json(['error' => $e->getMessage()], 400);
+                $this->json(['success' => false, 'error' => $e->getMessage()], 400);
             } else {
                 $this->redirectWithError('desligamento.php', $e->getMessage());
             }
@@ -155,11 +174,21 @@ class DesligamentoController extends BaseController {
      * Reativar atendido
      */
     public function reativar() {
-        $this->requireAuth();
-        $this->requirePermission('manage_users');
+        // Verificar autenticação e permissão ANTES de qualquer output
+        try {
+            $this->requireAuth();
+            $this->requirePermission('manage_users');
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => false, 'error' => $e->getMessage()], 401);
+            } else {
+                $this->redirectWithError('index.php', $e->getMessage());
+            }
+            return;
+        }
         
         if (!$this->isPost()) {
-            $this->json(['error' => 'Método não permitido'], 405);
+            $this->json(['success' => false, 'error' => 'Método não permitido'], 405);
             return;
         }
         
@@ -197,16 +226,25 @@ class DesligamentoController extends BaseController {
             // Reativar
             $this->desligamentoDB->cancelarDesligamento($idAtendido);
             
+            // Retornar resposta adequada ANTES de qualquer output
             if ($this->isAjaxRequest()) {
+                // Limpar qualquer output buffer
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
+                // Retornar JSON imediatamente
                 $this->json(['success' => true, 'message' => 'Atendido reativado com sucesso']);
+                return; // IMPORTANTE: Parar execução
             } else {
                 $this->redirectWithSuccess('desligamento.php', 'Atendido reativado com sucesso!');
+                return; // IMPORTANTE: Parar execução
             }
             
         } catch (Exception $e) {
             error_log('Erro ao reativar atendido: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
             if ($this->isAjaxRequest()) {
-                $this->json(['error' => $e->getMessage()], 400);
+                $this->json(['success' => false, 'error' => $e->getMessage()], 400);
             } else {
                 $this->redirectWithError('desligamento.php', $e->getMessage());
             }
@@ -217,11 +255,22 @@ class DesligamentoController extends BaseController {
      * Desligamento automático por excesso de faltas
      */
     public function automatico() {
-        $this->requireAuth();
-        $this->requirePermission('manage_users');
+        // Verificar autenticação e permissão ANTES de qualquer output
+        try {
+            $this->requireAuth();
+            $this->requirePermission('manage_users');
+        } catch (Exception $e) {
+            if ($this->isAjaxRequest()) {
+                $this->json(['success' => false, 'error' => $e->getMessage()], 401);
+            } else {
+                $this->redirectWithError('index.php', $e->getMessage());
+            }
+            return;
+        }
         
         if (!$this->isPost()) {
-            $this->json(['error' => 'Método não permitido'], 405);
+            $this->json(['success' => false, 'error' => 'Método não permitido'], 405);
+            return;
         }
         
         try {
@@ -234,14 +283,22 @@ class DesligamentoController extends BaseController {
                 : 'Nenhum atendido para desligar automaticamente';
             
             if ($this->isAjaxRequest()) {
+                // Limpar qualquer output buffer
+                if (ob_get_level() > 0) {
+                    ob_clean();
+                }
                 $this->json(['success' => true, 'message' => $mensagem, 'desligados' => $desligados]);
+                return; // IMPORTANTE: Parar execução
             } else {
                 $this->redirectWithSuccess('desligamento.php', $mensagem);
+                return; // IMPORTANTE: Parar execução
             }
             
         } catch (Exception $e) {
+            error_log('Erro ao processar desligamento automático: ' . $e->getMessage());
+            error_log('Stack trace: ' . $e->getTraceAsString());
             if ($this->isAjaxRequest()) {
-                $this->json(['error' => $e->getMessage()], 400);
+                $this->json(['success' => false, 'error' => $e->getMessage()], 400);
             } else {
                 $this->redirectWithError('desligamento.php', $e->getMessage());
             }

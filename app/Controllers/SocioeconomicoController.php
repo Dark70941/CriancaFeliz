@@ -104,7 +104,31 @@ class SocioeconomicoController extends BaseController {
             // Debug: Log dos dados recebidos
             error_log('=== SOCIOECONOMICO STORE ===');
             error_log('ID recebido: ' . ($data['id'] ?? 'NENHUM'));
-            error_log('Dados: ' . print_r($data, true));
+            
+            // Decodificar JSON de despesas e família ANTES de enviar ao service
+            if (!empty($data['despesas_json'])) {
+                $despesasDecoded = json_decode($data['despesas_json'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($despesasDecoded)) {
+                    $data['despesas'] = $despesasDecoded;
+                    error_log('Despesas decodificadas: ' . count($despesasDecoded) . ' itens');
+                } else {
+                    error_log('ERRO ao decodificar despesas_json: ' . json_last_error_msg());
+                    $data['despesas'] = [];
+                }
+            }
+            
+            if (!empty($data['familia_json'])) {
+                $familiaDecoded = json_decode($data['familia_json'], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($familiaDecoded)) {
+                    $data['familia'] = $familiaDecoded;
+                    error_log('Família decodificada: ' . count($familiaDecoded) . ' membros');
+                } else {
+                    error_log('ERRO ao decodificar familia_json: ' . json_last_error_msg());
+                    $data['familia'] = [];
+                }
+            }
+            
+            error_log('Dados preparados: ' . print_r(array_keys($data), true));
             
             // Verificar se é edição ou criação
             if (!empty($data['id'])) {

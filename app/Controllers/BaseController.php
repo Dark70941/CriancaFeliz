@@ -49,14 +49,29 @@ class BaseController {
      * Redireciona com mensagem de sucesso
      */
     protected function redirectWithSuccess($url, $message) {
+        // Limpar qualquer output anterior
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
         $_SESSION['flash_success'] = $message;
-        redirect($url);
+        
+        // Redirecionar
+        if (!headers_sent()) {
+            header('Location: ' . $url, true, 302);
+        }
+        exit;
     }
     
     /**
      * Redireciona com mensagem de erro
      */
     protected function redirectWithError($url, $message, $preserveInput = true) {
+        // Limpar qualquer output anterior
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
         $_SESSION['flash_error'] = $message;
         
         // Preservar valores dos campos após erro
@@ -64,16 +79,30 @@ class BaseController {
             $_SESSION['old_input'] = $_POST;
         }
         
-        redirect($url);
+        // Redirecionar
+        if (!headers_sent()) {
+            header('Location: ' . $url, true, 302);
+        }
+        exit;
     }
     
     /**
      * Retorna JSON
      */
     protected function json($data, $statusCode = 200) {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        // Limpar qualquer output anterior
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        
+        // Limpar headers anteriores
+        if (!headers_sent()) {
+            http_response_code($statusCode);
+            header('Content-Type: application/json; charset=utf-8');
+            header('Cache-Control: no-cache, must-revalidate');
+        }
+        
+        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         exit;
     }
     

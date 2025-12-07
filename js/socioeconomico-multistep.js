@@ -196,8 +196,60 @@ function consolidateAllSteps() {
     console.log('📊 Total de campos consolidados:', Object.keys(allData).length);
     console.log('📋 Dados consolidados:', allData);
     
-    // Adicionar campos hidden ao formulário para cada dado
+    // Consolidar despesas (campos despesa_nome_X e despesa_valor_X)
+    const despesas = [];
     Object.keys(allData).forEach(key => {
+        if (key.startsWith('despesa_nome_')) {
+            const index = key.replace('despesa_nome_', '');
+            const valorKey = `despesa_valor_${index}`;
+            const nome = allData[key];
+            const valor = parseFloat(allData[valorKey] || 0);
+            
+            if (nome && nome.trim() && valor > 0) {
+                despesas.push({
+                    nome: nome.trim(),
+                    valor: valor,
+                    tipo: nome.trim(), // usar nome como tipo
+                    renda: valor // valor da renda
+                });
+            }
+        }
+    });
+    
+    // Salvar despesas como JSON se houver
+    if (despesas.length > 0) {
+        // Garantir que campo hidden existe
+        let despesasField = form.querySelector('[name="despesas_json"]');
+        if (!despesasField) {
+            despesasField = document.createElement('input');
+            despesasField.type = 'hidden';
+            despesasField.name = 'despesas_json';
+            form.appendChild(despesasField);
+        }
+        despesasField.value = JSON.stringify(despesas);
+        console.log(`  ✓ Despesas consolidadas: ${despesas.length} itens`, despesas);
+    }
+    
+    // Garantir que familia_json está no formulário
+    if (familyMembers.length > 0) {
+        let familiaField = form.querySelector('[name="familia_json"]');
+        if (!familiaField) {
+            familiaField = document.createElement('input');
+            familiaField.type = 'hidden';
+            familiaField.name = 'familia_json';
+            form.appendChild(familiaField);
+        }
+        familiaField.value = JSON.stringify(familyMembers);
+        console.log(`  ✓ Família consolidada: ${familyMembers.length} membros`);
+    }
+    
+    // Adicionar campos hidden ao formulário para cada dado (exceto despesas já processadas)
+    Object.keys(allData).forEach(key => {
+        // Pular campos de despesas individuais (já foram consolidados)
+        if (key.startsWith('despesa_nome_') || key.startsWith('despesa_valor_')) {
+            return;
+        }
+        
         // Verificar se o campo já existe no formulário
         let field = form.querySelector(`[name="${key}"]`);
         
@@ -450,8 +502,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Salvar dados da etapa atual antes de enviar
                 saveStepData(5);
                 
+                // IMPORTANTE: Salvar família e despesas antes de consolidar
+                if (familyMembers.length > 0) {
+                    const familiaField = form.querySelector('[name="familia_json"]');
+                    if (familiaField) {
+                        familiaField.value = JSON.stringify(familyMembers);
+                        console.log('✓ Família salva antes do submit:', familyMembers.length, 'membros');
+                    }
+                }
+                
                 // IMPORTANTE: Consolidar todos os dados das etapas anteriores
                 consolidateAllSteps();
+                
+                // Verificar se campos JSON foram populados
+                const familiaCheck = form.querySelector('[name="familia_json"]');
+                const despesasCheck = form.querySelector('[name="despesas_json"]');
+                console.log('Verificação final - familia_json:', familiaCheck ? familiaCheck.value.substring(0, 50) : 'NÃO ENCONTRADO');
+                console.log('Verificação final - despesas_json:', despesasCheck ? despesasCheck.value.substring(0, 50) : 'NÃO ENCONTRADO');
                 
                 return true; // Permitir submit
             }

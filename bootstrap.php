@@ -17,10 +17,16 @@ define('CSS_PATH', BASE_PATH . '/css');
 define('JS_PATH', BASE_PATH . '/js');
 define('IMG_PATH', BASE_PATH . '/img');
 
-// Configurações de segurança
-header('X-Content-Type-Options: nosniff');
-header('X-Frame-Options: DENY');
-header('X-XSS-Protection: 1; mode=block');
+// Configurações de segurança (apenas para requisições não-AJAX)
+// Verificar se é AJAX antes de enviar headers que podem interferir
+$isAjaxRequest = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                 strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
+if (!$isAjaxRequest && !headers_sent()) {
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: DENY');
+    header('X-XSS-Protection: 1; mode=block');
+}
 
 // Configurações de erro para desenvolvimento
 error_reporting(E_ALL);

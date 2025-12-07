@@ -3,7 +3,14 @@
  * Sistema de Desligamento
  */
 
+// Iniciar output buffering ANTES de qualquer output
+ob_start();
+
 require_once 'bootstrap.php';
+
+// Verificar se é AJAX ANTES de instanciar controller
+$isAjaxRequest = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                 strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 
 // Instanciar controller
 $controller = new DesligamentoController();
@@ -32,6 +39,15 @@ if (isset($actions[$action])) {
     }
 } else {
     // Ação não encontrada
-    header('Location: desligamento.php');
-    exit;
+    if ($isAjaxRequest) {
+        // Retornar JSON para AJAX
+        header('Content-Type: application/json; charset=utf-8');
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Ação não encontrada']);
+        exit;
+    } else {
+        // Redirect para requisições normais
+        header('Location: desligamento.php');
+        exit;
+    }
 }

@@ -258,13 +258,26 @@ function reativarAtendido(idAtendido) {
     
     fetch('desligamento.php?action=reativar', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erro na requisição');
+    .then(async response => {
+        // Tentar fazer parse do JSON mesmo se status não for ok
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || data.message || 'Erro na requisição');
+            }
+            return data;
+        } else {
+            // Se não for JSON, pegar texto para debug
+            const text = await response.text();
+            console.error('Resposta não é JSON:', text.substring(0, 200));
+            throw new Error('Resposta inválida do servidor. Status: ' + response.status);
         }
-        return response.json();
     })
     .then(data => {
         if (data.success) {
@@ -275,8 +288,8 @@ function reativarAtendido(idAtendido) {
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao processar requisição. Tente recarregar a página.');
+        console.error('Erro completo:', error);
+        alert('Erro ao processar requisição: ' + error.message + '\n\nTente recarregar a página.');
     });
 }
 
@@ -288,13 +301,26 @@ function processarDesligamentoAutomatico() {
     
     fetch('desligamento.php?action=automatico', {
         method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        },
         body: formData
     })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Erro na requisição');
+    .then(async response => {
+        // Tentar fazer parse do JSON mesmo se status não for ok
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || data.message || 'Erro na requisição');
+            }
+            return data;
+        } else {
+            // Se não for JSON, pegar texto para debug
+            const text = await response.text();
+            console.error('Resposta não é JSON:', text.substring(0, 200));
+            throw new Error('Resposta inválida do servidor. Status: ' + response.status);
         }
-        return response.json();
     })
     .then(data => {
         if (data.success) {
@@ -305,8 +331,8 @@ function processarDesligamentoAutomatico() {
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao processar requisição. Tente recarregar a página.');
+        console.error('Erro completo:', error);
+        alert('Erro ao processar requisição: ' + error.message + '\n\nTente recarregar a página.');
     });
 }
 </script>

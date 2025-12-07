@@ -183,7 +183,16 @@ class AuthService {
      */
     public function requireAuth() {
         if (!$this->isLoggedIn()) {
-            redirect('index.php');
+            // Verificar se é AJAX antes de redirecionar
+            $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                     strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+            
+            if ($isAjax) {
+                // Para AJAX, lançar exceção ao invés de redirecionar
+                throw new Exception('Não autenticado. Faça login novamente.');
+            } else {
+                redirect('index.php');
+            }
         }
     }
     

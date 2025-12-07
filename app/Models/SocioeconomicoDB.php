@@ -149,41 +149,103 @@ class SocioeconomicoDB extends BaseModelDB {
                 ]
             );
             
-            $fichaId = Database::lastInsertId();
+            // Obter ID gerado (PK é idficha na tabela Ficha_Socioeconomico)
+            $fichaId = (int)Database::lastInsertId();
+            error_log('Ficha criada com idficha: ' . $fichaId);
             
             // 3. Salvar Família (se houver)
+            // Aceitar tanto familia_json quanto familia array
+            $familia = [];
             if (!empty($data['familia_json'])) {
                 $familia = json_decode($data['familia_json'], true);
-                if (is_array($familia)) {
-                    foreach ($familia as $membro) {
-                        $this->query(
-                            "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
-                            [
-                                $fichaId,
-                                $membro['nome'] ?? '',
-                                $membro['parentesco'] ?? '',
-                                $this->convertDate($membro['dataNasc'] ?? ''),
-                                $membro['formacao'] ?? '',
-                                $membro['renda'] ?? 0
-                            ]
-                        );
-                    }
+                if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
+                    error_log('ERRO ao decodificar familia_json: ' . json_last_error_msg());
+                    $familia = [];
                 }
+            } elseif (!empty($data['familia']) && is_array($data['familia'])) {
+                $familia = $data['familia'];
+            }
+            
+            if (!empty($familia) && is_array($familia)) {
+                $familiaInseridos = 0;
+                foreach ($familia as $membro) {
+                    // Validar membro antes de inserir
+                    if (empty($membro['nome']) || empty($membro['parentesco'])) {
+                        error_log('Membro da família ignorado - falta nome ou parentesco');
+                        continue;
+                    }
+                    
+                    $renda = 0;
+                    if (!empty($membro['renda'])) {
+                        // Converter renda para float
+                        $renda = is_numeric($membro['renda']) ? floatval($membro['renda']) : 0;
+                    }
+                    
+                    $this->query(
+                        "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                        [
+                            $fichaId, // id_ficha (FK) recebe idficha (PK)
+                            trim($membro['nome'] ?? ''),
+                            trim($membro['parentesco'] ?? ''),
+                            $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
+                            trim($membro['formacao'] ?? ''),
+                            $renda
+                        ]
+                    );
+                    $familiaInseridos++;
+                }
+                error_log("Família: {$familiaInseridos} membros inseridos");
             }
             
             // 4. Salvar Despesas (se houver)
-            if (!empty($data['despesas'])) {
-                foreach ($data['despesas'] as $despesa) {
-                    $this->query(
-                        "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
-                        [
-                            $fichaId,
-                            $despesa['valor'] ?? 0,
-                            $despesa['tipo'] ?? '',
-                            $despesa['renda'] ?? 0
-                        ]
-                    );
+            // Aceitar tanto despesas_json quanto despesas array
+            $despesas = [];
+            if (!empty($data['despesas_json'])) {
+                $despesas = json_decode($data['despesas_json'], true);
+                if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
+                    error_log('ERRO ao decodificar despesas_json: ' . json_last_error_msg());
+                    $despesas = [];
                 }
+            } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
+                $despesas = $data['despesas'];
+            }
+            
+            if (!empty($despesas) && is_array($despesas)) {
+                $despesasInseridas = 0;
+                foreach ($despesas as $despesa) {
+                    // Normalizar valor
+                    $valor = 0;
+                    if (!empty($despesa['valor'])) {
+                        $valorStr = is_string($despesa['valor']) ? str_replace(',', '.', $despesa['valor']) : $despesa['valor'];
+                        $valor = floatval($valorStr);
+                    } elseif (!empty($despesa['valor_despesa'])) {
+                        $valorStr = is_string($despesa['valor_despesa']) ? str_replace(',', '.', $despesa['valor_despesa']) : $despesa['valor_despesa'];
+                        $valor = floatval($valorStr);
+                    }
+                    
+                    // Normalizar tipo/nome
+                    $tipo = trim($despesa['tipo'] ?? $despesa['tipo_renda'] ?? $despesa['nome'] ?? '');
+                    
+                    // Normalizar renda
+                    $renda = 0;
+                    if (!empty($despesa['renda'])) {
+                        $rendaStr = is_string($despesa['renda']) ? str_replace(',', '.', $despesa['renda']) : $despesa['renda'];
+                        $renda = floatval($rendaStr);
+                    } elseif (!empty($despesa['valor_renda'])) {
+                        $rendaStr = is_string($despesa['valor_renda']) ? str_replace(',', '.', $despesa['valor_renda']) : $despesa['valor_renda'];
+                        $renda = floatval($rendaStr);
+                    }
+                    
+                    // Inserir se tiver pelo menos valor ou tipo
+                    if ($valor > 0 || !empty($tipo)) {
+                        $this->query(
+                            "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                            [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
+                        );
+                        $despesasInseridas++;
+                    }
+                }
+                error_log("Despesas: {$despesasInseridas} itens inseridos");
             }
             
             Database::commit();
@@ -367,6 +429,113 @@ class SocioeconomicoDB extends BaseModelDB {
                     $id
                 ]
             );
+            
+            // 3. Atualizar Família e Despesas (deletar existentes e recriar)
+            // Buscar fichaId primeiro (PK é idficha)
+            $fichaIdStmt = $this->query("SELECT idficha FROM Ficha_Socioeconomico WHERE id_atendido = ?", [$id]);
+            $fichaExistente = $fichaIdStmt->fetch();
+            $fichaId = $fichaExistente['idficha'] ?? null;
+            
+            if ($fichaId) {
+                error_log('Atualizando família e despesas para ficha idficha: ' . $fichaId);
+                
+                // Deletar família e despesas existentes
+                $this->query("DELETE FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                $this->query("DELETE FROM Despesas WHERE id_ficha = ?", [$fichaId]);
+                
+                // Salvar nova família (se houver)
+                $familia = [];
+                if (!empty($data['familia_json'])) {
+                    $familia = json_decode($data['familia_json'], true);
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
+                        error_log('ERRO ao decodificar familia_json no update: ' . json_last_error_msg());
+                        $familia = [];
+                    }
+                } elseif (!empty($data['familia']) && is_array($data['familia'])) {
+                    $familia = $data['familia'];
+                }
+                
+                if (!empty($familia) && is_array($familia)) {
+                    $familiaInseridos = 0;
+                    foreach ($familia as $membro) {
+                        // Validar membro antes de inserir
+                        if (empty($membro['nome']) || empty($membro['parentesco'])) {
+                            continue;
+                        }
+                        
+                        $renda = 0;
+                        if (!empty($membro['renda'])) {
+                            $renda = is_numeric($membro['renda']) ? floatval($membro['renda']) : 0;
+                        }
+                        
+                        $this->query(
+                            "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                            [
+                                $fichaId, // id_ficha (FK) recebe idficha (PK)
+                                trim($membro['nome'] ?? ''),
+                                trim($membro['parentesco'] ?? ''),
+                                $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
+                                trim($membro['formacao'] ?? ''),
+                                $renda
+                            ]
+                        );
+                        $familiaInseridos++;
+                    }
+                    error_log("Update - Família: {$familiaInseridos} membros inseridos");
+                }
+                
+                // Salvar novas despesas (se houver)
+                $despesas = [];
+                if (!empty($data['despesas_json'])) {
+                    $despesas = json_decode($data['despesas_json'], true);
+                    if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
+                        error_log('ERRO ao decodificar despesas_json no update: ' . json_last_error_msg());
+                        $despesas = [];
+                    }
+                } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
+                    $despesas = $data['despesas'];
+                }
+                
+                if (!empty($despesas) && is_array($despesas)) {
+                    $despesasInseridas = 0;
+                    foreach ($despesas as $despesa) {
+                        // Normalizar valor
+                        $valor = 0;
+                        if (!empty($despesa['valor'])) {
+                            $valorStr = is_string($despesa['valor']) ? str_replace(',', '.', $despesa['valor']) : $despesa['valor'];
+                            $valor = floatval($valorStr);
+                        } elseif (!empty($despesa['valor_despesa'])) {
+                            $valorStr = is_string($despesa['valor_despesa']) ? str_replace(',', '.', $despesa['valor_despesa']) : $despesa['valor_despesa'];
+                            $valor = floatval($valorStr);
+                        }
+                        
+                        // Normalizar tipo/nome
+                        $tipo = trim($despesa['tipo'] ?? $despesa['tipo_renda'] ?? $despesa['nome'] ?? '');
+                        
+                        // Normalizar renda
+                        $renda = 0;
+                        if (!empty($despesa['renda'])) {
+                            $rendaStr = is_string($despesa['renda']) ? str_replace(',', '.', $despesa['renda']) : $despesa['renda'];
+                            $renda = floatval($rendaStr);
+                        } elseif (!empty($despesa['valor_renda'])) {
+                            $rendaStr = is_string($despesa['valor_renda']) ? str_replace(',', '.', $despesa['valor_renda']) : $despesa['valor_renda'];
+                            $renda = floatval($rendaStr);
+                        }
+                        
+                        // Inserir se tiver pelo menos valor ou tipo
+                        if ($valor > 0 || !empty($tipo)) {
+                            $this->query(
+                                "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                                [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
+                            );
+                            $despesasInseridas++;
+                        }
+                    }
+                    error_log("Update - Despesas: {$despesasInseridas} itens inseridos");
+                }
+            } else {
+                error_log('ATENÇÃO: Ficha não encontrada para id_atendido: ' . $id);
+            }
             
             Database::commit();
             

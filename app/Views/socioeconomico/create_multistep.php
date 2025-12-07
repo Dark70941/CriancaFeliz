@@ -281,6 +281,7 @@ $editId = $_GET['id'] ?? ($ficha['id'] ?? null);
     <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
     <input type="hidden" name="step" value="<?php echo $step; ?>">
     <input type="hidden" name="familia_json" id="familia_json" value="">
+    <input type="hidden" name="despesas_json" id="despesas_json" value="">
     <?php if ($editId): ?>
         <input type="hidden" name="id" id="edit_id" value="<?php echo htmlspecialchars($editId); ?>">
     <?php endif; ?>
