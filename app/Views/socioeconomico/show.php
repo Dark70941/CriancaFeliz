@@ -33,7 +33,19 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">RG</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['rg'] ?? 'Não informado'); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php 
+                $rg = $ficha['rg'] ?? '';
+                if ($rg && strlen(preg_replace('/\D/', '', $rg)) >= 9) {
+                    // Formato: XX.XXX.XXX-XX
+                    $rgNumeros = preg_replace('/\D/', '', $rg);
+                    $rgFormatado = substr($rgNumeros, 0, 2) . '.' . substr($rgNumeros, 2, 3) . '.' . substr($rgNumeros, 5, 3) . '-' . substr($rgNumeros, 8, 2);
+                    echo htmlspecialchars($rgFormatado);
+                } else {
+                    echo $rg ?: 'Não informado';
+                }
+                ?>
+            </div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
@@ -63,7 +75,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Nº de Cômodos</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['num_comodos'] ?? 'Não informado'); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['numero_comodos'] ?? 'Não informado'); ?></div>
         </div>
     </div>
 </div>
@@ -73,9 +85,19 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
     <h3 style="margin:0 0 16px 0; color:#495057; border-bottom:2px solid #f0a36b; padding-bottom:8px;"><i class="fas fa-users"></i> Composição Familiar</h3>
     
     <?php 
+    // Helper local para formatar datas yyyy-mm-dd -> dd/mm/yyyy
+    function _fmtDateView($d) {
+        if (empty($d)) return '';
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $d, $m)) return "{$m[3]}/{$m[2]}/{$m[1]}";
+        return $d;
+    }
+
+    // Preferir família carregada do banco (array), caso contrário aceitar familia_json
     $familia = [];
-    if (!empty($ficha['familia_json'])) {
-        $familia = json_decode($ficha['familia_json'], true);
+    if (!empty($ficha['familia']) && is_array($ficha['familia'])) {
+        $familia = $ficha['familia'];
+    } elseif (!empty($ficha['familia_json'])) {
+        $familia = json_decode($ficha['familia_json'], true) ?: [];
     }
     
     if (!empty($familia) && is_array($familia)): ?>
@@ -94,7 +116,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                     <tr style="border-bottom:1px solid #dee2e6;">
                         <td style="padding:12px;"><?php echo htmlspecialchars($membro['nome'] ?? ''); ?></td>
                         <td style="padding:12px;"><?php echo htmlspecialchars($membro['parentesco'] ?? ''); ?></td>
-                        <td style="padding:12px;"><?php echo htmlspecialchars($membro['data_nascimento'] ?? ''); ?></td>
+                        <td style="padding:12px;"><?php echo htmlspecialchars(_fmtDateView($membro['data_nasc'] ?? $membro['data_nascimento'] ?? '')); ?></td>
                         <td style="padding:12px;"><?php echo htmlspecialchars($membro['formacao'] ?? ''); ?></td>
                         <td style="padding:12px; text-align:right;">
                             <?php 
@@ -138,7 +160,18 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Cadastro Único (CadÚnico)</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['cadunico'] ?? 'Não informado'); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php
+                $cad = $ficha['cadunico'] ?? null;
+                if ($cad === null || $cad === '') {
+                    echo 'Não informado';
+                } elseif (is_numeric($cad)) {
+                    echo ($cad ? 'Sim' : 'Não');
+                } else {
+                    echo htmlspecialchars($cad);
+                }
+                ?>
+            </div>
         </div>
     </div>
     
@@ -190,17 +223,46 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Água</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['agua'] ?? 'Não informado'); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php
+                // Priorizar mostrar valor de despesa, se disponível
+                if (!empty($ficha['despesa_agua'])) {
+                    echo 'R$ ' . number_format($ficha['despesa_agua'], 2, ',', '.');
+                } elseif (isset($ficha['agua'])) {
+                    echo (!empty($ficha['agua']) ? 'Sim' : 'Não');
+                } else {
+                    echo 'Não informado';
+                }
+                ?>
+            </div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Esgoto</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['esgoto'] ?? 'Não informado'); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php
+                if (isset($ficha['esgoto'])) {
+                    echo (!empty($ficha['esgoto']) ? 'Sim' : 'Não');
+                } else {
+                    echo 'Não informado';
+                }
+                ?>
+            </div>
         </div>
         
         <div class="field" style="background:var(--card-bg, #f8f9fa); padding:12px; border-radius:8px; transition:background-color 0.3s ease;">
             <div class="label" style="font-size:12px; color:var(--text-muted, #6c757d); font-weight:600; margin-bottom:4px;">Energia Elétrica</div>
-            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;"><?php echo htmlspecialchars($ficha['energia'] ?? 'Não informado'); ?></div>
+            <div class="value" style="color:var(--text-primary, #212529); font-weight:500;">
+                <?php
+                if (!empty($ficha['despesa_energia'])) {
+                    echo 'R$ ' . number_format($ficha['despesa_energia'], 2, ',', '.');
+                } elseif (isset($ficha['energia'])) {
+                    echo (!empty($ficha['energia']) ? 'Sim' : 'Não');
+                } else {
+                    echo 'Não informado';
+                }
+                ?>
+            </div>
         </div>
     </div>
     

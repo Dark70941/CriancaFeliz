@@ -124,7 +124,20 @@ class BaseController {
      * Obtém dados POST sanitizados
      */
     protected function getPostData() {
-        return sanitizeInput($_POST);
+        // Sanitizar a maior parte dos campos, mas preservar campos JSON
+        $raw = $_POST;
+        $sanitized = sanitizeInput($_POST);
+
+        // Preserve raw JSON payloads (enviados por campos hidden) para evitar
+        // que as aspas sejam convertidas e o json_decode falhe.
+        $jsonKeys = ['familia_json', 'despesas_json', 'despesas', 'familia'];
+        foreach ($jsonKeys as $key) {
+            if (isset($raw[$key])) {
+                $sanitized[$key] = $raw[$key];
+            }
+        }
+
+        return $sanitized;
     }
     
     /**

@@ -177,6 +177,12 @@ function consolidateAllSteps() {
         return;
     }
     
+    // ⚠️ IMPORTANTE: Garantir que o ID de edição seja preservado
+    const editIdField = form.querySelector('[name="id"]');
+    if (editIdField && editIdField.value) {
+        console.log('✓ ID de edição encontrado:', editIdField.value);
+    }
+    
     // Coletar dados de todas as etapas
     const allData = {};
     
@@ -204,14 +210,21 @@ function consolidateAllSteps() {
             const valorKey = `despesa_valor_${index}`;
             const nome = allData[key];
             const valor = parseFloat(allData[valorKey] || 0);
-            
+
             if (nome && nome.trim() && valor > 0) {
-                despesas.push({
-                    nome: nome.trim(),
-                    valor: valor,
-                    tipo: nome.trim(), // usar nome como tipo
-                    renda: valor // valor da renda
-                });
+                despesas.push({ nome: nome.trim(), valor: valor, tipo: nome.trim(), renda: valor });
+            }
+        }
+
+        // Suportar campos de despesa padrão: desp_agua, desp_luz, desp_gas, desp_telefone, desp_celular, desp_internet, desp_alimentacao
+        if (key.startsWith('desp_')) {
+            const tipo = key.replace('desp_', '');
+            const valor = parseFloat(allData[key] || 0);
+            if (!isNaN(valor) && valor > 0) {
+                // Normalizar nomes (agua, luz -> energia/luz)
+                let nomeTipo = tipo;
+                if (tipo === 'luz') nomeTipo = 'energia';
+                despesas.push({ nome: nomeTipo, valor: valor, tipo: nomeTipo, renda: valor });
             }
         }
     });
@@ -228,6 +241,103 @@ function consolidateAllSteps() {
         }
         despesasField.value = JSON.stringify(despesas);
         console.log(`  ✓ Despesas consolidadas: ${despesas.length} itens`, despesas);
+    }
+
+    // Normalizações e mapeamentos de campos para compatibilidade com o model
+    // 1) Número de cômodos: formulário usa 'num_comodos'
+    if (allData['num_comodos']) {
+        let v = allData['num_comodos'];
+        v = parseInt(v) || 0;
+        let f = form.querySelector('[name="numero_comodos"]');
+        if (!f) { f = document.createElement('input'); f.type = 'hidden'; f.name = 'numero_comodos'; form.appendChild(f); }
+        f.value = v;
+        let f2 = form.querySelector('[name="nr_comodos"]');
+        if (!f2) { f2 = document.createElement('input'); f2.type = 'hidden'; f2.name = 'nr_comodos'; form.appendChild(f2); }
+        f2.value = v;
+    }
+
+    // 2) Condições -> cond_residencia / situacao_moradia
+    if (allData['condicoes']) {
+        const v = allData['condicoes'];
+        let f = form.querySelector('[name="cond_residencia"]');
+        if (!f) { f = document.createElement('input'); f.type = 'hidden'; f.name = 'cond_residencia'; form.appendChild(f); }
+        f.value = v;
+        let f2 = form.querySelector('[name="situacao_moradia"]');
+        if (!f2) { f2 = document.createElement('input'); f2.type = 'hidden'; f2.name = 'situacao_moradia'; form.appendChild(f2); }
+        f2.value = v;
+    }
+
+    // 3) Residencia (ownership) -> mapar para tipo_moradia / moradia
+    if (allData['residencia']) {
+        const v = allData['residencia'];
+        let f = form.querySelector('[name="tipo_moradia"]');
+        if (!f) { f = document.createElement('input'); f.type = 'hidden'; f.name = 'tipo_moradia'; form.appendChild(f); }
+        f.value = v;
+        let f2 = form.querySelector('[name="moradia"]');
+        if (!f2) { f2 = document.createElement('input'); f2.type = 'hidden'; f2.name = 'moradia'; form.appendChild(f2); }
+        f2.value = v;
+    }
+
+    // 4) Número de veículos: somar campos veiculos_* e preencher nr_veiculos
+    let totalVeiculos = 0;
+    ['veiculos_motocicleta','veiculos_automovel','veiculos_caminhonete','veiculos_caminhao','veiculos_outros'].forEach(k => {
+        if (allData[k]) totalVeiculos += parseInt(allData[k]) || 0;
+    });
+    if (totalVeiculos > 0) {
+        let f = form.querySelector('[name="nr_veiculos"]');
+        if (!f) { f = document.createElement('input'); f.type = 'hidden'; f.name = 'nr_veiculos'; form.appendChild(f); }
+        f.value = totalVeiculos;
+    }
+
+    // 5) Renda familiar: PRIORIZAR familia_json (para evitar dupla contagem)
+    // Se houver dados de família com rendas, usar a soma da família
+    // Caso contrário, usar renda_salario + renda_bolsa
+    let rendaFamiliar = 0;
+    let temFamiliaComRenda = false;
+    
+    try {
+        if (allData['familia_json']) {
+            const fam = JSON.parse(allData['familia_json']);
+            if (Array.isArray(fam)) {
+                fam.forEach(m => { 
+                    if (m.renda && parseFloat(m.renda) > 0) {
+                        rendaFamiliar += parseFloat(m.renda);
+                        temFamiliaComRenda = true;
+                    }
+                });
+            }
+        }
+    } catch (e) { 
+        console.log('Erro ao processar familia_json:', e);
+    }
+    
+    // Se NÃO houver renda na família, tentar usar campos diretos
+    if (!temFamiliaComRenda) {
+        if (allData['renda_salario']) rendaFamiliar += parseFloat(allData['renda_salario']) || 0;
+        if (allData['renda_bolsa']) rendaFamiliar += parseFloat(allData['renda_bolsa']) || 0;
+    }
+    
+    if (rendaFamiliar > 0) {
+        let f = form.querySelector('[name="renda_familiar"]');
+        if (!f) { f = document.createElement('input'); f.type = 'hidden'; f.name = 'renda_familiar'; form.appendChild(f); }
+        f.value = rendaFamiliar.toFixed(2);
+        
+        // Renda per capita: dividir pela quantidade de membros da família
+        let membros = parseInt(allData['num_comodos'] || allData['qtd_pessoas'] || 0) || 0;
+        // Se houver familia_json, usar o tamanho real da família
+        try {
+            if (allData['familia_json']) {
+                const fam = JSON.parse(allData['familia_json']);
+                if (Array.isArray(fam) && fam.length > 0) {
+                    membros = fam.length;
+                }
+            }
+        } catch (e) { }
+        
+        let percapita = membros > 0 ? (rendaFamiliar / membros) : 0;
+        let f2 = form.querySelector('[name="renda_per_capita"]');
+        if (!f2) { f2 = document.createElement('input'); f2.type = 'hidden'; f2.name = 'renda_per_capita'; form.appendChild(f2); }
+        f2.value = percapita.toFixed(2);
     }
     
     // Garantir que familia_json está no formulário
@@ -302,14 +412,26 @@ function addFamilyMember() {
         return;
     }
     
+    // Converter renda: remover R$, pontos e converter vírgula em ponto
+    let rendaNum = 0;
+    if (renda) {
+        let rendaStr = String(renda).replace(/R\$|\.(?=\d{3})|,/g, (m) => {
+            if (m === ',') return '.';
+            return '';
+        });
+        rendaNum = parseFloat(rendaStr) || 0;
+    }
+    
     const member = {
         id: Date.now(),
         nome,
         parentesco,
         dataNasc,
         formacao,
-        renda: parseFloat(renda) || 0
+        renda: rendaNum
     };
+    
+    console.log(`✓ Membro adicionado: ${nome} (${parentesco}) - Renda: R$ ${rendaNum.toFixed(2)}`);
     
     familyMembers.push(member);
     updateFamilyList();
@@ -420,6 +542,22 @@ function toggleCltField(show) {
         field.style.display = show ? 'block' : 'none';
     }
 }
+
+// Garantir que, ao submeter o formulário final, os dados consolidados sejam inseridos nos hidden fields
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('socioeconomicoForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e) {
+        try {
+            // Consolidar todos os passos antes do envio
+            consolidateAllSteps();
+        } catch (err) {
+            console.error('Erro ao consolidar dados antes do submit:', err);
+        }
+        // Deixar o submit prosseguir (consolidation é síncrona)
+    });
+});
 
 // Máscaras
 function applyMasks() {

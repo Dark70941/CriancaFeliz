@@ -37,7 +37,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                 <tr>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:150px;">Nome</th>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:120px;">CPF</th>
-                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:80px;">Idade</th>
+                    <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:120px;">Data de Acolhimento</th>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:120px;">Renda</th>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:100px;">Benefícios</th>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057; min-width:80px;">Status</th>
@@ -59,32 +59,45 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                             ?>
                         </td>
                         <td style="padding:12px; color:#212529; text-align:center;">
-                            <?php 
-                            $idade = 'N/A';
-                            if (!empty($ficha['data_nascimento'])) {
-                                $parts = explode('/', $ficha['data_nascimento']);
-                                if (count($parts) == 3) {
-                                    $date = DateTime::createFromFormat('d/m/Y', $ficha['data_nascimento']);
-                                    if ($date) {
-                                        $now = new DateTime();
-                                        $idade = $now->diff($date)->y;
-                                    }
-                                }
+                            <?php
+                            $acolhimento = $ficha['data_acolhimento'] ?? ($ficha['data_de_acolhimento'] ?? null);
+                            if (!empty($acolhimento)) {
+                                echo htmlspecialchars($acolhimento);
+                            } else {
+                                echo 'N/I';
                             }
-                            echo $idade;
                             ?>
                         </td>
                         <td style="padding:12px; color:#212529; font-size:13px;">
                             <?php 
                             $renda = $ficha['renda_familiar'] ?? 0;
+                            
+                            // Converter para float se for string
                             if (is_string($renda)) {
                                 $renda = floatval(str_replace(['R$', '.', ','], ['', '', '.'], $renda));
+                            } else {
+                                $renda = floatval($renda);
                             }
-                            echo $renda > 0 ? 'R$ ' . number_format($renda, 2, ',', '.') : 'N/I';
+                            
+                            // Exibir a renda formatada ou N/I se for 0
+                            if ($renda > 0) {
+                                echo 'R$ ' . number_format($renda, 2, ',', '.');
+                            } else {
+                                echo 'N/I';
+                            }
                             ?>
                         </td>
                         <td style="padding:12px; color:#212529; font-size:12px;">
-                            Nenhum
+                            <?php
+                            $beneficios = $ficha['beneficios_list'] ?? [];
+                            if (is_string($beneficios) && strlen(trim($beneficios))>0) {
+                                echo htmlspecialchars($beneficios);
+                            } elseif (is_array($beneficios) && count($beneficios)>0) {
+                                echo htmlspecialchars(implode(', ', $beneficios));
+                            } else {
+                                echo 'N/I';
+                            }
+                            ?>
                         </td>
                         <td style="padding:12px; color:#212529;">
                             <span class="status <?php echo strtolower($ficha['status'] ?? 'ativo'); ?>" 

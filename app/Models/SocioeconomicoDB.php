@@ -102,6 +102,7 @@ class SocioeconomicoDB extends BaseModelDB {
                 'cpf' => $data['cpf'] ?? '',
                 'rg' => $data['rg'] ?? '',
                 'data_nascimento' => $this->convertDate($data['data_nascimento'] ?? ''),
+                'data_acolhimento' => $this->convertDate($data['data_acolhimento'] ?? ''),
                 'data_cadastro' => date('Y-m-d'),
                 'endereco' => $data['endereco'] ?? null,
                 'numero' => $data['numero'] ?? null,
@@ -125,33 +126,116 @@ class SocioeconomicoDB extends BaseModelDB {
                 $rendaFamiliar = floatval($renda);
             }
             
-            $this->query(
-                "INSERT INTO Ficha_Socioeconomico (
-                    id_atendido, agua, esgoto, energia, renda_familiar, 
-                    qtd_pessoas, cond_residencia, moradia, nr_veiculos, 
-                    observacoes, entrevistado, residencia, nr_comodos, construcao
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [
-                    $atendidoId,
-                    isset($data['agua']) ? 1 : 0,
-                    isset($data['esgoto']) ? 1 : 0,
-                    isset($data['energia']) ? 1 : 0,
-                    $rendaFamiliar,
-                    $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
-                    $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
-                    $data['tipo_moradia'] ?? $data['moradia'] ?? null,
-                    $data['nr_veiculos'] ?? 0,
-                    $data['observacoes'] ?? null,
-                    $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
-                    $data['residencia'] ?? null,
-                    $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
-                    $data['construcao'] ?? null
-                ]
-            );
-            
-            // Obter ID gerado (PK é idficha na tabela Ficha_Socioeconomico)
-            $fichaId = (int)Database::lastInsertId();
-            error_log('Ficha criada com idficha: ' . $fichaId);
+            // Garantir que colunas de benefícios existam na tabela (compatibilidade)
+            try {
+                $colsStmt = $this->query("SHOW COLUMNS FROM Ficha_Socioeconomico");
+                $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+            } catch (Exception $e) {
+                $colsArr = [];
+            }
+
+            $benefitCols = [
+                'bolsa_familia' => "TINYINT(1) DEFAULT 0",
+                'auxilio_brasil' => "TINYINT(1) DEFAULT 0",
+                'bpc' => "TINYINT(1) DEFAULT 0",
+                'auxilio_emergencial' => "TINYINT(1) DEFAULT 0",
+                'seguro_desemprego' => "TINYINT(1) DEFAULT 0",
+                'aposentadoria' => "TINYINT(1) DEFAULT 0"
+            ];
+
+            foreach ($benefitCols as $col => $ddl) {
+                if (!in_array($col, $colsArr)) {
+                    try {
+                        $this->query("ALTER TABLE Ficha_Socioeconomico ADD COLUMN {$col} {$ddl}");
+                        error_log("Coluna adicionada: {$col}");
+                    } catch (Exception $e) {
+                        error_log("Falha ao adicionar coluna {$col}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            // Determinar flags de benefícios a partir dos campos disponíveis
+            $bolsa = (!empty($data['bolsa_familia'])) ? 1 : 0;
+            $auxilio = (!empty($data['auxilio_brasil'])) ? 1 : 0;
+            $bpc = (!empty($data['bpc'])) ? 1 : 0;
+            $auxEmerg = (!empty($data['auxilio_emergencial'])) ? 1 : 0;
+            $seguro = (!empty($data['seguro_desemprego'])) ? 1 : 0;
+            $aposentadoria = (!empty($data['aposentadoria'])) ? 1 : 0;
+
+            if (!$bolsa && !empty($data['renda_bolsa'])) {
+                $val = floatval(str_replace([',','R$','.'],['','.',''],$data['renda_bolsa']));
+                if ($val > 0) $bolsa = 1;
+            }
+
+            // Preparar dados da ficha para inserção (mapa coluna => valor)
+            $fichaData = [
+                'id_atendido' => $atendidoId,
+                'agua' => isset($data['agua']) ? 1 : 0,
+                'esgoto' => isset($data['esgoto']) ? 1 : 0,
+                'energia' => isset($data['energia']) ? 1 : 0,
+                'renda_familiar' => $rendaFamiliar,
+                'qtd_pessoas' => $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
+                'cond_residencia' => $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
+                'moradia' => $data['tipo_moradia'] ?? $data['moradia'] ?? null,
+                'nr_veiculos' => $data['nr_veiculos'] ?? 0,
+                'observacoes' => $data['observacoes'] ?? null,
+                'entrevistado' => $data['nome_entrevistado'] ?? $data['nome_completo'] ?? '',
+                'residencia' => $data['residencia'] ?? null,
+                'nr_comodos' => $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
+                'construcao' => $data['construcao'] ?? null,
+                'nome_menor' => $data['nome_menor'] ?? null,
+                'assistente_social' => $data['assistente_social'] ?? null,
+                'cadunico' => $data['cadunico'] ?? null,
+                'renda_per_capita' => isset($data['renda_per_capita']) ? floatval($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'bolsa_familia' => $bolsa,
+                'auxilio_brasil' => $auxilio,
+                'bpc' => $bpc,
+                'auxilio_emergencial' => $auxEmerg,
+                'seguro_desemprego' => $seguro,
+                'aposentadoria' => $aposentadoria
+            ];
+
+            // Filtrar apenas colunas que existem na tabela (para evitar erro de coluna desconhecida)
+            // $colsArr já foi obtido acima (SHOW COLUMNS)
+            $insertCols = [];
+            $insertVals = [];
+            foreach ($fichaData as $col => $val) {
+                if (in_array($col, $colsArr)) {
+                    $insertCols[] = $col;
+                    // converter booleanos/flags para 0/1
+                    if (is_bool($val)) $val = $val ? 1 : 0;
+                    $insertVals[] = $val;
+                }
+            }
+
+            if (empty($insertCols)) {
+                throw new Exception('Nenhuma coluna válida encontrada em Ficha_Socioeconomico para inserir. Verifique o schema.');
+            }
+
+            $placeholders = implode(', ', array_fill(0, count($insertCols), '?'));
+            $colsList = implode(', ', $insertCols);
+            $sql = "INSERT INTO Ficha_Socioeconomico ({$colsList}) VALUES ({$placeholders})";
+
+            try {
+                // Log detalhado para debug (arquivo em DATA_PATH)
+                $debugFile = defined('DATA_PATH') ? DATA_PATH . '/debug_sql.log' : __DIR__ . '/../../data/debug_sql.log';
+                $logEntry = [
+                    'time' => date('c'),
+                    'action' => 'insert_ficha_socioeconomico',
+                    'sql' => $sql,
+                    'params' => $insertVals
+                ];
+                @file_put_contents($debugFile, json_encode($logEntry, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);
+
+                $this->query($sql, $insertVals);
+                $fichaId = (int)Database::lastInsertId();
+                error_log('Ficha criada com idficha: ' . $fichaId);
+                @file_put_contents($debugFile, json_encode(['time'=>date('c'),'result'=>'ok','idficha'=>$fichaId]) . PHP_EOL, FILE_APPEND);
+            } catch (Exception $e) {
+                error_log('ERRO ao inserir Ficha_Socioeconomico: ' . $e->getMessage());
+                @file_put_contents($debugFile, json_encode(['time'=>date('c'),'error'=>$e->getMessage()]) . PHP_EOL, FILE_APPEND);
+                throw $e;
+            }
             
             // 3. Salvar Família (se houver)
             // Aceitar tanto familia_json quanto familia array
@@ -303,9 +387,36 @@ class SocioeconomicoDB extends BaseModelDB {
             $ficha['renda_familiar'] = floatval($ficha['renda_familiar'] ?? 0);
             $ficha['qtd_pessoas'] = intval($ficha['qtd_pessoas'] ?? 0);
             $ficha['numero_membros'] = $ficha['qtd_pessoas'];
-            $ficha['nr_comodos'] = intval($ficha['nr_comodos'] ?? 0);
+            $ficha['nr_comodos'] = intval($ficha['nr_comodos'] ?? $ficha['numero_comodos'] ?? 0);
             $ficha['numero_comodos'] = $ficha['nr_comodos'];
             $ficha['nr_veiculos'] = intval($ficha['nr_veiculos'] ?? 0);
+
+            // Mapear nomes compatíveis com as views
+            $ficha['tipo_moradia'] = $ficha['tipo_moradia'] ?? $ficha['moradia'] ?? null;
+            $ficha['situacao_moradia'] = $ficha['situacao_moradia'] ?? $ficha['cond_residencia'] ?? null;
+            $ficha['nome_menor'] = $ficha['nome_menor'] ?? null;
+            $ficha['assistente_social'] = $ficha['assistente_social'] ?? null;
+            $ficha['cadunico'] = $ficha['cadunico'] ?? null;
+
+            // Calcular renda per capita se não estiver presente
+            if (empty($ficha['renda_per_capita'])) {
+                $ficha['renda_per_capita'] = ($ficha['qtd_pessoas'] > 0) ? ($ficha['renda_familiar'] / max(1, $ficha['qtd_pessoas'])) : 0;
+            }
+
+            // Preparar mapa de despesas por tipo (facilita exibição de Agua/Energia)
+            $despesasMap = [];
+            if (!empty($ficha['despesas']) && is_array($ficha['despesas'])) {
+                foreach ($ficha['despesas'] as $d) {
+                    $tipo = mb_strtolower(trim($d['tipo'] ?? ($d['tipo_renda'] ?? '')));
+                    $valor = floatval($d['valor_despesa'] ?? $d['valor'] ?? $d['valor_renda'] ?? 0);
+                    if (!isset($despesasMap[$tipo])) $despesasMap[$tipo] = 0;
+                    $despesasMap[$tipo] += $valor;
+                }
+            }
+            $ficha['despesas_map'] = $despesasMap;
+            // Expor despesas específicas de interesse
+            $ficha['despesa_agua'] = $despesasMap['agua'] ?? ($despesasMap['água'] ?? null);
+            $ficha['despesa_energia'] = $despesasMap['energia'] ?? null;
         }
         
         return $ficha;
@@ -325,33 +436,75 @@ class SocioeconomicoDB extends BaseModelDB {
         ");
         $countResult = $countStmt->fetch();
         
-        $stmt = $this->query("
-            SELECT 
-                a.idatendido as id,
-                a.idatendido,
-                a.nome,
-                a.nome as nome_entrevistado,
-                a.nome as nome_completo,
-                a.cpf,
-                a.data_nascimento,
-                a.status,
-                f.renda_familiar,
-                f.qtd_pessoas
-            FROM Atendido a
-            INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
-            ORDER BY a.data_cadastro DESC
-            LIMIT ? OFFSET ?
-        ", [$perPage, $offset]);
+        // Try to select with all benefit columns, fallback gracefully if columns don't exist
+        try {
+            $stmt = $this->query("
+                SELECT 
+                    a.idatendido as id,
+                    a.idatendido,
+                    a.nome,
+                    a.nome as nome_entrevistado,
+                    a.nome as nome_completo,
+                    a.cpf,
+                    COALESCE(a.data_acolhimento, a.data_cadastro) as data_acolhimento,
+                    a.data_nascimento,
+                    a.status,
+                    f.renda_familiar,
+                    f.qtd_pessoas,
+                    COALESCE(f.bolsa_familia, 0) as bolsa_familia,
+                    COALESCE(f.auxilio_brasil, 0) as auxilio_brasil,
+                    COALESCE(f.bpc, 0) as bpc,
+                    COALESCE(f.auxilio_emergencial, 0) as auxilio_emergencial,
+                    COALESCE(f.seguro_desemprego, 0) as seguro_desemprego,
+                    COALESCE(f.aposentadoria, 0) as aposentadoria
+                FROM Atendido a
+                INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+                ORDER BY a.data_cadastro DESC
+                LIMIT ? OFFSET ?
+            ", [$perPage, $offset]);
+        } catch (Exception $e) {
+            // Fallback: Select only columns that definitely exist
+            error_log("Error with benefit columns in listFichas, using fallback: " . $e->getMessage());
+            $stmt = $this->query("
+                SELECT 
+                    a.idatendido as id,
+                    a.idatendido,
+                    a.nome,
+                    a.nome as nome_entrevistado,
+                    a.nome as nome_completo,
+                    a.cpf,
+                    COALESCE(a.data_acolhimento, a.data_cadastro) as data_acolhimento,
+                    a.data_nascimento,
+                    a.status,
+                    f.renda_familiar,
+                    f.qtd_pessoas
+                FROM Atendido a
+                INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
+                ORDER BY a.data_cadastro DESC
+                LIMIT ? OFFSET ?
+            ", [$perPage, $offset]);
+        }
         
         $fichas = $stmt->fetchAll();
         
         // Formatar datas e adicionar dados calculados
         foreach ($fichas as &$ficha) {
             $ficha['data_nascimento'] = $this->formatDate($ficha['data_nascimento']);
+            $ficha['data_acolhimento'] = $this->formatDate($ficha['data_acolhimento'] ?? '');
             $ficha['idade'] = $this->calculateAge($ficha['data_nascimento']);
             $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
+
+            // Construir lista de benefícios a partir das flags
+            $beneficios = [];
+            if (!empty($ficha['bolsa_familia'])) $beneficios[] = 'Bolsa Família';
+            if (!empty($ficha['auxilio_brasil'])) $beneficios[] = 'Auxílio Brasil';
+            if (!empty($ficha['bpc'])) $beneficios[] = 'BPC';
+            if (!empty($ficha['auxilio_emergencial'])) $beneficios[] = 'Auxílio Emergencial';
+            if (!empty($ficha['seguro_desemprego'])) $beneficios[] = 'Seguro Desemprego';
+            if (!empty($ficha['aposentadoria'])) $beneficios[] = 'Aposentadoria';
+            $ficha['beneficios_list'] = $beneficios;
             
-            // Garantir que nome_completo existe (compatibilidade com view)
+            // Garantir que nome_completo exista (compatibilidade com view)
             if (empty($ficha['nome_completo'])) {
                 $ficha['nome_completo'] = $ficha['nome_entrevistado'];
             }
@@ -408,27 +561,112 @@ class SocioeconomicoDB extends BaseModelDB {
                 $rendaFamiliar = floatval($renda);
             }
             
-            $this->query(
-                "UPDATE Ficha_Socioeconomico SET 
-                    agua = ?, esgoto = ?, energia = ?, renda_familiar = ?,
-                    qtd_pessoas = ?, cond_residencia = ?, moradia = ?,
-                    nr_veiculos = ?, observacoes = ?, nr_comodos = ?, construcao = ?
-                WHERE id_atendido = ?",
-                [
-                    isset($data['agua']) ? 1 : 0,
-                    isset($data['esgoto']) ? 1 : 0,
-                    isset($data['energia']) ? 1 : 0,
-                    $rendaFamiliar,
-                    $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
-                    $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
-                    $data['tipo_moradia'] ?? $data['moradia'] ?? null,
-                    $data['nr_veiculos'] ?? 0,
-                    $data['observacoes'] ?? null,
-                    $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
-                    $data['construcao'] ?? null,
-                    $id
-                ]
-            );
+            // Garantir colunas de benefícios (caso não existam ainda)
+            try {
+                $colsStmt = $this->query("SHOW COLUMNS FROM Ficha_Socioeconomico");
+                $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+            } catch (Exception $e) {
+                $colsArr = [];
+            }
+
+            $benefitCols = [
+                'bolsa_familia' => "TINYINT(1) DEFAULT 0",
+                'auxilio_brasil' => "TINYINT(1) DEFAULT 0",
+                'bpc' => "TINYINT(1) DEFAULT 0",
+                'auxilio_emergencial' => "TINYINT(1) DEFAULT 0",
+                'seguro_desemprego' => "TINYINT(1) DEFAULT 0",
+                'aposentadoria' => "TINYINT(1) DEFAULT 0"
+            ];
+
+            foreach ($benefitCols as $col => $ddl) {
+                if (!in_array($col, $colsArr)) {
+                    try {
+                        $this->query("ALTER TABLE Ficha_Socioeconomico ADD COLUMN {$col} {$ddl}");
+                        error_log("Coluna adicionada (update): {$col}");
+                    } catch (Exception $e) {
+                        error_log("Falha ao adicionar coluna {$col} no update: " . $e->getMessage());
+                    }
+                }
+            }
+
+            $bolsa = (!empty($data['bolsa_familia'])) ? 1 : 0;
+            $auxilio = (!empty($data['auxilio_brasil'])) ? 1 : 0;
+            $bpc = (!empty($data['bpc'])) ? 1 : 0;
+            $auxEmerg = (!empty($data['auxilio_emergencial'])) ? 1 : 0;
+            $seguro = (!empty($data['seguro_desemprego'])) ? 1 : 0;
+            $aposentadoria = (!empty($data['aposentadoria'])) ? 1 : 0;
+            if (!$bolsa && !empty($data['renda_bolsa'])) {
+                $val = floatval(str_replace([',','R$','.'],['','.',''],$data['renda_bolsa']));
+                if ($val > 0) $bolsa = 1;
+            }
+
+            // Preparar dados para UPDATE (mapa coluna => valor)
+            $updateData = [
+                'agua' => isset($data['agua']) ? 1 : 0,
+                'esgoto' => isset($data['esgoto']) ? 1 : 0,
+                'energia' => isset($data['energia']) ? 1 : 0,
+                'renda_familiar' => $rendaFamiliar,
+                'qtd_pessoas' => $data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0,
+                'cond_residencia' => $data['situacao_moradia'] ?? $data['cond_residencia'] ?? null,
+                'moradia' => $data['tipo_moradia'] ?? $data['moradia'] ?? null,
+                'nr_veiculos' => $data['nr_veiculos'] ?? 0,
+                'observacoes' => $data['observacoes'] ?? null,
+                'nr_comodos' => $data['numero_comodos'] ?? $data['nr_comodos'] ?? 0,
+                'construcao' => $data['construcao'] ?? null,
+                'nome_menor' => $data['nome_menor'] ?? null,
+                'assistente_social' => $data['assistente_social'] ?? null,
+                'cadunico' => $data['cadunico'] ?? null,
+                'renda_per_capita' => isset($data['renda_per_capita']) ? floatval($data['renda_per_capita']) : ( ($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0) ? ($rendaFamiliar / max(1, intval($data['pessoas_casa'] ?? $data['qtd_pessoas'] ?? 0))) : null ),
+                'bolsa_familia' => $bolsa,
+                'auxilio_brasil' => $auxilio,
+                'bpc' => $bpc,
+                'auxilio_emergencial' => $auxEmerg,
+                'seguro_desemprego' => $seguro,
+                'aposentadoria' => $aposentadoria
+            ];
+
+            // Garantir colunas existentes antes de atualizar
+            try {
+                $colsStmt = $this->query("SHOW COLUMNS FROM Ficha_Socioeconomico");
+                $colsArr = array_column($colsStmt->fetchAll(PDO::FETCH_ASSOC), 'Field');
+            } catch (Exception $e) {
+                $colsArr = [];
+            }
+
+            $setParts = [];
+            $values = [];
+            foreach ($updateData as $col => $val) {
+                if (in_array($col, $colsArr)) {
+                    $setParts[] = "$col = ?";
+                    if (is_bool($val)) $val = $val ? 1 : 0;
+                    $values[] = $val;
+                }
+            }
+
+            if (!empty($setParts)) {
+                $sql = "UPDATE Ficha_Socioeconomico SET " . implode(', ', $setParts) . " WHERE id_atendido = ?";
+                $values[] = $id;
+                try {
+                    // Log detalhado de UPDATE
+                    $debugFile = defined('DATA_PATH') ? DATA_PATH . '/debug_sql.log' : __DIR__ . '/../../data/debug_sql.log';
+                    $logEntry = [
+                        'time' => date('c'),
+                        'action' => 'update_ficha_socioeconomico',
+                        'sql' => $sql,
+                        'params' => $values
+                    ];
+                    @file_put_contents($debugFile, json_encode($logEntry, JSON_UNESCAPED_UNICODE) . PHP_EOL, FILE_APPEND);
+
+                    $this->query($sql, $values);
+                    @file_put_contents($debugFile, json_encode(['time'=>date('c'),'result'=>'ok','id_atendido'=>$id]) . PHP_EOL, FILE_APPEND);
+                } catch (Exception $e) {
+                    error_log('ERRO ao atualizar Ficha_Socioeconomico: ' . $e->getMessage());
+                    @file_put_contents($debugFile, json_encode(['time'=>date('c'),'error'=>$e->getMessage()]) . PHP_EOL, FILE_APPEND);
+                    throw $e;
+                }
+            } else {
+                error_log('Nenhuma coluna válida para atualizar em Ficha_Socioeconomico (schema possivelmente incompleto)');
+            }
             
             // 3. Atualizar Família e Despesas (deletar existentes e recriar)
             // Buscar fichaId primeiro (PK é idficha)

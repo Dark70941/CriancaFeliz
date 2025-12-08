@@ -70,7 +70,7 @@
                     <?php $userRole = $user['role'] ?? $user['nivel'] ?? ''; ?>
                     <option value="">Selecione o nível de acesso</option>
                     <option value="admin" <?php echo ($userRole === 'admin' || $userRole === 'Administrador') ? 'selected' : ''; ?>>Administrador</option>
-                    <option value="psicologo" <?php echo ($userRole === 'psicologo' || $userRole === 'Psicólogo') ? 'selected' : ''; ?>>Psicólogo</option>
+                    <option value="psicologo" <?php echo ($userRole === 'psicologo' || $userRole === 'Psicólogo') ? 'selected' : ''; ?>>Psicólogo / Assistente Social</option>
                     <option value="funcionario" <?php echo ($userRole === 'funcionario' || $userRole === 'Funcionário') ? 'selected' : ''; ?>>Funcionário</option>
                 </select>
             </div>

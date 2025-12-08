@@ -278,5 +278,95 @@
         "user_name": "Administrador",
         "timestamp": "2025-12-08 00:20:05",
         "ip": "::1"
+    },
+    {
+        "id": "6936f771b36ff",
+        "action": "create",
+        "ficha_id": 6,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:06:09",
+        "ip": "::1"
+    },
+    {
+        "id": "6936f90447cc5",
+        "action": "update",
+        "ficha_id": "6",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:12:52",
+        "ip": "::1"
+    },
+    {
+        "id": "6936f929c29af",
+        "action": "delete",
+        "ficha_id": "5",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:13:29",
+        "ip": "::1"
+    },
+    {
+        "id": "6937014f8fa97",
+        "action": "delete",
+        "ficha_id": "6",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:48:15",
+        "ip": "::1"
+    },
+    {
+        "id": "69370198099c9",
+        "action": "create",
+        "ficha_id": 7,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 17:49:28",
+        "ip": "::1"
+    },
+    {
+        "id": "69370ff713f96",
+        "action": "create",
+        "ficha_id": 8,
+        "description": "Ficha socioeconômica criada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:50:47",
+        "ip": "::1"
+    },
+    {
+        "id": "6937103b29694",
+        "action": "delete",
+        "ficha_id": "7",
+        "description": "Ficha socioeconômica excluída",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:51:55",
+        "ip": "::1"
+    },
+    {
+        "id": "69371089b8033",
+        "action": "update",
+        "ficha_id": "8",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:53:13",
+        "ip": "::1"
+    },
+    {
+        "id": "693711d37b383",
+        "action": "update",
+        "ficha_id": "8",
+        "description": "Ficha socioeconômica atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-08 18:58:43",
+        "ip": "::1"
     }
 ]
