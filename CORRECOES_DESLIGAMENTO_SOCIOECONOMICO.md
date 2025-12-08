@@ -276,23 +276,75 @@ if ($fichaId) {
 
 #### 4. `js/socioeconomico-multistep.js`
 - **Verificação antes do submit**: Garante que `familia_json` está salvo antes de consolidar
-- **Logs de verificação**: Loga conteúdo dos campos JSON antes do submit para debug
+- **Logs detalhados de verificação**: Loga conteúdo completo dos campos JSON antes do submit para debug
+- **Validação de JSON**: Verifica se o JSON é válido antes do submit
 
 ```javascript
-// Adicionado antes do submit:
-if (familyMembers.length > 0) {
-    const familiaField = form.querySelector('[name="familia_json"]');
-    if (familiaField) {
-        familiaField.value = JSON.stringify(familyMembers);
-        console.log('✓ Família salva antes do submit:', familyMembers.length, 'membros');
-    }
+// Adicionado antes do submit (melhorado):
+console.log('📋 Salvando família antes do submit...');
+console.log('   familyMembers.length:', familyMembers.length);
+console.log('   familyMembers:', familyMembers);
+
+const familiaField = form.querySelector('[name="familia_json"]');
+if (familiaField) {
+    const familiaJson = JSON.stringify(familyMembers);
+    familiaField.value = familiaJson;
+    console.log('✓ Família salva antes do submit:', familyMembers.length, 'membros');
+    console.log('   Conteúdo familia_json:', familiaJson.substring(0, 200));
+} else {
+    console.error('✗ Campo familia_json não encontrado no formulário!');
 }
 
-// Verificação final:
-const familiaCheck = form.querySelector('[name="familia_json"]');
-const despesasCheck = form.querySelector('[name="despesas_json"]');
-console.log('Verificação final - familia_json:', familiaCheck ? familiaCheck.value.substring(0, 50) : 'NÃO ENCONTRADO');
-console.log('Verificação final - despesas_json:', despesasCheck ? despesasCheck.value.substring(0, 50) : 'NÃO ENCONTRADO');
+// Verificação final detalhada APÓS consolidar:
+console.log('=== VERIFICAÇÃO FINAL ANTES DO SUBMIT ===');
+if (familiaCheck) {
+    const familiaValue = familiaCheck.value || '';
+    console.log('✓ familia_json encontrado:', familiaValue.length, 'caracteres');
+    if (familiaValue.length > 0) {
+        try {
+            const parsed = JSON.parse(familiaValue);
+            console.log('   ✓ JSON válido:', parsed.length, 'membros');
+            console.log('   Conteúdo:', familiaValue.substring(0, 200));
+        } catch (e) {
+            console.error('   ✗ JSON inválido:', e.message);
+        }
+    } else {
+        console.warn('   ⚠️ Campo está VAZIO');
+    }
+} else {
+    console.error('✗ Campo familia_json NÃO ENCONTRADO');
+}
+// Mesma verificação para despesas_json
+```
+
+#### 5. `app/Models/SocioeconomicoDB.php` - Logs Detalhados Adicionados
+- **Logs em cada etapa do processo**: Adicionados logs detalhados em `createFicha()` e `updateFicha()`
+- **Rastreamento completo**: Cada membro da família e cada despesa é logada individualmente
+- **Erros detalhados**: Exceções são capturadas e logadas com contexto completo
+
+```php
+// Exemplo de logs adicionados:
+error_log('=== INICIANDO SALVAMENTO DE FAMÍLIA ===');
+error_log('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
+error_log('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
+
+// Para cada membro:
+error_log("Processando membro {$idx}: " . print_r($membro, true));
+// Após inserir:
+error_log("✅ Família: {$familiaInseridos} membros inseridos com sucesso");
+```
+
+#### 6. `app/Controllers/SocioeconomicoController.php` - Logs Detalhados Adicionados
+- **Logs antes de decodificar**: Verifica se os campos JSON existem e tamanho
+- **Logs após decodificação**: Confirma quantidade de itens decodificados
+- **Logs de erro detalhados**: Mostra código de erro JSON e conteúdo raw
+
+```php
+// Logs adicionados no controller:
+error_log('=== DADOS RECEBIDOS NO CONTROLLER ===');
+error_log('despesas_json presente: ' . (isset($data['despesas_json']) && !empty($data['despesas_json']) ? 'SIM (' . strlen($data['despesas_json']) . ' chars)' : 'NÃO'));
+error_log('Conteúdo raw: ' . substr($data['despesas_json'], 0, 300));
+error_log('✅ Despesas decodificadas no controller: ' . count($despesasDecoded) . ' itens');
 ```
 
 ---
@@ -381,9 +433,36 @@ console.log('Verificação final - despesas_json:', despesasCheck ? despesasChec
 3. `app/Services/AuthService.php` - requireAuth() não redireciona em AJAX
 4. `app/Controllers/DesligamentoController.php` - Try-catch explícito e respostas padronizadas
 5. `desligamento.php` - Output buffering e tratamento AJAX
-6. `app/Controllers/SocioeconomicoController.php` - Decodificação de JSON
-7. `app/Models/SocioeconomicoDB.php` - Validação, normalização e logs
-8. `js/socioeconomico-multistep.js` - Verificações antes do submit
+6. `app/Controllers/SocioeconomicoController.php` - Decodificação de JSON com logs detalhados
+7. `app/Models/SocioeconomicoDB.php` - Validação, normalização e logs detalhados em createFicha() e updateFicha()
+8. `js/socioeconomico-multistep.js` - Verificações detalhadas antes do submit com validação de JSON
+
+## DIAGNÓSTICO DE PROBLEMAS - LOGS ADICIONADOS
+
+Para facilitar o diagnóstico de problemas futuros com persistência de despesas e família, foram adicionados logs detalhados em múltiplos pontos:
+
+### Logs no JavaScript (Console do Browser):
+- ✅ Quantidade de membros da família antes de salvar
+- ✅ Conteúdo completo do JSON antes do submit
+- ✅ Validação de JSON válido/inválido
+- ✅ Verificação de campos hidden presentes/ausentes
+
+### Logs no Controller (error_log PHP):
+- ✅ Presença/ausência de campos JSON no POST
+- ✅ Tamanho dos campos JSON recebidos
+- ✅ Sucesso/erro na decodificação JSON
+- ✅ Quantidade de itens decodificados
+
+### Logs no Model (error_log PHP):
+- ✅ ID da ficha criada (idficha)
+- ✅ Processamento individual de cada membro/despesa
+- ✅ Quantidade final de itens inseridos
+- ✅ Erros específicos com contexto completo
+
+**Para visualizar os logs:**
+- **JavaScript**: Abrir DevTools → Console
+- **PHP**: Verificar arquivo de erro do PHP (geralmente `php_error.log` ou `error_log`)
+- **SQL**: Verificar arquivo `data/debug_sql.log` para logs de queries SQL
 
 ---
 

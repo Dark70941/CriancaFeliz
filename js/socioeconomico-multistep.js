@@ -637,26 +637,67 @@ document.addEventListener('DOMContentLoaded', function() {
             // Permitir submit apenas na última etapa (Etapa 5)
             if (currentStep === 5) {
                 console.log('✓ Submit permitido na etapa final');
-                // Salvar dados da etapa atual antes de enviar
-                saveStepData(5);
                 
-                // IMPORTANTE: Salvar família e despesas antes de consolidar
-                if (familyMembers.length > 0) {
-                    const familiaField = form.querySelector('[name="familia_json"]');
-                    if (familiaField) {
-                        familiaField.value = JSON.stringify(familyMembers);
-                        console.log('✓ Família salva antes do submit:', familyMembers.length, 'membros');
-                    }
+                // IMPORTANTE: Salvar família ANTES de consolidar
+                console.log('📋 Salvando família antes do submit...');
+                console.log('   familyMembers.length:', familyMembers.length);
+                console.log('   familyMembers:', familyMembers);
+                
+                const familiaField = form.querySelector('[name="familia_json"]');
+                if (familiaField) {
+                    const familiaJson = JSON.stringify(familyMembers);
+                    familiaField.value = familiaJson;
+                    console.log('✓ Família salva antes do submit:', familyMembers.length, 'membros');
+                    console.log('   Conteúdo familia_json:', familiaJson.substring(0, 200));
+                } else {
+                    console.error('✗ Campo familia_json não encontrado no formulário!');
                 }
                 
                 // IMPORTANTE: Consolidar todos os dados das etapas anteriores
+                console.log('📦 Consolidando todos os dados...');
                 consolidateAllSteps();
                 
-                // Verificar se campos JSON foram populados
+                // Verificar se campos JSON foram populados APÓS consolidar
                 const familiaCheck = form.querySelector('[name="familia_json"]');
                 const despesasCheck = form.querySelector('[name="despesas_json"]');
-                console.log('Verificação final - familia_json:', familiaCheck ? familiaCheck.value.substring(0, 50) : 'NÃO ENCONTRADO');
-                console.log('Verificação final - despesas_json:', despesasCheck ? despesasCheck.value.substring(0, 50) : 'NÃO ENCONTRADO');
+                
+                console.log('=== VERIFICAÇÃO FINAL ANTES DO SUBMIT ===');
+                if (familiaCheck) {
+                    const familiaValue = familiaCheck.value || '';
+                    console.log('✓ familia_json encontrado:', familiaValue.length, 'caracteres');
+                    if (familiaValue.length > 0) {
+                        try {
+                            const parsed = JSON.parse(familiaValue);
+                            console.log('   ✓ JSON válido:', parsed.length, 'membros');
+                            console.log('   Conteúdo:', familiaValue.substring(0, 200));
+                        } catch (e) {
+                            console.error('   ✗ JSON inválido:', e.message);
+                        }
+                    } else {
+                        console.warn('   ⚠️ Campo está VAZIO');
+                    }
+                } else {
+                    console.error('✗ Campo familia_json NÃO ENCONTRADO');
+                }
+                
+                if (despesasCheck) {
+                    const despesasValue = despesasCheck.value || '';
+                    console.log('✓ despesas_json encontrado:', despesasValue.length, 'caracteres');
+                    if (despesasValue.length > 0) {
+                        try {
+                            const parsed = JSON.parse(despesasValue);
+                            console.log('   ✓ JSON válido:', parsed.length, 'itens');
+                            console.log('   Conteúdo:', despesasValue.substring(0, 200));
+                        } catch (e) {
+                            console.error('   ✗ JSON inválido:', e.message);
+                        }
+                    } else {
+                        console.warn('   ⚠️ Campo está VAZIO');
+                    }
+                } else {
+                    console.error('✗ Campo despesas_json NÃO ENCONTRADO');
+                }
+                console.log('==========================================');
                 
                 return true; // Permitir submit
             }

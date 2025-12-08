@@ -105,28 +105,55 @@ class SocioeconomicoController extends BaseController {
             error_log('=== SOCIOECONOMICO STORE ===');
             error_log('ID recebido: ' . ($data['id'] ?? 'NENHUM'));
             
+            // Log detalhado dos dados recebidos
+            error_log('=== DADOS RECEBIDOS NO CONTROLLER ===');
+            error_log('Keys presentes: ' . implode(', ', array_keys($data)));
+            error_log('despesas_json presente: ' . (isset($data['despesas_json']) && !empty($data['despesas_json']) ? 'SIM (' . strlen($data['despesas_json']) . ' chars)' : 'NÃO'));
+            error_log('familia_json presente: ' . (isset($data['familia_json']) && !empty($data['familia_json']) ? 'SIM (' . strlen($data['familia_json']) . ' chars)' : 'NÃO'));
+            
             // Decodificar JSON de despesas e família ANTES de enviar ao service
             if (!empty($data['despesas_json'])) {
+                error_log('Decodificando despesas_json no controller...');
+                error_log('Conteúdo raw: ' . substr($data['despesas_json'], 0, 300));
                 $despesasDecoded = json_decode($data['despesas_json'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($despesasDecoded)) {
                     $data['despesas'] = $despesasDecoded;
-                    error_log('Despesas decodificadas: ' . count($despesasDecoded) . ' itens');
+                    error_log('✅ Despesas decodificadas no controller: ' . count($despesasDecoded) . ' itens');
                 } else {
-                    error_log('ERRO ao decodificar despesas_json: ' . json_last_error_msg());
+                    error_log('❌ ERRO ao decodificar despesas_json no controller: ' . json_last_error_msg());
+                    error_log('   JSON Error Code: ' . json_last_error());
                     $data['despesas'] = [];
                 }
+            } else {
+                error_log('⚠️ despesas_json está vazio ou não existe');
             }
             
             if (!empty($data['familia_json'])) {
+                error_log('Decodificando familia_json no controller...');
+                error_log('Conteúdo raw: ' . substr($data['familia_json'], 0, 300));
                 $familiaDecoded = json_decode($data['familia_json'], true);
                 if (json_last_error() === JSON_ERROR_NONE && is_array($familiaDecoded)) {
                     $data['familia'] = $familiaDecoded;
-                    error_log('Família decodificada: ' . count($familiaDecoded) . ' membros');
+                    error_log('✅ Família decodificada no controller: ' . count($familiaDecoded) . ' membros');
                 } else {
-                    error_log('ERRO ao decodificar familia_json: ' . json_last_error_msg());
+                    error_log('❌ ERRO ao decodificar familia_json no controller: ' . json_last_error_msg());
+                    error_log('   JSON Error Code: ' . json_last_error());
                     $data['familia'] = [];
                 }
+            } else {
+                error_log('⚠️ familia_json está vazio ou não existe');
             }
+            
+            // Garantir que arrays estão presentes mesmo se vazios
+            if (!isset($data['despesas'])) {
+                $data['despesas'] = [];
+            }
+            if (!isset($data['familia'])) {
+                $data['familia'] = [];
+            }
+            
+            error_log('Dados finais preparados - despesas: ' . count($data['despesas']) . ', familia: ' . count($data['familia']));
+            error_log('==========================================');
             
             error_log('Dados preparados: ' . print_r(array_keys($data), true));
             

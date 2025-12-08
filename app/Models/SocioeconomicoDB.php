@@ -239,23 +239,37 @@ class SocioeconomicoDB extends BaseModelDB {
             
             // 3. Salvar Família (se houver)
             // Aceitar tanto familia_json quanto familia array
+            error_log('=== INICIANDO SALVAMENTO DE FAMÍLIA ===');
+            error_log('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
+            error_log('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
+            
             $familia = [];
             if (!empty($data['familia_json'])) {
+                error_log('Decodificando familia_json...');
                 $familia = json_decode($data['familia_json'], true);
                 if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
                     error_log('ERRO ao decodificar familia_json: ' . json_last_error_msg());
+                    error_log('Conteúdo familia_json: ' . substr($data['familia_json'], 0, 200));
                     $familia = [];
+                } else {
+                    error_log('familia_json decodificado com sucesso: ' . count($familia) . ' membros');
                 }
             } elseif (!empty($data['familia']) && is_array($data['familia'])) {
+                error_log('Usando array familia diretamente: ' . count($data['familia']) . ' membros');
                 $familia = $data['familia'];
+            } else {
+                error_log('NENHUM dado de família encontrado (nem familia_json nem familia array)');
             }
             
             if (!empty($familia) && is_array($familia)) {
+                error_log('Inserindo ' . count($familia) . ' membros da família na tabela Familia com id_ficha = ' . $fichaId);
                 $familiaInseridos = 0;
-                foreach ($familia as $membro) {
+                foreach ($familia as $idx => $membro) {
+                    error_log("Processando membro {$idx}: " . print_r($membro, true));
+                    
                     // Validar membro antes de inserir
                     if (empty($membro['nome']) || empty($membro['parentesco'])) {
-                        error_log('Membro da família ignorado - falta nome ou parentesco');
+                        error_log("Membro da família #{$idx} ignorado - falta nome ou parentesco");
                         continue;
                     }
                     
@@ -265,38 +279,60 @@ class SocioeconomicoDB extends BaseModelDB {
                         $renda = is_numeric($membro['renda']) ? floatval($membro['renda']) : 0;
                     }
                     
-                    $this->query(
-                        "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
-                        [
-                            $fichaId, // id_ficha (FK) recebe idficha (PK)
-                            trim($membro['nome'] ?? ''),
-                            trim($membro['parentesco'] ?? ''),
-                            $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
-                            trim($membro['formacao'] ?? ''),
-                            $renda
-                        ]
-                    );
-                    $familiaInseridos++;
+                    try {
+                        $this->query(
+                            "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                            [
+                                $fichaId, // id_ficha (FK) recebe idficha (PK)
+                                trim($membro['nome'] ?? ''),
+                                trim($membro['parentesco'] ?? ''),
+                                $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
+                                trim($membro['formacao'] ?? ''),
+                                $renda
+                            ]
+                        );
+                        $familiaInseridos++;
+                        error_log("Membro #{$idx} inserido com sucesso");
+                    } catch (Exception $e) {
+                        error_log("ERRO ao inserir membro #{$idx}: " . $e->getMessage());
+                        throw $e;
+                    }
                 }
-                error_log("Família: {$familiaInseridos} membros inseridos");
+                error_log("✅ Família: {$familiaInseridos} membros inseridos com sucesso");
+            } else {
+                error_log('⚠️ Nenhum membro da família para inserir (array vazio ou inválido)');
             }
             
             // 4. Salvar Despesas (se houver)
             // Aceitar tanto despesas_json quanto despesas array
+            error_log('=== INICIANDO SALVAMENTO DE DESPESAS ===');
+            error_log('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
+            error_log('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
+            
             $despesas = [];
             if (!empty($data['despesas_json'])) {
+                error_log('Decodificando despesas_json...');
                 $despesas = json_decode($data['despesas_json'], true);
                 if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
                     error_log('ERRO ao decodificar despesas_json: ' . json_last_error_msg());
+                    error_log('Conteúdo despesas_json: ' . substr($data['despesas_json'], 0, 200));
                     $despesas = [];
+                } else {
+                    error_log('despesas_json decodificado com sucesso: ' . count($despesas) . ' itens');
                 }
             } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
+                error_log('Usando array despesas diretamente: ' . count($data['despesas']) . ' itens');
                 $despesas = $data['despesas'];
+            } else {
+                error_log('NENHUM dado de despesas encontrado (nem despesas_json nem despesas array)');
             }
             
             if (!empty($despesas) && is_array($despesas)) {
+                error_log('Inserindo ' . count($despesas) . ' despesas na tabela Despesas com id_ficha = ' . $fichaId);
                 $despesasInseridas = 0;
-                foreach ($despesas as $despesa) {
+                foreach ($despesas as $idx => $despesa) {
+                    error_log("Processando despesa {$idx}: " . print_r($despesa, true));
+                    
                     // Normalizar valor
                     $valor = 0;
                     if (!empty($despesa['valor'])) {
@@ -322,14 +358,24 @@ class SocioeconomicoDB extends BaseModelDB {
                     
                     // Inserir se tiver pelo menos valor ou tipo
                     if ($valor > 0 || !empty($tipo)) {
-                        $this->query(
-                            "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
-                            [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
-                        );
-                        $despesasInseridas++;
+                        try {
+                            $this->query(
+                                "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                                [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
+                            );
+                            $despesasInseridas++;
+                            error_log("Despesa #{$idx} inserida com sucesso: {$tipo} = R$ {$valor}");
+                        } catch (Exception $e) {
+                            error_log("ERRO ao inserir despesa #{$idx}: " . $e->getMessage());
+                            throw $e;
+                        }
+                    } else {
+                        error_log("Despesa #{$idx} ignorada (sem valor e sem tipo)");
                     }
                 }
-                error_log("Despesas: {$despesasInseridas} itens inseridos");
+                error_log("✅ Despesas: {$despesasInseridas} itens inseridos com sucesso");
+            } else {
+                error_log('⚠️ Nenhuma despesa para inserir (array vazio ou inválido)');
             }
             
             Database::commit();
@@ -682,22 +728,35 @@ class SocioeconomicoDB extends BaseModelDB {
                 $this->query("DELETE FROM Despesas WHERE id_ficha = ?", [$fichaId]);
                 
                 // Salvar nova família (se houver)
+                error_log('=== UPDATE: INICIANDO SALVAMENTO DE FAMÍLIA ===');
+                error_log('familia_json presente: ' . (isset($data['familia_json']) ? 'SIM' : 'NÃO'));
+                error_log('familia array presente: ' . (isset($data['familia']) && is_array($data['familia']) ? 'SIM (' . count($data['familia']) . ' itens)' : 'NÃO'));
+                
                 $familia = [];
                 if (!empty($data['familia_json'])) {
+                    error_log('Decodificando familia_json no update...');
                     $familia = json_decode($data['familia_json'], true);
                     if (json_last_error() !== JSON_ERROR_NONE || !is_array($familia)) {
                         error_log('ERRO ao decodificar familia_json no update: ' . json_last_error_msg());
+                        error_log('Conteúdo familia_json: ' . substr($data['familia_json'], 0, 200));
                         $familia = [];
+                    } else {
+                        error_log('familia_json decodificado com sucesso no update: ' . count($familia) . ' membros');
                     }
                 } elseif (!empty($data['familia']) && is_array($data['familia'])) {
+                    error_log('Usando array familia diretamente no update: ' . count($data['familia']) . ' membros');
                     $familia = $data['familia'];
+                } else {
+                    error_log('NENHUM dado de família encontrado no update');
                 }
                 
                 if (!empty($familia) && is_array($familia)) {
+                    error_log('Inserindo ' . count($familia) . ' membros da família no update com id_ficha = ' . $fichaId);
                     $familiaInseridos = 0;
-                    foreach ($familia as $membro) {
+                    foreach ($familia as $idx => $membro) {
                         // Validar membro antes de inserir
                         if (empty($membro['nome']) || empty($membro['parentesco'])) {
+                            error_log("Update - Membro da família #{$idx} ignorado - falta nome ou parentesco");
                             continue;
                         }
                         
@@ -706,37 +765,56 @@ class SocioeconomicoDB extends BaseModelDB {
                             $renda = is_numeric($membro['renda']) ? floatval($membro['renda']) : 0;
                         }
                         
-                        $this->query(
-                            "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
-                            [
-                                $fichaId, // id_ficha (FK) recebe idficha (PK)
-                                trim($membro['nome'] ?? ''),
-                                trim($membro['parentesco'] ?? ''),
-                                $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
-                                trim($membro['formacao'] ?? ''),
-                                $renda
-                            ]
-                        );
-                        $familiaInseridos++;
+                        try {
+                            $this->query(
+                                "INSERT INTO Familia (id_ficha, nome, parentesco, data_nasc, formacao, renda) VALUES (?, ?, ?, ?, ?, ?)",
+                                [
+                                    $fichaId, // id_ficha (FK) recebe idficha (PK)
+                                    trim($membro['nome'] ?? ''),
+                                    trim($membro['parentesco'] ?? ''),
+                                    $this->convertDate($membro['dataNasc'] ?? $membro['data_nasc'] ?? ''),
+                                    trim($membro['formacao'] ?? ''),
+                                    $renda
+                                ]
+                            );
+                            $familiaInseridos++;
+                        } catch (Exception $e) {
+                            error_log("ERRO ao inserir membro #{$idx} no update: " . $e->getMessage());
+                            throw $e;
+                        }
                     }
-                    error_log("Update - Família: {$familiaInseridos} membros inseridos");
+                    error_log("✅ Update - Família: {$familiaInseridos} membros inseridos com sucesso");
+                } else {
+                    error_log('⚠️ Update - Nenhum membro da família para inserir');
                 }
                 
                 // Salvar novas despesas (se houver)
+                error_log('=== UPDATE: INICIANDO SALVAMENTO DE DESPESAS ===');
+                error_log('despesas_json presente: ' . (isset($data['despesas_json']) ? 'SIM' : 'NÃO'));
+                error_log('despesas array presente: ' . (isset($data['despesas']) && is_array($data['despesas']) ? 'SIM (' . count($data['despesas']) . ' itens)' : 'NÃO'));
+                
                 $despesas = [];
                 if (!empty($data['despesas_json'])) {
+                    error_log('Decodificando despesas_json no update...');
                     $despesas = json_decode($data['despesas_json'], true);
                     if (json_last_error() !== JSON_ERROR_NONE || !is_array($despesas)) {
                         error_log('ERRO ao decodificar despesas_json no update: ' . json_last_error_msg());
+                        error_log('Conteúdo despesas_json: ' . substr($data['despesas_json'], 0, 200));
                         $despesas = [];
+                    } else {
+                        error_log('despesas_json decodificado com sucesso no update: ' . count($despesas) . ' itens');
                     }
                 } elseif (!empty($data['despesas']) && is_array($data['despesas'])) {
+                    error_log('Usando array despesas diretamente no update: ' . count($data['despesas']) . ' itens');
                     $despesas = $data['despesas'];
+                } else {
+                    error_log('NENHUM dado de despesas encontrado no update');
                 }
                 
                 if (!empty($despesas) && is_array($despesas)) {
+                    error_log('Inserindo ' . count($despesas) . ' despesas no update com id_ficha = ' . $fichaId);
                     $despesasInseridas = 0;
-                    foreach ($despesas as $despesa) {
+                    foreach ($despesas as $idx => $despesa) {
                         // Normalizar valor
                         $valor = 0;
                         if (!empty($despesa['valor'])) {
@@ -762,14 +840,21 @@ class SocioeconomicoDB extends BaseModelDB {
                         
                         // Inserir se tiver pelo menos valor ou tipo
                         if ($valor > 0 || !empty($tipo)) {
-                            $this->query(
-                                "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
-                                [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
-                            );
-                            $despesasInseridas++;
+                            try {
+                                $this->query(
+                                    "INSERT INTO Despesas (id_ficha, valor_despesa, tipo_renda, valor_renda) VALUES (?, ?, ?, ?)",
+                                    [$fichaId, $valor, $tipo, $renda] // id_ficha (FK) recebe idficha (PK)
+                                );
+                                $despesasInseridas++;
+                            } catch (Exception $e) {
+                                error_log("ERRO ao inserir despesa #{$idx} no update: " . $e->getMessage());
+                                throw $e;
+                            }
                         }
                     }
-                    error_log("Update - Despesas: {$despesasInseridas} itens inseridos");
+                    error_log("✅ Update - Despesas: {$despesasInseridas} itens inseridos com sucesso");
+                } else {
+                    error_log('⚠️ Update - Nenhuma despesa para inserir');
                 }
             } else {
                 error_log('ATENÇÃO: Ficha não encontrada para id_atendido: ' . $id);
