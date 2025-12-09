@@ -5,7 +5,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 <div class="actions" style="display:flex; gap:10px; justify-content:flex-end; margin-bottom:20px;">
     <a href="acolhimento_list.php" class="btn secondary" style="background:#6b7b84; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">← Voltar</a>
     <?php if ($isAdmin): ?>
-    <a href="acolhimento_form.php?edit=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">✏️ Editar</a>
+    <a href="acolhimento_form.php?id=<?php echo urlencode($ficha['id']); ?>" class="btn" style="background:#f0a36b; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; text-decoration:none;">✏️ Editar</a>
     <?php endif; ?>
 </div>
 
