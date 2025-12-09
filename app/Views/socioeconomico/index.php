@@ -47,7 +47,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
             <tbody>
                 <?php foreach ($fichas as $ficha): ?>
                     <tr style="border-bottom:1px solid #dee2e6;">
-                        <td style="padding:12px; color:#212529; word-break:break-word;"><?php echo htmlspecialchars($ficha['nome_entrevistado'] ?? $ficha['nome_completo'] ?? ''); ?></td>
+                        <td style="padding:12px; color:#212529; word-break:break-word;"><?php echo htmlspecialchars($ficha['nome_menor'] ?? $ficha['nome_entrevistado'] ?? $ficha['nome_completo'] ?? ''); ?></td>
                         <td style="padding:12px; color:#212529; font-size:13px;">
                             <?php 
                             $cpf = $ficha['cpf'] ?? '';

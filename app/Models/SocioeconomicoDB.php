@@ -118,12 +118,21 @@ class SocioeconomicoDB extends BaseModelDB {
             $atendidoId = $atendido['idatendido'];
             
             // 2. Criar Ficha Socioeconômica
-            // Converter renda_familiar para número (remover R$, pontos e converter vírgula)
+            // Converter renda_familiar para número (remover R$, pontos de milhar, converter vírgula em ponto)
             $rendaFamiliar = 0;
             if (!empty($data['renda_familiar'])) {
                 $renda = $data['renda_familiar'];
-                $renda = str_replace(['R$', '.', ','], ['', '', '.'], $renda);
+                // Remover R$ e espaços
+                $renda = str_replace(['R$', ' '], '', $renda);
+                // Se tiver vírgula, é formato brasileiro (1.800,00)
+                if (strpos($renda, ',') !== false) {
+                    // Remover pontos de milhar e converter vírgula em ponto
+                    $renda = str_replace('.', '', $renda);
+                    $renda = str_replace(',', '.', $renda);
+                }
+                // Agora converter para float
                 $rendaFamiliar = floatval($renda);
+                error_log("DEBUG: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
             }
             
             // Garantir que colunas de benefícios existam na tabela (compatibilidade)
@@ -495,8 +504,10 @@ class SocioeconomicoDB extends BaseModelDB {
                     COALESCE(a.data_acolhimento, a.data_cadastro) as data_acolhimento,
                     a.data_nascimento,
                     a.status,
-                    f.renda_familiar,
-                    f.qtd_pessoas,
+                    COALESCE(f.renda_familiar, 0) as renda_familiar,
+                    COALESCE(f.qtd_pessoas, 0) as qtd_pessoas,
+                    COALESCE(f.numero_comodos, f.nr_comodos, 0) as numero_comodos,
+                    COALESCE(f.nome_menor, '') as nome_menor,
                     COALESCE(f.bolsa_familia, 0) as bolsa_familia,
                     COALESCE(f.auxilio_brasil, 0) as auxilio_brasil,
                     COALESCE(f.bpc, 0) as bpc,
@@ -599,12 +610,21 @@ class SocioeconomicoDB extends BaseModelDB {
             $this->update($id, $atendidoData);
             
             // 2. Atualizar Ficha Socioeconômica
-            // Converter renda_familiar para número (remover R$, pontos e converter vírgula)
+            // Converter renda_familiar para número (remover R$, pontos de milhar, converter vírgula em ponto)
             $rendaFamiliar = 0;
             if (!empty($data['renda_familiar'])) {
                 $renda = $data['renda_familiar'];
-                $renda = str_replace(['R$', '.', ','], ['', '', '.'], $renda);
+                // Remover R$ e espaços
+                $renda = str_replace(['R$', ' '], '', $renda);
+                // Se tiver vírgula, é formato brasileiro (1.800,00)
+                if (strpos($renda, ',') !== false) {
+                    // Remover pontos de milhar e converter vírgula em ponto
+                    $renda = str_replace('.', '', $renda);
+                    $renda = str_replace(',', '.', $renda);
+                }
+                // Agora converter para float
                 $rendaFamiliar = floatval($renda);
+                error_log("DEBUG UPDATE: renda_familiar original: " . $data['renda_familiar'] . " → convertido: " . $rendaFamiliar);
             }
             
             // Garantir colunas de benefícios (caso não existam ainda)

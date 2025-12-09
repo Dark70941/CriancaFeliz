@@ -38,7 +38,8 @@ spl_autoload_register(function ($class) {
         BASE_PATH . '/app/Config/' . $class . '.php',
         BASE_PATH . '/app/Controllers/' . $class . '.php',
         BASE_PATH . '/app/Models/' . $class . '.php',
-        BASE_PATH . '/app/Services/' . $class . '.php'
+        BASE_PATH . '/app/Services/' . $class . '.php',
+        BASE_PATH . '/app/Helpers/' . $class . '.php'
     ];
     
     foreach ($paths as $path) {
@@ -48,6 +49,11 @@ spl_autoload_register(function ($class) {
         }
     }
 });
+
+// Preparar variáveis de log para MySQL triggers
+if (isLoggedIn()) {
+    LogHelper::prepareLogVariables();
+}
 
 // Função para sanitizar dados de entrada
 function sanitizeInput($data) {

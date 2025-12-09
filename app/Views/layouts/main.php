@@ -158,6 +158,7 @@
             <?php endif; ?>
             <?php if ($currentUser['role'] === 'admin'): ?>
                 <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'users') !== false) ? 'active' : ''; ?>" href="users.php" title="Gerenciar Usuários"><i class="fas fa-user-cog"></i></a>
+                <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'logs') !== false) ? 'active' : ''; ?>" href="logs.php" title="Sistema de Logs"><i class="fas fa-history"></i></a>
                 <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'faltas') !== false && isset($_GET['action']) && $_GET['action'] === 'gerenciarOficinas') ? 'active' : ''; ?>" href="faltas.php?action=gerenciarOficinas" title="Gerenciar Oficinas"><i class="fas fa-cogs"></i></a>
             <?php endif; ?>
             <a class="nav-icon <?php echo (strpos($_SERVER['PHP_SELF'], 'profile') !== false) ? 'active' : ''; ?>" href="profile.php" title="Meu Perfil"><i class="fas fa-cog"></i></a>
