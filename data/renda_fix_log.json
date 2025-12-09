@@ -1,0 +1,18 @@
+[
+    {
+        "idficha": 4,
+        "id_atendido": 8,
+        "renda_familiar": 0,
+        "qtd_pessoas": 0,
+        "renda_per_capita": 0,
+        "timestamp": "2025-12-09T01:36:34+01:00"
+    },
+    {
+        "idficha": 5,
+        "id_atendido": 9,
+        "renda_familiar": 0,
+        "qtd_pessoas": 0,
+        "renda_per_capita": 0,
+        "timestamp": "2025-12-09T01:36:34+01:00"
+    }
+]

@@ -368,19 +368,14 @@ class AcolhimentoDB extends BaseModelDB {
         $conditions = [];
         $params = [];
         
-        // Busca por nome ou CPF
+        // Busca por nome (removido busca por CPF conforme solicitado)
         if (!empty($query)) {
-            $conditions[] = "(a.nome LIKE ? OR a.cpf LIKE ?)";
-            $params[] = "%$query%";
+            $conditions[] = "(a.nome LIKE ?)";
             $params[] = "%$query%";
         }
         
         // Aplicar filtros adicionais
-        if (!empty($filters['cpf'])) {
-            $cpf = preg_replace('/\D+/', '', $filters['cpf']);
-            $conditions[] = "a.cpf LIKE ?";
-            $params[] = "%$cpf%";
-        }
+        // Ignorar filtro por CPF aqui - busca por CPF removida para esta listagem
         
         // Se não há condições, retornar vazio
         if (empty($conditions)) {

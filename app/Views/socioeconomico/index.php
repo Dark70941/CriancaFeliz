@@ -18,11 +18,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
             <input type="text" name="q" placeholder="Digite o nome..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" 
                    style="padding:10px 12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
         </div>
-        <div>
-            <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:4px;">CPF</label>
-            <input type="text" name="cpf" placeholder="000.000.000-00" value="<?php echo htmlspecialchars($_GET['cpf'] ?? ''); ?>" 
-                   style="padding:10px 12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
-        </div>
+        <!-- CPF search removed: somente busca por nome solicitada -->
         <div>
             <button type="submit" class="btn" style="background:#6fb64f; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; width:100%;">Buscar</button>
         </div>
@@ -70,20 +66,19 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                         </td>
                         <td style="padding:12px; color:#212529; font-size:13px;">
                             <?php 
-                            $renda = $ficha['renda_familiar'] ?? 0;
-                            
-                            // Converter para float se for string
-                            if (is_string($renda)) {
+                            $renda = $ficha['renda_familiar'] ?? null;
+                            // Normalizar string para número quando aplicável
+                            if (is_string($renda) && strlen(trim($renda))>0) {
                                 $renda = floatval(str_replace(['R$', '.', ','], ['', '', '.'], $renda));
-                            } else {
-                                $renda = floatval($renda);
                             }
-                            
-                            // Exibir a renda formatada ou N/I se for 0
-                            if ($renda > 0) {
-                                echo 'R$ ' . number_format($renda, 2, ',', '.');
+
+                            if ($renda === null || $renda === '') {
+                                // Sem informação registrada
+                                echo '<span style="color:#e55353; font-weight:600;">Não possui</span>';
                             } else {
-                                echo 'N/I';
+                                // Mostrar valor real (mesmo que 0.00)
+                                $r = floatval($renda);
+                                echo 'R$ ' . number_format($r, 2, ',', '.');
                             }
                             ?>
                         </td>
@@ -95,7 +90,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                             } elseif (is_array($beneficios) && count($beneficios)>0) {
                                 echo htmlspecialchars(implode(', ', $beneficios));
                             } else {
-                                echo 'N/I';
+                                echo '<span style="color:#e55353; font-weight:600;">não possui</span>';
                             }
                             ?>
                         </td>
@@ -150,10 +145,10 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         </table>
         
         <!-- Paginação -->
-        <?php if ($pagination['last_page'] > 1): ?>
+                <?php if ($pagination['last_page'] > 1): ?>
             <div class="pagination" style="padding:16px; text-align:center; border-top:1px solid #dee2e6;">
                 <?php if ($pagination['current_page'] > 1): ?>
-                    <a href="?page=<?php echo $pagination['current_page'] - 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>&cpf=<?php echo urlencode($_GET['cpf'] ?? ''); ?>" 
+                    <a href="?page=<?php echo $pagination['current_page'] - 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>" 
                        class="btn btn-sm secondary" style="background:#6b7b84; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; margin:0 2px;">
                         ← Anterior
                     </a>
@@ -165,7 +160,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                 </span>
                 
                 <?php if ($pagination['current_page'] < $pagination['last_page']): ?>
-                    <a href="?page=<?php echo $pagination['current_page'] + 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>&cpf=<?php echo urlencode($_GET['cpf'] ?? ''); ?>" 
+                    <a href="?page=<?php echo $pagination['current_page'] + 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>" 
                        class="btn btn-sm secondary" style="background:#6b7b84; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; margin:0 2px;">
                         Próxima →
                     </a>

@@ -20,13 +20,32 @@ class AcolhimentoController extends BaseController {
         try {
             $page = intval($this->getParam('page', 1));
             $perPage = 10;
-            
-            $result = $this->acolhimentoService->listFichas($page, $perPage);
-            
-            // Adicionar dados calculados
-            foreach ($result['data'] as &$ficha) {
-                $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
-                $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
+            // Se houver query de busca (q) usar searchFichas (busca por nome)
+            $q = $this->getParam('q', '');
+            $filters = $this->getGetData();
+
+            if (!empty($q)) {
+                $fichas = $this->acolhimentoService->searchFichas($q, $filters);
+                foreach ($fichas as &$f) {
+                    $f['idade'] = $this->calculateAge($f['data_nascimento'] ?? '');
+                    $f['categoria'] = $this->categorizeByAge($f['idade']);
+                }
+
+                $result = [
+                    'data' => $fichas,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => count($fichas),
+                    'total' => count($fichas)
+                ];
+            } else {
+                $result = $this->acolhimentoService->listFichas($page, $perPage);
+
+                // Adicionar dados calculados
+                foreach ($result['data'] as &$ficha) {
+                    $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
+                    $ficha['categoria'] = $this->categorizeByAge($ficha['idade']);
+                }
             }
             
             $data = [

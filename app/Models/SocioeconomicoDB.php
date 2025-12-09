@@ -85,6 +85,81 @@ class SocioeconomicoDB extends BaseModelDB {
         if ($age < 18) return 'Adolescente';
         return 'Adulto';
     }
+
+    /**
+     * Calcula renda familiar total (compatível com DB-backed model)
+     */
+    public function calculateRendaFamiliar($data) {
+        $renda = 0;
+
+        // 1) Se houver array 'familia' já carregado
+        if (!empty($data['familia']) && is_array($data['familia'])) {
+            foreach ($data['familia'] as $membro) {
+                $valor = $membro['renda'] ?? $membro['renda_membro'] ?? 0;
+                if (is_string($valor)) {
+                    $valor = str_replace(['R$', ' ', '.'], ['', '', ''], $valor);
+                    $valor = str_replace(',', '.', $valor);
+                }
+                $renda += floatval($valor);
+            }
+            return $renda;
+        }
+
+        // 2) Se existir familia_json como string
+        if (!empty($data['familia_json']) && is_string($data['familia_json'])) {
+            $decoded = json_decode($data['familia_json'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                foreach ($decoded as $membro) {
+                    $valor = $membro['renda'] ?? $membro['renda_membro'] ?? 0;
+                    if (is_string($valor)) {
+                        $valor = str_replace(['R$', ' ', '.'], ['', '', ''], $valor);
+                        $valor = str_replace(',', '.', $valor);
+                    }
+                    $renda += floatval($valor);
+                }
+                return $renda;
+            }
+        }
+
+        // 3) Tentar somar a partir da tabela Familia quando tivermos ficha_id/id
+        $fichaId = $data['ficha_id'] ?? $data['idficha'] ?? null;
+        if (!$fichaId) {
+            // tentar descobrir idficha a partir do id do atendido
+            $atendidoId = $data['id'] ?? $data['idatendido'] ?? null;
+            if ($atendidoId) {
+                try {
+                    $stmt = $this->query("SELECT idficha FROM Ficha_Socioeconomico WHERE id_atendido = ?", [$atendidoId]);
+                    $row = $stmt->fetch();
+                    $fichaId = $row['idficha'] ?? null;
+                } catch (Exception $e) {
+                    $fichaId = null;
+                }
+            }
+        }
+
+        if ($fichaId) {
+            try {
+                $sumStmt = $this->query("SELECT COALESCE(SUM(renda),0) as total FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                $sumRow = $sumStmt->fetch();
+                $renda = floatval($sumRow['total'] ?? 0);
+                if ($renda > 0) return $renda;
+            } catch (Exception $e) {
+                // ignore and fallback
+            }
+        }
+
+        // 4) Fallback para campos individuais renda_membro_1..10 no record
+        for ($i = 1; $i <= 10; $i++) {
+            $campo = $data["renda_membro_$i"] ?? 0;
+            if (is_string($campo)) {
+                $campo = str_replace(['R$', ' ', '.'], ['', '', ''], $campo);
+                $campo = str_replace(',', '.', $campo);
+            }
+            $renda += floatval($campo);
+        }
+
+        return $renda;
+    }
     
     /**
      * Criar ficha socioeconômica
@@ -378,8 +453,32 @@ class SocioeconomicoDB extends BaseModelDB {
                 error_log('⚠️ Nenhuma despesa para inserir (array vazio ou inválido)');
             }
             
+            // Recalcular e salvar renda_familiar a partir da tabela Familia, se houver
+            try {
+                $sumStmt = $this->query("SELECT COALESCE(SUM(renda),0) as total FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                $sumRow = $sumStmt->fetch();
+                $familySum = floatval($sumRow['total'] ?? 0);
+
+                if ($familySum > 0) {
+                    // Obter qtd_pessoas atual na ficha (caso tenha sido inserida)
+                    $qtdStmt = $this->query("SELECT qtd_pessoas FROM Ficha_Socioeconomico WHERE idficha = ?", [$fichaId]);
+                    $qtdRow = $qtdStmt->fetch();
+                    $qtd = intval($qtdRow['qtd_pessoas'] ?? 0);
+                    $rendaPerCapita = ($qtd > 0) ? ($familySum / max(1, $qtd)) : $familySum;
+
+                    // Atualizar a ficha com os valores calculados
+                    try {
+                        $this->query("UPDATE Ficha_Socioeconomico SET renda_familiar = ?, renda_per_capita = ? WHERE idficha = ?", [$familySum, $rendaPerCapita, $fichaId]);
+                    } catch (Exception $e) {
+                        error_log('ERRO ao atualizar renda_familiar após criar ficha: ' . $e->getMessage());
+                    }
+                }
+            } catch (Exception $e) {
+                error_log('ERRO ao recalcular renda_familiar no createFicha: ' . $e->getMessage());
+            }
+
             Database::commit();
-            
+
             return $this->getFicha($atendidoId);
             
         } catch (Exception $e) {
@@ -424,6 +523,14 @@ class SocioeconomicoDB extends BaseModelDB {
                 // Buscar despesas
                 $stmt = $this->query("SELECT * FROM Despesas WHERE id_ficha = ?", [$fichaId]);
                 $ficha['despesas'] = $stmt->fetchAll();
+
+                // Calcular soma de renda a partir da tabela Familia (prioridade máxima)
+                $sumStmt = $this->query("SELECT COALESCE(SUM(renda),0) as total FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                $sumRow = $sumStmt->fetch();
+                $familySum = floatval($sumRow['total'] ?? 0);
+                
+                // SEMPRE atualizar renda_familiar baseado na tabela Familia (é a fonte de verdade)
+                $ficha['renda_familiar'] = $familySum;
             } else {
                 $ficha['familia'] = [];
                 $ficha['despesas'] = [];
@@ -495,14 +602,15 @@ class SocioeconomicoDB extends BaseModelDB {
                     COALESCE(a.data_acolhimento, a.data_cadastro) as data_acolhimento,
                     a.data_nascimento,
                     a.status,
-                    f.renda_familiar,
-                    f.qtd_pessoas,
-                    COALESCE(f.bolsa_familia, 0) as bolsa_familia,
-                    COALESCE(f.auxilio_brasil, 0) as auxilio_brasil,
-                    COALESCE(f.bpc, 0) as bpc,
-                    COALESCE(f.auxilio_emergencial, 0) as auxilio_emergencial,
-                    COALESCE(f.seguro_desemprego, 0) as seguro_desemprego,
-                    COALESCE(f.aposentadoria, 0) as aposentadoria
+                        f.renda_familiar,
+                        f.qtd_pessoas,
+                        COALESCE(f.bolsa_familia, 0) as bolsa_familia,
+                        COALESCE(f.auxilio_brasil, 0) as auxilio_brasil,
+                        COALESCE(f.bpc, 0) as bpc,
+                        COALESCE(f.auxilio_emergencial, 0) as auxilio_emergencial,
+                        COALESCE(f.seguro_desemprego, 0) as seguro_desemprego,
+                        COALESCE(f.aposentadoria, 0) as aposentadoria,
+                        f.idficha as ficha_id
                 FROM Atendido a
                 INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
                 ORDER BY a.data_cadastro DESC
@@ -556,6 +664,25 @@ class SocioeconomicoDB extends BaseModelDB {
             }
         }
         
+        // Preencher renda_familiar a partir da tabela Familia quando possível (corrige casos onde renda não foi atualizada)
+        foreach ($fichas as &$f) {
+            $f['renda_familiar'] = isset($f['renda_familiar']) ? floatval($f['renda_familiar']) : 0;
+            $fichaId = $f['ficha_id'] ?? null;
+            if ($fichaId) {
+                try {
+                    // SEMPRE recalcular baseado na tabela Familia (fonte de verdade)
+                    $sumStmt = $this->query("SELECT COALESCE(SUM(renda),0) as total FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                    $sumRow = $sumStmt->fetch();
+                    $familySum = floatval($sumRow['total'] ?? 0);
+                    // Usar o valor calculado (mesmo que seja 0) - a tabela Familia é a verdade
+                    $f['renda_familiar'] = $familySum;
+                } catch (Exception $e) {
+                    // Se erro, manter valor existente
+                    $f['renda_familiar'] = isset($f['renda_familiar']) ? floatval($f['renda_familiar']) : 0;
+                }
+            }
+        }
+
         // Contar total
         $stmt = $this->query("
             SELECT COUNT(*) as total 
@@ -599,11 +726,25 @@ class SocioeconomicoDB extends BaseModelDB {
             $this->update($id, $atendidoData);
             
             // 2. Atualizar Ficha Socioeconômica
-            // Converter renda_familiar para número (remover R$, pontos e converter vírgula)
+            // Converter renda_familiar para número (remover R$, depois tratar formatos brasileiros/JS)
             $rendaFamiliar = 0;
             if (!empty($data['renda_familiar'])) {
-                $renda = $data['renda_familiar'];
-                $renda = str_replace(['R$', '.', ','], ['', '', '.'], $renda);
+                $renda = trim($data['renda_familiar']);
+                // Remove R$
+                $renda = str_replace('R$', '', $renda);
+                // Se contém vírgula, é formato brasileiro: 1.234,56 ou 1234,56
+                // Se contém ponto sem vírgula depois: 1234.56 (formato JS .toFixed)
+                if (strpos($renda, ',') !== false) {
+                    // Formato brasileiro: remover pontos de milhares, converter vírgula em ponto
+                    $renda = str_replace('.', '', $renda);
+                    $renda = str_replace(',', '.', $renda);
+                } else if (preg_match('/^\d+\.\d{2}$/', trim($renda))) {
+                    // Já está em formato decimal (1500.00 do JS) - deixar como está
+                    // não fazer alteração
+                } else {
+                    // Remover pontos se existirem (milhares)
+                    $renda = str_replace('.', '', $renda);
+                }
                 $rendaFamiliar = floatval($renda);
             }
             
@@ -856,6 +997,27 @@ class SocioeconomicoDB extends BaseModelDB {
                 } else {
                     error_log('⚠️ Update - Nenhuma despesa para inserir');
                 }
+                
+                // Recalcular e salvar renda_familiar a partir da tabela Familia após update
+                try {
+                    $sumStmt = $this->query("SELECT COALESCE(SUM(renda),0) as total FROM Familia WHERE id_ficha = ?", [$fichaId]);
+                    $sumRow = $sumStmt->fetch();
+                    $familySum = floatval($sumRow['total'] ?? 0);
+
+                    if ($familySum > 0) {
+                        $qtdStmt = $this->query("SELECT qtd_pessoas FROM Ficha_Socioeconomico WHERE idficha = ?", [$fichaId]);
+                        $qtdRow = $qtdStmt->fetch();
+                        $qtd = intval($qtdRow['qtd_pessoas'] ?? 0);
+                        $rendaPerCapita = ($qtd > 0) ? ($familySum / max(1, $qtd)) : $familySum;
+                        try {
+                            $this->query("UPDATE Ficha_Socioeconomico SET renda_familiar = ?, renda_per_capita = ? WHERE idficha = ?", [$familySum, $rendaPerCapita, $fichaId]);
+                        } catch (Exception $e) {
+                            error_log('ERRO ao atualizar renda_familiar após updateFicha: ' . $e->getMessage());
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log('ERRO ao recalcular renda_familiar no updateFicha: ' . $e->getMessage());
+                }
             } else {
                 error_log('ATENÇÃO: Ficha não encontrada para id_atendido: ' . $id);
             }
@@ -914,16 +1076,15 @@ class SocioeconomicoDB extends BaseModelDB {
                 a.data_nascimento,
                 a.status,
                 f.renda_familiar,
-                f.qtd_pessoas as numero_membros
+                f.qtd_pessoas as numero_membros,
+                f.idficha
             FROM Atendido a
             INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
             WHERE 
-                a.nome LIKE ? OR
-                a.cpf LIKE ? OR
-                a.rg LIKE ?
+                a.nome LIKE ?
             ORDER BY a.data_cadastro DESC
             LIMIT 100
-        ", ["%$query%", "%$query%", "%$query%"]);
+        ", ["%$query%"]);
         
         $results = $stmt->fetchAll();
         
@@ -932,6 +1093,19 @@ class SocioeconomicoDB extends BaseModelDB {
             $result['data_nascimento'] = $this->formatDate($result['data_nascimento']);
             $result['idade'] = $this->calculateAge($result['data_nascimento']);
             $result['categoria'] = $this->categorizeByAge($result['idade']);
+            
+            // SEMPRE recalcular renda_familiar a partir da tabela Familia (é a fonte de verdade)
+            if (isset($result['idficha']) && $result['idficha']) {
+                try {
+                    $stmtRenda = $this->query("SELECT COALESCE(SUM(renda),0) as total FROM Familia WHERE id_ficha = ?", [$result['idficha']]);
+                    $familySum = floatval($stmtRenda->fetch()['total'] ?? 0);
+                    $result['renda_familiar'] = $familySum;
+                } catch (\Exception $e) {
+                    error_log('ERRO ao recalcular renda_familiar em searchAdvanced: ' . $e->getMessage());
+                }
+            }
+            
+            $result['renda_familiar'] = floatval($result['renda_familiar'] ?? 0);
         }
         
         return $results;

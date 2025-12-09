@@ -58,5 +58,15 @@
         "user_name": "Administrador",
         "timestamp": "2025-11-17 00:25:12",
         "ip": "::1"
+    },
+    {
+        "id": "6937684a1e590",
+        "action": "update",
+        "ficha_id": "9",
+        "description": "Ficha de acolhimento atualizada",
+        "user_id": 1,
+        "user_name": "Administrador",
+        "timestamp": "2025-12-09 01:07:38",
+        "ip": "::1"
     }
 ]

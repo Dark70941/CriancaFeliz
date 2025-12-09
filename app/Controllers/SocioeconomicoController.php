@@ -20,17 +20,38 @@ class SocioeconomicoController extends BaseController {
         try {
             $page = intval($this->getParam('page', 1));
             $perPage = 10;
-            
-            $result = $this->socioeconomicoService->listFichas($page, $perPage);
-            
-            // Adicionar dados calculados
-            foreach ($result['data'] as &$ficha) {
-                $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
-                $ficha['renda_familiar'] = $this->calculateRendaFamiliar($ficha);
-                $ficha['situacao_economica'] = $this->categorizeSituacao(
-                    $ficha['renda_familiar'], 
-                    intval($ficha['numero_membros'] ?? 1)
-                );
+            // Se houver query de busca (q) usar searchFichas (busca por nome)
+            $q = $this->getParam('q', '');
+            $filters = $this->getGetData();
+
+            if (!empty($q)) {
+                $fichas = $this->socioeconomicoService->searchFichas($q, $filters);
+                // garantir calculos mínimos caso o service/model não os tenha feito
+                foreach ($fichas as &$f) {
+                    $f['idade'] = $this->calculateAge($f['data_nascimento'] ?? '');
+                    $f['renda_familiar'] = isset($f['renda_familiar']) ? floatval($f['renda_familiar']) : $this->calculateRendaFamiliar($f);
+                    $f['situacao_economica'] = $this->categorizeSituacao($f['renda_familiar'], intval($f['numero_membros'] ?? 1));
+                }
+
+                $result = [
+                    'data' => $fichas,
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => count($fichas),
+                    'total' => count($fichas)
+                ];
+            } else {
+                $result = $this->socioeconomicoService->listFichas($page, $perPage);
+
+                // Adicionar dados calculados
+                foreach ($result['data'] as &$ficha) {
+                    $ficha['idade'] = $this->calculateAge($ficha['data_nascimento'] ?? '');
+                    $ficha['renda_familiar'] = isset($ficha['renda_familiar']) ? floatval($ficha['renda_familiar']) : $this->calculateRendaFamiliar($ficha);
+                    $ficha['situacao_economica'] = $this->categorizeSituacao(
+                        $ficha['renda_familiar'], 
+                        intval($ficha['numero_membros'] ?? 1)
+                    );
+                }
             }
             
             $data = [

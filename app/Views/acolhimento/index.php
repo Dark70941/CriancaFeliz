@@ -12,8 +12,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
 
 <script>
  document.addEventListener('DOMContentLoaded', function() {
-   const inputNome = document.querySelector('input[name="q"]');
-   const inputCpf = document.querySelector('input[name="cpf"]');
+    const inputNome = document.querySelector('input[name="q"]');
    const tbody = document.getElementById('fichas-body');
   const initialTbodyHTML = tbody ? tbody.innerHTML : '';
    const pagination = document.querySelector('.pagination');
@@ -36,13 +35,13 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
      return `<span class="badge" style="${style}">${label}</span>`;
    }
 
-   function renderRows(items) {
+    function renderRows(items) {
      if (!Array.isArray(items)) return;
      tbody.innerHTML = items.map(it => {
        const id = it.id || '';
        const nome = it.nome_completo || '';
-       const cpf = it.cpf || '';
-       const idade = (it.idade != null && it.idade !== '') ? `${it.idade} anos` : 'N/A anos';
+    const cpf = it.cpf || '';
+    const idade = (it.idade != null && it.idade !== '') ? `${it.idade} anos` : 'não informada';
        const categoria = formatCategoria(it.categoria);
        const responsavel = it.responsavel || '';
        const status = formatStatus(it.status);
@@ -97,8 +96,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
      }, 300);
    }
 
-   if (inputNome) inputNome.addEventListener('input', triggerSearch);
-   if (inputCpf) inputCpf.addEventListener('input', triggerSearch);
+    if (inputNome) inputNome.addEventListener('input', triggerSearch);
  });
 </script>
 
@@ -110,11 +108,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
             <input type="text" name="q" placeholder="Digite o nome..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" 
                    style="padding:10px 12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
         </div>
-        <div>
-            <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:4px;">CPF</label>
-            <input type="text" name="cpf" placeholder="000.000.000-00" value="<?php echo htmlspecialchars($_GET['cpf'] ?? ''); ?>" 
-                   style="padding:10px 12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
-        </div>
+        <!-- CPF search removed: somente busca por nome solicitada -->
         <div>
             <button type="submit" class="btn" style="background:#6fb64f; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; width:100%;">Buscar</button>
         </div>
@@ -128,6 +122,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
             <thead style="background:#f8f9fa;">
                 <tr>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Nome</th>
+                    <!-- CPF column kept for compatibility but will be empty when not provided -->
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">CPF</th>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Idade</th>
                     <th style="padding:12px; text-align:left; border-bottom:1px solid #dee2e6; font-weight:600; color:#495057;">Categoria</th>
@@ -141,7 +136,13 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                     <tr style="border-bottom:1px solid #dee2e6;">
                         <td style="padding:12px; color:#212529;"><?php echo htmlspecialchars($ficha['nome_completo'] ?? ''); ?></td>
                         <td style="padding:12px; color:#212529;"><?php echo htmlspecialchars($ficha['cpf'] ?? ''); ?></td>
-                        <td style="padding:12px; color:#212529;"><?php echo $ficha['idade'] ?? 'N/A'; ?> anos</td>
+                        <td style="padding:12px; color:#212529;">
+                            <?php if (isset($ficha['idade']) && $ficha['idade'] !== null && $ficha['idade'] !== ''): ?>
+                                <?php echo $ficha['idade']; ?> anos
+                            <?php else: ?>
+                                não informada
+                            <?php endif; ?>
+                        </td>
                         <td style="padding:12px; color:#212529;">
                             <span class="badge <?php echo strtolower($ficha['categoria'] ?? 'indefinido'); ?>" 
                                   style="padding:4px 8px; border-radius:12px; font-size:12px; font-weight:500;
@@ -208,7 +209,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
         <?php if ($pagination['last_page'] > 1): ?>
             <div class="pagination" style="padding:16px; text-align:center; border-top:1px solid #dee2e6;">
                 <?php if ($pagination['current_page'] > 1): ?>
-                    <a href="?page=<?php echo $pagination['current_page'] - 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>&cpf=<?php echo urlencode($_GET['cpf'] ?? ''); ?>" 
+                    <a href="?page=<?php echo $pagination['current_page'] - 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>" 
                        class="btn btn-sm secondary" style="background:#6b7b84; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; margin:0 2px;">
                         ← Anterior
                     </a>
@@ -220,7 +221,7 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
                 </span>
                 
                 <?php if ($pagination['current_page'] < $pagination['last_page']): ?>
-                    <a href="?page=<?php echo $pagination['current_page'] + 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>&cpf=<?php echo urlencode($_GET['cpf'] ?? ''); ?>" 
+                    <a href="?page=<?php echo $pagination['current_page'] + 1; ?>&q=<?php echo urlencode($_GET['q'] ?? ''); ?>" 
                        class="btn btn-sm secondary" style="background:#6b7b84; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; text-decoration:none; margin:0 2px;">
                         Próxima →
                     </a>

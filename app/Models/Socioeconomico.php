@@ -150,13 +150,47 @@ public function searchByName($nome)
      */
     public function calculateRendaFamiliar($data) {
         $renda = 0;
-        
-        // Somar rendas dos membros da família
+
+        // Preferir somar a partir da composição familiar (array) quando disponível
+        if (!empty($data['familia']) && is_array($data['familia'])) {
+            foreach ($data['familia'] as $membro) {
+                if (empty($membro)) continue;
+                $valor = $membro['renda'] ?? $membro['renda_membro'] ?? 0;
+                if (is_string($valor)) {
+                    $valor = str_replace(['R$', ' ', '.'], ['', '', ''], $valor);
+                    $valor = str_replace(',', '.', $valor);
+                }
+                $renda += floatval($valor);
+            }
+            return $renda;
+        }
+
+        // Se existir familia_json (string), tentar decodificar
+        if (!empty($data['familia_json']) && is_string($data['familia_json'])) {
+            $decoded = json_decode($data['familia_json'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                foreach ($decoded as $membro) {
+                    $valor = $membro['renda'] ?? $membro['renda_membro'] ?? 0;
+                    if (is_string($valor)) {
+                        $valor = str_replace(['R$', ' ', '.'], ['', '', ''], $valor);
+                        $valor = str_replace(',', '.', $valor);
+                    }
+                    $renda += floatval($valor);
+                }
+                return $renda;
+            }
+        }
+
+        // Fallback: somar campos individuais renda_membro_1..10
         for ($i = 1; $i <= 10; $i++) {
             $rendaMembro = $data["renda_membro_$i"] ?? 0;
-            $renda += floatval(str_replace(['.', ','], ['', '.'], $rendaMembro));
+            if (is_string($rendaMembro)) {
+                $rendaMembro = str_replace(['R$', ' ', '.'], ['', '', ''], $rendaMembro);
+                $rendaMembro = str_replace(',', '.', $rendaMembro);
+            }
+            $renda += floatval($rendaMembro);
         }
-        
+
         return $renda;
     }
     
