@@ -938,12 +938,10 @@ class SocioeconomicoDB extends BaseModelDB {
             FROM Atendido a
             INNER JOIN Ficha_Socioeconomico f ON a.idatendido = f.id_atendido
             WHERE 
-                a.nome LIKE ? OR
-                a.cpf LIKE ? OR
-                a.rg LIKE ?
+                a.nome LIKE ?
             ORDER BY a.data_cadastro DESC
             LIMIT 100
-        ", ["%$query%", "%$query%", "%$query%"]);
+        ", ["%$query%"]);
         
         $results = $stmt->fetchAll();
         

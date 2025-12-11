@@ -144,24 +144,36 @@ class SocioeconomicoService {
 
     
     public function searchFichas($query, $filters = []) {
-    $results = $this->socioeconomicoModel->searchByName($query);
+        error_log("SocioeconomicoService - searchFichas - Iniciando busca por: '" . htmlspecialchars($query) . "'");
         
-        // Aplicar filtros adicionais
-        if (!empty($filters)) {
-            $results = $this->applyFilters($results, $filters);
+        try {
+            $results = $this->socioeconomicoModel->searchByName($query);
+            error_log("SocioeconomicoService - searchFichas - Resultado bruto do modelo: " . count($results) . " registros");
+            
+            // Aplicar filtros adicionais
+            if (!empty($filters)) {
+                error_log("SocioeconomicoService - searchFichas - Aplicando filtros adicionais");
+                $results = $this->applyFilters($results, $filters);
+                error_log("SocioeconomicoService - searchFichas - Após filtros: " . count($results) . " registros");
+            }
+            
+            // Adicionar dados calculados
+            error_log("SocioeconomicoService - searchFichas - Adicionando dados calculados");
+            foreach ($results as &$ficha) {
+                $ficha['idade'] = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
+                $ficha['renda_familiar'] = $this->socioeconomicoModel->calculateRendaFamiliar($ficha);
+                $ficha['situacao_economica'] = $this->socioeconomicoModel->categorizeSituacao(
+                    $ficha['renda_familiar'], 
+                    intval($ficha['numero_membros'] ?? 1)
+                );
+            }
+            
+            return $results;
+        } catch (Exception $e) {
+            error_log("SocioeconomicoService - searchFichas - Erro ao buscar fichas: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            return [];
         }
-        
-        // Adicionar dados calculados
-        foreach ($results as &$ficha) {
-            $ficha['idade'] = $this->socioeconomicoModel->calculateAge($ficha['data_nascimento'] ?? '');
-            $ficha['renda_familiar'] = $this->socioeconomicoModel->calculateRendaFamiliar($ficha);
-            $ficha['situacao_economica'] = $this->socioeconomicoModel->categorizeSituacao(
-                $ficha['renda_familiar'], 
-                intval($ficha['numero_membros'] ?? 1)
-            );
-        }
-        
-        return $results;
     }
     
     /**

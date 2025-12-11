@@ -20,8 +20,30 @@ class SocioeconomicoController extends BaseController {
         try {
             $page = intval($this->getParam('page', 1));
             $perPage = 10;
+            $searchQuery = $this->getParam('q', '');
             
-            $result = $this->socioeconomicoService->listFichas($page, $perPage);
+            // Log para depuração
+            error_log("SocioeconomicoController - Parâmetros - Página: $page, Busca: '" . htmlspecialchars($searchQuery) . "'");
+            
+            if (!empty($searchQuery)) {
+                error_log("SocioeconomicoController - Iniciando busca por: '" . htmlspecialchars($searchQuery) . "'");
+                // Usar busca por nome
+                $result = $this->socioeconomicoService->searchFichas($searchQuery);
+                error_log("SocioeconomicoController - Resultado da busca: " . count($result) . " registros encontrados");
+                
+                $total = count($result);
+                $result = [
+                    'data' => $result,
+                    'current_page' => 1,
+                    'per_page' => $total,
+                    'total' => $total,
+                    'last_page' => 1
+                ];
+            } else {
+                error_log("SocioeconomicoController - Listando todas as fichas (página $page, $perPage por página)");
+                // Listar todas as fichas com paginação
+                $result = $this->socioeconomicoService->listFichas($page, $perPage);
+            }
             
             // Adicionar dados calculados
             foreach ($result['data'] as &$ficha) {

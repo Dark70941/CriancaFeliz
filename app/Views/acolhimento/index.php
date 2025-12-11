@@ -98,22 +98,17 @@ $isAdmin = (isset($currentUser) && isset($currentUser['role']) && $currentUser['
    }
 
    if (inputNome) inputNome.addEventListener('input', triggerSearch);
-   if (inputCpf) inputCpf.addEventListener('input', triggerSearch);
  });
 </script>
 
 <!-- Filtros de busca -->
 <div class="search-filters" style="background:#fff; border-radius:12px; padding:16px; margin-bottom:20px; box-shadow: 0 2px 10px rgba(0,0,0,.08);">
-    <form method="GET" style="display:grid; grid-template-columns: 1fr 200px 120px; gap:12px; align-items:end;">
+    <form method="GET" style="display:grid; grid-template-columns: 1fr 120px; gap:12px; align-items:end;">
         <div>
             <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:4px;">Buscar por nome</label>
             <input type="text" name="q" placeholder="Digite o nome..." value="<?php echo htmlspecialchars($_GET['q'] ?? ''); ?>" 
-                   style="padding:10px 12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
-        </div>
-        <div>
-            <label style="font-size:14px; color:#354047; font-weight:600; display:block; margin-bottom:4px;">CPF</label>
-            <input type="text" name="cpf" placeholder="000.000.000-00" value="<?php echo htmlspecialchars($_GET['cpf'] ?? ''); ?>" 
-                   style="padding:10px 12px; border:2px solid #f0a36b; border-radius:8px; font-family:Poppins; background:#fff; width:100%; box-sizing:border-box;">
+                   style="width:100%; padding:10px; border:1px solid #dee2e6; border-radius:6px; font-size:14px;"
+                   onkeyup="document.getElementById('fichas-body').innerHTML = '';">
         </div>
         <div>
             <button type="submit" class="btn" style="background:#6fb64f; color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; width:100%;">Buscar</button>

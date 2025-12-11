@@ -24,7 +24,17 @@ class LogHelper {
                 $pdo->exec("SET @usuario_id = NULL");
             }
             
-            $pdo->exec("SET @ip_usuario = '" . $pdo->quote($ipUsuario) . "'");
+            // Usar INET6_ATON para converter o endereço IP para binário
+            if (filter_var($ipUsuario, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                // Para IPv6, usar UNHEX para converter o endereço
+                $pdo->exec("SET @ip_usuario = UNHEX('" . bin2hex(inet_pton($ipUsuario)) . "')");
+            } else if (filter_var($ipUsuario, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                // Para IPv4, usar INET_ATON
+                $pdo->exec("SET @ip_usuario = INET_ATON('" . $ipUsuario . "')");
+            } else {
+                // Se não for um IP válido, definir como NULL
+                $pdo->exec("SET @ip_usuario = NULL");
+            }
             
         } catch (Exception $e) {
             // Log silencioso - não interrompe a execução
